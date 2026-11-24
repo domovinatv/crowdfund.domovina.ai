@@ -1,0 +1,85 @@
+---
+// Korak 5 „pregled”: sažetak po koracima s poveznicom „Uredi”, prihvat uvjeta i slanje zahtjeva.
+import Greska from "../../components/prijava/Greska.astro";
+import OkvirZahtjeva from "../../components/organizacija/OkvirZahtjeva.astro";
+import { GUMB } from "../../components/organizacija/ucitavanje";
+import { url, type KljucRute } from "../../lib/rute";
+import { ORGANIZACIJA } from "../sadrzaj/organizacija";
+import type { PropsStranice } from "../tipovi";
+import type { PodaciKorakaPregled } from "./organisation.new.review.ucitaj";
+
+type Props = PropsStranice<PodaciKorakaPregled>;
+const { lang, podaci } = Astro.props;
+const O = ORGANIZACIJA[lang];
+const T = O.carobnjak;
+const P = T.polja;
+const n = podaci.nacrt;
+const kat = n?.kategorija ? podaci.kategorije.find((k) => k.key === n.kategorija) : null;
+const nema = T.nedovrseno;
+const odjeljci: { korak: KljucRute; naslov: string; redovi: [string, string][] }[] = n
+  ? [
+      {
+        korak: "organisation.new.details",
+        naslov: T.koraci.details,
+        redovi: [
+          [P.naziv, n.naziv],
+          [P.slug, `/${lang}/o/${n.slug}`],
+          [P.pravniOblik, O.oblici[n.pravniOblik]],
+          [P.oib, n.oib || nema],
+          [P.web, n.web || nema],
+          [P.mreze, n.mreze.join(", ") || "—"],
+          [P.opis, n.opis || nema],
+          [P.kategorija, kat ? (lang === "hr" ? kat.nameHr : kat.nameEn) : "—"],
+          [P.adresa, [n.adresa, n.postanski, n.grad].filter(Boolean).join(", ") || "—"],
+        ],
+      },
+      {
+        korak: "organisation.new.representative",
+        naslov: T.koraci.representative,
+        redovi: n.zastupnik ? [[P.ime, `${n.zastupnik.ime} ${n.zastupnik.prezime}`], [P.funkcija, n.zastupnik.funkcija]] : [[T.koraci.representative, nema]],
+      },
+      {
+        korak: "organisation.new.project",
+        naslov: T.koraci.project,
+        redovi: n.projekt ? [[P.opisProjekta, n.opisProjekta], [P.ocekivaneUplate, O.uplate[n.ocekivaneUplate]]] : [[T.koraci.project, nema]],
+      },
+      { korak: "organisation.new.kyb", naslov: T.koraci.kyb, redovi: [[T.koraci.kyb, n.kyb ? O.statusVerifikacije.requested : nema]] },
+    ]
+  : [];
+const greska = podaci.greska ? O.greske[podaci.greska] : null;
+---
+<OkvirZahtjeva lang={lang} korak="review" naziv={n?.naziv ?? null}>
+  <p class="mt-2 text-ink-soft">{T.pregledUvod}</p>
+  {greska && <Greska poruka={greska} />}
+  {
+    odjeljci.map((o) => (
+      <section class="mt-6 rounded-md border border-line p-4">
+        <div class="flex items-center justify-between gap-2">
+          <h2 class="text-lg font-semibold text-ink">{o.naslov}</h2>
+          <a href={url(lang, o.korak)} class="text-sm font-medium text-action underline underline-offset-2">{T.uredi}</a>
+        </div>
+        <dl class="mt-2 grid gap-x-4 gap-y-1 sm:grid-cols-[12rem_1fr]">
+          {o.redovi.map(([k, v]) => (
+            <>
+              <dt class="text-sm text-ink-muted">{k}</dt>
+              <dd class:list={["break-words", v === nema ? "font-medium text-danger" : "text-ink"]}>{v}</dd>
+            </>
+          ))}
+        </dl>
+      </section>
+    ))
+  }
+  <form method="post" action={url(lang, "organisation.new.review")} class="mt-6 space-y-5">
+    <label class="flex items-start gap-3">
+      <input type="checkbox" name="uvjeti" value="1" required class="mt-1 size-5 shrink-0 accent-action" />
+      <span>
+        {T.uvjetiPrije} <a href={url(lang, "terms")} class="text-action underline underline-offset-2">{T.uvjeti}</a> {T.uvjetiI}{" "}
+        <a href={url(lang, "privacy")} class="text-action underline underline-offset-2">{T.privatnost}</a>
+      </span>
+    </label>
+    <div class="flex flex-wrap items-center gap-3">
+      <button type="submit" class={GUMB} disabled={podaci.nedovrseni !== "review"}>{T.posalji}</button>
+      <a href={url(lang, "organisation.new.kyb")} class="font-medium text-action underline underline-offset-2">{O.opce.natrag}</a>
+    </div>
+  </form>
+</OkvirZahtjeva>

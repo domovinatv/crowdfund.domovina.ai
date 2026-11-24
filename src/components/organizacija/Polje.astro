@@ -1,0 +1,20 @@
+---
+// Polje obrasca (docs/08 §3.5 `Field`): labela iznad, pomoć ispod, greška crveno. Kontrolu daje pozivatelj u
+// slotu i sam postavlja `aria-describedby` na `{id}-pomoc` / `{id}-greska` (vidi `opisano()` u ucitavanje.ts).
+interface Props {
+  id: string;
+  label: string;
+  pomoc?: string | undefined;
+  greska?: string | null | undefined;
+  oznaka?: string | undefined;
+}
+const { id, label, pomoc, greska, oznaka } = Astro.props;
+---
+<div>
+  <label for={id} class="font-semibold text-ink">
+    {label}{oznaka && <span class="ml-1 text-sm font-normal text-ink-muted">({oznaka})</span>}
+  </label>
+  <slot />
+  {pomoc && <p id={`${id}-pomoc`} class="mt-1.5 text-sm text-ink-muted">{pomoc}</p>}
+  {greska && <p id={`${id}-greska`} class="mt-1 text-sm font-medium text-danger">{greska}</p>}
+</div>

@@ -1,0 +1,72 @@
+---
+// Okvir upravljanja organizacijom `/hr/o/{slug}/…` (S6): naziv i stanje organizacije, kartice podstranica
+// prema ulozi (odluka 202: zahtjev owner, postavke i odobravanje admin, vanjske editor, ostalo viewer), noindex.
+import Base from "../../layouts/Base.astro";
+import { imaUlogu, type Uloga } from "../../lib/pristup";
+import { url, type KljucRute } from "../../lib/rute";
+import type { Lang } from "../../i18n";
+import { ORGANIZACIJA } from "../../views/sadrzaj/organizacija";
+
+interface Props {
+  lang: Lang;
+  naslov: string;
+  uvod?: string | undefined;
+  organizacija: { slug: string; displayName: string; status: "pending" | "active" | "suspended" | "closed" };
+  uloga: Uloga;
+  aktivna: KljucRute;
+}
+const { lang, naslov, uvod, organizacija, uloga, aktivna } = Astro.props;
+const T = ORGANIZACIJA[lang];
+const params = { slug: organizacija.slug };
+const kartice: { kljuc: KljucRute; tekst: string; najmanje: Uloga }[] = [
+  { kljuc: "org.campaigns", tekst: T.nav.kampanje, najmanje: "viewer" },
+  { kljuc: "org.approvals", tekst: T.nav.odobravanje, najmanje: "admin" },
+  { kljuc: "org.members", tekst: T.nav.clanovi, najmanje: "viewer" },
+  { kljuc: "org.external", tekst: T.nav.vanjske, najmanje: "editor" },
+  { kljuc: "org.settings", tekst: T.nav.postavke, najmanje: "admin" },
+  { kljuc: "org.application", tekst: T.nav.zahtjev, najmanje: "owner" },
+];
+const vidljive = kartice.filter((k) => imaUlogu(uloga, k.najmanje));
+---
+<Base lang={lang} title={`${naslov} · ${organizacija.displayName}`} noindex>
+  <p class="text-sm text-ink-muted">
+    {
+      organizacija.status === "active" ? (
+        <a href={url(lang, "org", params)} class="font-medium text-action underline underline-offset-2">{organizacija.displayName}</a>
+      ) : (
+        <span class="font-medium text-ink-soft">{organizacija.displayName}</span>
+      )
+    }
+    <span aria-hidden="true"> · </span>
+    <span class:list={["rounded-sm px-1.5 py-0.5 font-semibold", organizacija.status === "active" ? "bg-success-bg text-success" : "bg-warning-bg text-warning"]}>
+      {T.statusOrganizacije[organizacija.status]}
+    </span>
+    <span aria-hidden="true"> · </span>
+    <span>{T.uloge[uloga]}</span>
+  </p>
+  <nav aria-label={T.nav.naslov} class="mt-3 -mx-4 overflow-x-auto px-4">
+    <ul class="flex gap-1 border-b border-line text-sm whitespace-nowrap">
+      {
+        vidljive.map((k) => (
+          <li>
+            <a
+              href={url(lang, k.kljuc, params)}
+              aria-current={k.kljuc === aktivna ? "page" : undefined}
+              class:list={[
+                "inline-flex min-h-11 items-center border-b-2 px-3 font-medium",
+                k.kljuc === aktivna ? "border-action text-ink" : "border-transparent text-ink-soft hover:text-ink",
+              ]}
+            >
+              {k.tekst}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </nav>
+  <div class="mt-6 max-w-3xl">
+    <h1 class="page-title text-ink">{naslov}</h1>
+    {uvod && <p class="mt-2 text-ink-soft">{uvod}</p>}
+    <slot />
+  </div>
+</Base>

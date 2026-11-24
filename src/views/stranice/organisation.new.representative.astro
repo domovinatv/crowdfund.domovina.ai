@@ -1,0 +1,46 @@
+---
+// Korak 2 „zastupnik”: osoba koja šalje zahtjev i ovlaštena je zastupati organizaciju.
+import Greska from "../../components/prijava/Greska.astro";
+import OkvirZahtjeva from "../../components/organizacija/OkvirZahtjeva.astro";
+import Polje from "../../components/organizacija/Polje.astro";
+import { GUMB, KLASA_POLJA, opisano, rub } from "../../components/organizacija/ucitavanje";
+import { url } from "../../lib/rute";
+import { ORGANIZACIJA } from "../sadrzaj/organizacija";
+import type { PropsStranice } from "../tipovi";
+import type { PodaciKorakaZastupnik } from "./organisation.new.representative.ucitaj";
+
+type Props = PropsStranice<PodaciKorakaZastupnik>;
+const { lang, podaci } = Astro.props;
+const O = ORGANIZACIJA[lang];
+const P = O.carobnjak.polja;
+const { vrijednosti: v, greske: g } = podaci;
+const gr = (k: keyof typeof g) => (g[k] ? (O.greske[g[k]!] ?? O.greske.neispravno) : null);
+---
+<OkvirZahtjeva lang={lang} korak="representative" naziv={podaci.nacrt?.naziv ?? null}>
+  <p class="mt-2 text-ink-soft">{O.carobnjak.zastupnikUvod}</p>
+  {Object.keys(g).length > 0 && <Greska poruka={O.greske.neispravno} />}
+  <form method="post" action={url(lang, "organisation.new.representative")} class="mt-6 space-y-5" novalidate>
+    <div class="grid gap-4 sm:grid-cols-2">
+      <Polje id="ime" label={P.ime} greska={gr("ime")}>
+        <input id="ime" name="ime" required maxlength="80" value={v.ime} autocomplete="given-name" aria-invalid={g.ime ? "true" : undefined} aria-describedby={opisano("ime", false, g.ime)} class:list={[KLASA_POLJA, rub(g.ime)]} />
+      </Polje>
+      <Polje id="prezime" label={P.prezime} greska={gr("prezime")}>
+        <input id="prezime" name="prezime" required maxlength="80" value={v.prezime} autocomplete="family-name" aria-invalid={g.prezime ? "true" : undefined} aria-describedby={opisano("prezime", false, g.prezime)} class:list={[KLASA_POLJA, rub(g.prezime)]} />
+      </Polje>
+    </div>
+    <Polje id="funkcija" label={P.funkcija} pomoc={P.funkcijaPomoc} greska={gr("funkcija")}>
+      <input id="funkcija" name="funkcija" required maxlength="80" value={v.funkcija} autocomplete="organization-title" aria-invalid={g.funkcija ? "true" : undefined} aria-describedby={opisano("funkcija", true, g.funkcija)} class:list={[KLASA_POLJA, rub(g.funkcija)]} />
+    </Polje>
+    <div>
+      <label class="flex items-start gap-3">
+        <input type="checkbox" name="ovlast" value="1" required checked={v.ovlast} aria-describedby={g.ovlast ? "ovlast-greska" : undefined} class="mt-1 size-5 shrink-0 accent-action" />
+        <span>{P.ovlast}</span>
+      </label>
+      {g.ovlast && <p id="ovlast-greska" class="mt-1 text-sm font-medium text-danger">{O.greske.obavezno}</p>}
+    </div>
+    <div class="flex flex-wrap items-center gap-3">
+      <button type="submit" class={GUMB}>{O.carobnjak.spremiNastavi}</button>
+      <a href={url(lang, "organisation.new.details")} class="font-medium text-action underline underline-offset-2">{O.opce.natrag}</a>
+    </div>
+  </form>
+</OkvirZahtjeva>

@@ -1,0 +1,49 @@
+---
+// Okvir čarobnjaka zahtjeva organizacije (docs/08 `ApplicationSteps`/`WizardSteps`, ekrani 20 i 26): 5 koraka,
+// trenutni označen (`aria-current="step"`), „Korak n od 5”, nacrt bez nacrta → uputa na prvi korak.
+import Base from "../../layouts/Base.astro";
+import { url } from "../../lib/rute";
+import { KORACI_ZAHTJEVA, type KorakZahtjeva } from "../../lib/db/organizacija";
+import type { Lang } from "../../i18n";
+import { ORGANIZACIJA, umetni } from "../../views/sadrzaj/organizacija";
+
+interface Props {
+  lang: Lang;
+  korak: KorakZahtjeva;
+  /** Naziv organizacije iz nacrta (null = nacrt ne postoji). */
+  naziv: string | null;
+  /** Korak traži nacrt (svi osim „podaci”). */
+  trebaNacrt?: boolean;
+}
+const { lang, korak, naziv, trebaNacrt = true } = Astro.props;
+const T = ORGANIZACIJA[lang].carobnjak;
+const n = KORACI_ZAHTJEVA.indexOf(korak) + 1;
+const naslov = T.koraci[korak];
+---
+<Base lang={lang} title={`${naslov} · ${T.naslov}`} noindex>
+  <div class="mx-auto max-w-2xl">
+    <p class="text-sm font-medium text-ink-muted">{T.naslov}{naziv ? ` · ${naziv}` : ""}</p>
+    <ol class="mt-3 grid grid-cols-5 gap-1" aria-label={umetni(T.korak, { n, ukupno: 5 })}>
+      {
+        KORACI_ZAHTJEVA.map((k, i) => (
+          <li aria-current={k === korak ? "step" : undefined}>
+            <span class:list={["block h-1.5 rounded-full", i < n ? "bg-action" : "bg-line"]} aria-hidden="true" />
+            <span class:list={["mt-1 hidden text-xs sm:block", k === korak ? "font-semibold text-ink" : "text-ink-muted"]}>{T.koraci[k]}</span>
+          </li>
+        ))
+      }
+    </ol>
+    <p class="mt-4 text-sm text-ink-muted">{umetni(T.korak, { n, ukupno: 5 })}</p>
+    <h1 class="page-title text-ink">{naslov}</h1>
+    {
+      trebaNacrt && naziv === null ? (
+        <div role="status" class="mt-6 rounded-md bg-mist p-4">
+          <p>{T.nemaNacrta}</p>
+          <a href={url(lang, "organisation.new.details")} class="mt-2 inline-block font-medium text-action underline underline-offset-2">{T.naPrviKorak}</a>
+        </div>
+      ) : (
+        <slot />
+      )
+    }
+  </div>
+</Base>

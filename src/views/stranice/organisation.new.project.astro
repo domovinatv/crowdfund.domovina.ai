@@ -1,0 +1,45 @@
+---
+// Korak 3 „projekt”: opis projekta i očekivani broj uplata (1–10 · 11–100 · 101–1000 · >1000).
+import Greska from "../../components/prijava/Greska.astro";
+import OkvirZahtjeva from "../../components/organizacija/OkvirZahtjeva.astro";
+import Polje from "../../components/organizacija/Polje.astro";
+import { GUMB, KLASA_POLJA, opisano, rub } from "../../components/organizacija/ucitavanje";
+import { OCEKIVANE_UPLATE } from "../../lib/db/organizacija";
+import { url } from "../../lib/rute";
+import { ORGANIZACIJA } from "../sadrzaj/organizacija";
+import type { PropsStranice } from "../tipovi";
+import type { PodaciKorakaProjekt } from "./organisation.new.project.ucitaj";
+
+type Props = PropsStranice<PodaciKorakaProjekt>;
+const { lang, podaci } = Astro.props;
+const O = ORGANIZACIJA[lang];
+const P = O.carobnjak.polja;
+const { vrijednosti: v, greske: g } = podaci;
+const gr = (k: keyof typeof g) => (g[k] ? (O.greske[g[k]!] ?? O.greske.neispravno) : null);
+---
+<OkvirZahtjeva lang={lang} korak="project" naziv={podaci.nacrt?.naziv ?? null}>
+  {Object.keys(g).length > 0 && <Greska poruka={O.greske.neispravno} />}
+  <form method="post" action={url(lang, "organisation.new.project")} class="mt-6 space-y-5" novalidate>
+    <Polje id="opisProjekta" label={P.opisProjekta} pomoc={P.opisProjektaPomoc} greska={gr("opisProjekta")}>
+      <textarea id="opisProjekta" name="opisProjekta" rows="6" required minlength="30" maxlength="2000" aria-invalid={g.opisProjekta ? "true" : undefined} aria-describedby={opisano("opisProjekta", true, g.opisProjekta)} class:list={[KLASA_POLJA, rub(g.opisProjekta)]}>{v.opisProjekta}</textarea>
+    </Polje>
+    <fieldset aria-describedby={g.ocekivaneUplate ? "uplate-greska" : undefined}>
+      <legend class="font-semibold text-ink">{P.ocekivaneUplate}</legend>
+      <div class="mt-2 grid gap-2 sm:grid-cols-2">
+        {
+          OCEKIVANE_UPLATE.map((u) => (
+            <label class="flex min-h-11 items-center gap-3 rounded-md border border-line px-3">
+              <input type="radio" name="ocekivaneUplate" value={u} checked={v.ocekivaneUplate === u} required class="size-5 accent-action" />
+              <span>{O.uplate[u]}</span>
+            </label>
+          ))
+        }
+      </div>
+      {g.ocekivaneUplate && <p id="uplate-greska" class="mt-1 text-sm font-medium text-danger">{O.greske.obavezno}</p>}
+    </fieldset>
+    <div class="flex flex-wrap items-center gap-3">
+      <button type="submit" class={GUMB}>{O.carobnjak.spremiNastavi}</button>
+      <a href={url(lang, "organisation.new.representative")} class="font-medium text-action underline underline-offset-2">{O.opce.natrag}</a>
+    </div>
+  </form>
+</OkvirZahtjeva>

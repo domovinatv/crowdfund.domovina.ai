@@ -16,7 +16,8 @@
     "review404": "r5rzsb",
     "draft404": "ryhs5w",
     "blokirana404": "w70emf",
-    "obrisana404": "necdy4"
+    "obrisana404": "necdy4",
+    "zaOdobrenje404": "94cw6h"
   },
   "korisnik": {
     "javni": "019e04e2-4c00-72fa-bdb3-a8c1e48e8d77",
@@ -47,5 +48,9 @@
   "potvrdaRadnje": "01a20ac7-dc80-7606-b7ae-985a68f99966",
   "pozivnica": "demo-pozivnica-novi",
   "prijavaModeracije": "01a1f640-bc00-7203-bfe2-a81784a17cfd",
-  "korisnikSlug": "demo-marko"
+  "korisnikSlug": "demo-marko",
+  "organizacijaNaCekanju": "demo-zeleni-kvart",
+  "pozivnicaIstekla": "demo-pozivnica-istekla",
+  "verifikacijaNamjene": "01a1f640-bc00-715c-a8f1-74b2673c1378",
+  "prijavaNova": "01a20990-9500-7bee-be48-a4578f69d235"
 }

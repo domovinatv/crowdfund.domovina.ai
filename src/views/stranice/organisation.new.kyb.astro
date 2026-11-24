@@ -1,0 +1,38 @@
+---
+// Korak 4 „KYB”: što institucija za e-novac traži i privola (mock pružatelj, bez mreže).
+import ShieldCheck from "@lucide/astro/icons/shield-check";
+import OkvirZahtjeva from "../../components/organizacija/OkvirZahtjeva.astro";
+import { GUMB } from "../../components/organizacija/ucitavanje";
+import { url } from "../../lib/rute";
+import { ORGANIZACIJA } from "../sadrzaj/organizacija";
+import type { PropsStranice } from "../tipovi";
+import type { PodaciKorakaKyb } from "./organisation.new.kyb.ucitaj";
+
+type Props = PropsStranice<PodaciKorakaKyb>;
+const { lang, podaci } = Astro.props;
+const O = ORGANIZACIJA[lang];
+const T = O.carobnjak;
+const g = podaci.greske;
+---
+<OkvirZahtjeva lang={lang} korak="kyb" naziv={podaci.nacrt?.naziv ?? null}>
+  <div class="mt-4 flex gap-3 rounded-md bg-mist p-4">
+    <ShieldCheck size={22} aria-hidden="true" class="mt-0.5 shrink-0 text-action" />
+    <p class="text-ink-soft">{T.kybUvod} <span class="text-sm text-ink-muted">({O.opce.mock})</span></p>
+  </div>
+  <ul class="mt-4 list-disc space-y-1 pl-6 text-ink-soft">
+    {T.kybStavke.map((s) => <li>{s}</li>)}
+  </ul>
+  <form method="post" action={url(lang, "organisation.new.kyb")} class="mt-6 space-y-5" novalidate>
+    <div>
+      <label class="flex items-start gap-3">
+        <input type="checkbox" name="privola" value="1" required checked={podaci.nacrt?.kyb} aria-describedby={g.privola ? "privola-greska" : undefined} class="mt-1 size-5 shrink-0 accent-action" />
+        <span>{T.kybPrivola}</span>
+      </label>
+      {g.privola && <p id="privola-greska" class="mt-1 text-sm font-medium text-danger">{O.greske.obavezno}</p>}
+    </div>
+    <div class="flex flex-wrap items-center gap-3">
+      <button type="submit" class={GUMB}>{T.spremiNastavi}</button>
+      <a href={url(lang, "organisation.new.project")} class="font-medium text-action underline underline-offset-2">{O.opce.natrag}</a>
+    </div>
+  </form>
+</OkvirZahtjeva>

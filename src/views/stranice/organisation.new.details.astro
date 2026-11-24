@@ -1,0 +1,77 @@
+---
+// Korak 1 „podaci” (ekran 26, obrazac tvrtke): naziv, adresa profila, pravni oblik (osoba = faza 2), OIB s
+// kontrolnom znamenkom, web, do 3 mreže, opis, kategorija, sjedište. Radi bez JS-a.
+import Greska from "../../components/prijava/Greska.astro";
+import OkvirZahtjeva from "../../components/organizacija/OkvirZahtjeva.astro";
+import Polje from "../../components/organizacija/Polje.astro";
+import { GUMB, KLASA_POLJA, opisano, rub } from "../../components/organizacija/ucitavanje";
+import { PRAVNI_OBLICI } from "../../lib/db/organizacija";
+import { url } from "../../lib/rute";
+import { ORGANIZACIJA } from "../sadrzaj/organizacija";
+import type { PropsStranice } from "../tipovi";
+import type { PodaciKorakaPodaci } from "./organisation.new.details.ucitaj";
+
+type Props = PropsStranice<PodaciKorakaPodaci>;
+const { lang, podaci } = Astro.props;
+const O = ORGANIZACIJA[lang];
+const P = O.carobnjak.polja;
+const { vrijednosti: v, greske: g } = podaci;
+const gr = (k: keyof typeof g) => (g[k] ? (O.greske[g[k]!] ?? O.greske.neispravno) : null);
+const imaGresaka = Object.keys(g).length > 0;
+const neob = O.opce.neobavezno;
+---
+<OkvirZahtjeva lang={lang} korak="details" naziv={v.naziv || null} trebaNacrt={false}>
+  {imaGresaka && <Greska poruka={O.greske.neispravno} />}
+  <form method="post" action={url(lang, "organisation.new.details")} class="mt-6 space-y-5" novalidate>
+    <Polje id="naziv" label={P.naziv} greska={gr("naziv")}>
+      <input id="naziv" name="naziv" required maxlength="120" value={v.naziv} autocomplete="organization" aria-invalid={g.naziv ? "true" : undefined} aria-describedby={opisano("naziv", false, g.naziv)} class:list={[KLASA_POLJA, rub(g.naziv)]} />
+    </Polje>
+    <Polje id="slug" label={P.slug} pomoc={P.slugPomoc} greska={gr("slug")}>
+      <div class="mt-1.5 flex items-stretch">
+        <span class="flex items-center rounded-l-sm border border-r-0 border-ink-muted/60 bg-mist px-2 text-sm text-ink-muted">/{lang}/o/</span>
+        <input id="slug" name="slug" maxlength="40" value={v.slug} pattern="[a-z0-9\-]{3,40}" aria-invalid={g.slug ? "true" : undefined} aria-describedby={opisano("slug", true, g.slug)} class:list={["block w-full min-w-0 rounded-r-sm border bg-paper px-3 py-2.5 text-base text-ink", rub(g.slug)]} />
+      </div>
+    </Polje>
+    <Polje id="pravniOblik" label={P.pravniOblik} greska={gr("pravniOblik")}>
+      <select id="pravniOblik" name="pravniOblik" required aria-invalid={g.pravniOblik ? "true" : undefined} aria-describedby={opisano("pravniOblik", false, g.pravniOblik)} class:list={[KLASA_POLJA, rub(g.pravniOblik)]}>
+        <option value="">{P.odaberi}</option>
+        {PRAVNI_OBLICI.map((o) => <option value={o} selected={v.pravniOblik === o} disabled={o === "osoba"}>{O.oblici[o]}{o === "osoba" ? ` (${lang === "hr" ? "nije u fazi 1" : "not in phase 1"})` : ""}</option>)}
+      </select>
+    </Polje>
+    <Polje id="oib" label={P.oib} pomoc={P.oibPomoc} greska={gr("oib")}>
+      <input id="oib" name="oib" required inputmode="numeric" maxlength="11" value={v.oib} aria-invalid={g.oib ? "true" : undefined} aria-describedby={opisano("oib", true, g.oib)} class:list={[KLASA_POLJA, rub(g.oib)]} />
+    </Polje>
+    <Polje id="web" label={P.web} greska={gr("web")}>
+      <input id="web" name="web" type="url" required maxlength="200" value={v.web} placeholder="https://" aria-invalid={g.web ? "true" : undefined} aria-describedby={opisano("web", false, g.web)} class:list={[KLASA_POLJA, rub(g.web)]} />
+    </Polje>
+    <Polje id="mreze" label={P.mreze} pomoc={P.mrezePomoc} greska={gr("mreze")} oznaka={neob}>
+      <textarea id="mreze" name="mreze" rows="3" aria-invalid={g.mreze ? "true" : undefined} aria-describedby={opisano("mreze", true, g.mreze)} class:list={[KLASA_POLJA, rub(g.mreze)]}>{v.mreze.join("\n")}</textarea>
+    </Polje>
+    <Polje id="opis" label={P.opis} greska={gr("opis")}>
+      <textarea id="opis" name="opis" rows="5" required maxlength="2000" aria-invalid={g.opis ? "true" : undefined} aria-describedby={opisano("opis", false, g.opis)} class:list={[KLASA_POLJA, rub(g.opis)]}>{v.opis}</textarea>
+    </Polje>
+    <Polje id="kategorija" label={P.kategorija} greska={gr("kategorija")} oznaka={neob}>
+      <select id="kategorija" name="kategorija" aria-describedby={opisano("kategorija", false, g.kategorija)} class:list={[KLASA_POLJA, rub(g.kategorija)]}>
+        <option value="">{P.bezKategorije}</option>
+        {podaci.kategorije.map((k) => <option value={k.key} selected={v.kategorija === k.key}>{lang === "hr" ? k.nameHr : k.nameEn}</option>)}
+      </select>
+    </Polje>
+    <fieldset class="grid gap-4 sm:grid-cols-[2fr_1fr_1fr]">
+      <legend class="sr-only">{P.adresa}</legend>
+      <Polje id="adresa" label={P.adresa} greska={gr("adresa")} oznaka={neob}>
+        <input id="adresa" name="adresa" maxlength="120" value={v.adresa} autocomplete="street-address" class:list={[KLASA_POLJA, rub(g.adresa)]} />
+      </Polje>
+      <Polje id="grad" label={P.grad} greska={gr("grad")}>
+        <input id="grad" name="grad" maxlength="80" value={v.grad} autocomplete="address-level2" class:list={[KLASA_POLJA, rub(g.grad)]} />
+      </Polje>
+      <Polje id="postanski" label={P.postanski} greska={gr("postanski")}>
+        <input id="postanski" name="postanski" inputmode="numeric" maxlength="5" value={v.postanski} autocomplete="postal-code" aria-describedby={opisano("postanski", false, g.postanski)} class:list={[KLASA_POLJA, rub(g.postanski)]} />
+      </Polje>
+    </fieldset>
+    <div class="flex flex-wrap items-center gap-3">
+      <button type="submit" class={GUMB}>{O.carobnjak.spremiNastavi}</button>
+      <a href={url(lang, "organisation.new")} class="font-medium text-action underline underline-offset-2">{O.opce.natrag}</a>
+    </div>
+    {podaci.imaNacrt && <p class="text-sm text-ink-muted">{O.carobnjak.spremljenoNaRacunu}</p>}
+  </form>
+</OkvirZahtjeva>

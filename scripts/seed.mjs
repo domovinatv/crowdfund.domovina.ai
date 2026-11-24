@@ -65,6 +65,7 @@ export const DEMO_TOKENI = {
   sesijaNovi: "demo-sesija-novi",
   poveznicaPrijave: "demo-poveznica-novi",
   pozivnica: "demo-pozivnica-novi",
+  pozivnicaIstekla: "demo-pozivnica-istekla",
 };
 
 // --- PRNG i ID-evi -----------------------------------------------------------------------------
@@ -844,6 +845,102 @@ function generiraj(/** @type {string} */ demoSad) {
     token_hash: sha256(DEMO_TOKENI.pozivnica), status: "pending", invited_by: organizator.id,
     created_at: SAD - DAN, expires_at: SAD + 6 * DAN,
   });
+
+  // --- S6 organizacija i moderacija (agent C): opet na kraju, da PRNG ne pomakne ništa iznad ----------
+  // 1. Kampanja drugog korisnika (Maja) za Svjetionik koja čeka odobrenje: `/hr/o/demo-svjetionik/odobravanje`
+  //    i e2e „organizacija odobri tuđu kampanju”. Druga takva (`review404`) ostaje za provjeru 404.
+  const autorZaOdobrenje = users[6];
+  const tO = SAD - 2 * DAN;
+  const zaOdobrenje = { id: uuid7(tO), publicId: javniId() };
+  const naslovZaOdobrenje = "Zimske jakne za djecu iz doma u Splitu";
+  upisi("campaigns", {
+    id: zaOdobrenje.id, tenant_id: TENANT, organizer_id: orgOrganizatora.organizerId, slug: slug(naslovZaOdobrenje), type: "donation",
+    vertical: "none", title: naslovZaOdobrenje,
+    description: "Skupljam za zakladu Svjetionik nade: trideset toplih jakni prije siječnja. Kampanja čeka odobrenje zaklade.",
+    goal_cents: 120000, min_contribution_cents: 100, max_contributors: null, currency: "EUR", state: "review", visibility: "public",
+    mode: "byo", rails: "platform", starts_at: null, ends_at: SAD + 60 * DAN, recurrence: "none", cover_image_url: null, lat: null,
+    lng: null, location_name: "Split", surplus_intent: "Višak prikupljenog ide u redovni rad organizacije.", demo: 1,
+    metadata: { demo: true }, created_by: autorZaOdobrenje.id, created_at: tO, updated_at: tO, deleted_at: null,
+  });
+  upisi("campaign_safes", {
+    campaign_id: zaOdobrenje.id, address: orgOrganizatora.safe, chain_id: LANAC, threshold: 2,
+    owners: [1, 2, 3].map((n) => adresa("de0e1", 2 * 3 + n)), platform_signer_count: 0, deployed_at: orgOrganizatora.t + 3 * DAN,
+    verified_at: null,
+  });
+  upisi("campaign_settings", {
+    campaign_id: zaOdobrenje.id, public_id: zaOdobrenje.publicId, kind: "for_organization", category_key: "charity",
+    cover_theme: TEME.charity, created_by_user_id: autorZaOdobrenje.id, beneficiary_organization_id: orgOrganizatora.orgId,
+    beneficiary_approved_at: null, beneficiary_approved_by: null, amount_presets: [2000, 5000, 10000, 30000, 50000], indexable: 1,
+    hide_raised: 0, hide_contributor_count: 0, contributions_sort: "latest", comments_mode: "everyone", allow_moneyboxes: 1,
+    allow_external_offers: 0, contribution_notifications: 1, thank_you_message: "Hvala na podršci! (demo)", purpose_verified: 0,
+    contributions_list: "visible", paused_at: null, blocked_at: null, blocked_reason: null, updated_at: tO,
+  });
+  upisi("campaign_stats", {
+    campaign_id: zaOdobrenje.id, raised_cents: 0, contribution_count: 0, contributor_count: 0, last_contribution_at: null, updated_at: tO,
+  });
+
+  // 2. Zahtjev Svjetionika (odobren, korak 5: prima kampanje drugih), da `/hr/o/demo-svjetionik/zahtjev` ima povijest.
+  upisi("organization_applications", {
+    id: uuid7(orgOrganizatora.t), organization_id: orgOrganizatora.orgId, submitted_by: organizator.id,
+    project_description: "Prikupljamo za tople obroke, školski pribor i zimsku odjeću za djecu i starije u Splitu (demo).",
+    expected_payments: "11-100", step: 5, status: "approved", reason: null, created_at: orgOrganizatora.t,
+    updated_at: orgOrganizatora.t + 2 * DAN,
+    representative: { ime: "Ivana", prezime: "Testić", funkcija: "predsjednica uprave", ovlast: true },
+  });
+
+  // 3. Organizacija na čekanju (Maja): `pending`, bez Safea, zahtjev poslan (korak 3), KYB `submitted` kod mocka.
+  //    OIB je prazan: izmišljeni OIB s ispravnom kontrolnom znamenkom mogao bi pripadati stvarnoj osobi.
+  const tP = SAD - 4 * DAN;
+  const naCekanju = { organizerId: uuid7(tP), orgId: uuid7(tP), slug: "demo-zeleni-kvart", naziv: "Udruga Zeleni kvart Ogledni" };
+  upisi("organizers", {
+    id: naCekanju.organizerId, tenant_id: TENANT, holder_type: "association", legal_name: naCekanju.naziv, oib: null,
+    address_line: "Ulica Primjera 6", city: "Zadar", postal_code: "23000", country_code: "HR",
+    contact_email: `${naCekanju.slug}@demo.invalid`, is_platform: 0, created_at: tP, updated_at: tP,
+  });
+  upisi("organizations", {
+    id: naCekanju.orgId, organizer_id: naCekanju.organizerId, slug: naCekanju.slug, kind: "legal", legal_form: "udruga",
+    display_name: naCekanju.naziv, description: `${naCekanju.naziv} je izmišljena udruga za demo prikaz zahtjeva organizacije.`,
+    website: "https://zeleni-kvart.invalid", social_links: [], logo_file_id: null, category_key: "projects", safe_address: null,
+    safe_chain_id: null, status: "pending", is_fixed_beneficiary: 0, created_at: tP, updated_at: tP + SAT, deleted_at: null,
+  });
+  upisi("memberships", { user_id: autorZaOdobrenje.id, organization_id: naCekanju.orgId, role: "owner", invited_by: null, created_at: tP, updated_at: tP });
+  upisi("organization_applications", {
+    id: uuid7(tP), organization_id: naCekanju.orgId, submitted_by: autorZaOdobrenje.id,
+    project_description: "Uređujemo zapuštene zelene površine u kvartu sa susjedima i školom; skupljamo za sadnice i alat (demo).",
+    expected_payments: "1-10", step: 3, status: "submitted", reason: null, created_at: tP, updated_at: tP + SAT,
+    representative: { ime: "Maja", prezime: "Skicić", funkcija: "predsjednica", ovlast: true },
+  });
+  upisi("verifications", {
+    id: uuid7(tP + SAT), kind: "org_kyb", subject_type: "organization", subject_id: naCekanju.orgId, status: "submitted",
+    provider: "mock", provider_ref: `MOCK-KYB-${naCekanju.slug}`, trigger: "user", reason: null, requested_at: tP + SAT,
+    decided_at: null, due_at: null,
+  });
+
+  // 4. Istekla pozivnica u Svjetionik (stranica `pozivnica/{token}` pokazuje „istekla”).
+  upisi("membership_invites", {
+    id: uuid7(SAD - 10 * DAN), organization_id: orgOrganizatora.orgId, email: "bivsi.clan@demo.invalid", role: "viewer",
+    token_hash: sha256(DEMO_TOKENI.pozivnicaIstekla), status: "pending", invited_by: organizator.id,
+    created_at: SAD - 10 * DAN, expires_at: SAD - 3 * DAN,
+  });
+
+  // 5. Verifikacija namjene s poslanim dokumentima (`/admin/verifikacije`): kampanja `kampanja.aktivna`.
+  const verifikacijaNamjene = uuid7(SAD - 4 * DAN);
+  upisi("verifications", {
+    id: verifikacijaNamjene, kind: "campaign_purpose", subject_type: "campaign", subject_id: kInfo[0].id, status: "submitted",
+    provider: "platform", provider_ref: "DEMO-NAMJENA-PREGLED", trigger: "threshold_campaign", reason: null,
+    requested_at: SAD - 4 * DAN, decided_at: null, due_at: SAD + 10 * DAN,
+  });
+
+  // 6. Nova DSA prijava (`received`) za red prijava, bez prijavljenog korisnika (samo e-pošta).
+  const prijavaNova = uuid7(SAD - 6 * SAT);
+  upisi("reports", {
+    id: prijavaNova, target_type: "campaign", target_id: kInfo[3].id, reason: "spam",
+    description: "Demo prijava: istu objavu o koncertu dobivam porukama s više nepoznatih brojeva, izgleda kao neželjena pošta.",
+    reporter_user_id: null, reporter_email: "zabrinuti.gradanin@demo.invalid", phone: null, attachment_file_id: null,
+    status: "received", created_at: SAD - 6 * SAT, updated_at: SAD - 6 * SAT,
+  });
+  primjeri.kampanja.zaOdobrenje404 = zaOdobrenje.publicId;
+
   Object.assign(primjeri, {
     demoSad,
     demoRacuni: { organizator: organizator.email, moderator: moderator.email, novi: novi.email },
@@ -856,6 +953,10 @@ function generiraj(/** @type {string} */ demoSad) {
     pozivnica: DEMO_TOKENI.pozivnica,
     prijavaModeracije: prijaveModeracije[0],
     korisnikSlug: "demo-marko",
+    organizacijaNaCekanju: naCekanju.slug,
+    pozivnicaIstekla: DEMO_TOKENI.pozivnicaIstekla,
+    verifikacijaNamjene,
+    prijavaNova,
   });
 
   // --- Ispis ------------------------------------------------------------------------------------

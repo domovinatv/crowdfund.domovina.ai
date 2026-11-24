@@ -95,10 +95,11 @@ describe("seed/demo.sql", () => {
     expect(redovi(d2, "PRAGMA foreign_key_check")).toEqual([]);
   });
 
-  it("količine: ≥ 20 kampanja, 5 organizacija, 10 osoba", () => {
+  it("količine: ≥ 20 kampanja, 6 organizacija (jedna na čekanju, S6), 10 osoba", () => {
     expect(kampanje.length).toBeGreaterThanOrEqual(20);
-    expect(broj(db, "SELECT count(*) FROM organizations")).toBe(5);
-    expect(broj(db, "SELECT count(*) FROM organizers")).toBe(5);
+    expect(broj(db, "SELECT count(*) FROM organizations")).toBe(6);
+    expect(broj(db, "SELECT count(*) FROM organizations WHERE status = 'pending'")).toBe(1);
+    expect(broj(db, "SELECT count(*) FROM organizers")).toBe(6);
     expect(broj(db, "SELECT count(*) FROM users")).toBe(11);
     expect(broj(db, "SELECT count(*) FROM contributions")).toBeGreaterThan(100);
     expect(broj(db, "SELECT count(*) FROM campaign_updates")).toBeGreaterThan(0);
