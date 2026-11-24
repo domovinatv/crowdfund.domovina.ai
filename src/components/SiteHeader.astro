@@ -1,0 +1,61 @@
+---
+// Zaglavlje (docs/08 §3.1). Izbornik računa (AccountMenu) i OrgSwitcher su otoci u S6;
+// mobilni izbornik je zasad <details>, radi bez JS-a.
+import Menu from "@lucide/astro/icons/menu";
+import Plus from "@lucide/astro/icons/plus";
+import LanguageSwitcher from "./LanguageSwitcher.astro";
+import { prevoditelj, type Lang } from "../i18n";
+import { url } from "../lib/rute";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = prevoditelj(lang);
+const veze = [
+  { href: url(lang, "campaigns"), tekst: t("nav.campaigns") },
+  { href: url(lang, "organisations"), tekst: t("nav.organisations") },
+];
+const put = Astro.url.pathname;
+---
+<header class="border-b border-line bg-paper">
+  <div class="mx-auto flex max-w-(--container-content) items-center gap-4 px-4 py-3 sm:px-6">
+    <a href={url(lang, "home")} class="group flex flex-col leading-none" aria-label={`${t("site.name")}, ${t("nav.home")}`}>
+      <span class="text-lg font-bold tracking-tight text-action">{t("site.name")}</span>
+      <span class="mt-1 h-0.5 w-10 bg-accent transition-all group-hover:w-full" aria-hidden="true"></span>
+    </a>
+
+    <nav aria-label={t("nav.main")} class="ml-auto hidden items-center gap-1 md:flex">
+      {
+        veze.map((v) => (
+          <a
+            href={v.href}
+            aria-current={put.startsWith(v.href) ? "page" : undefined}
+            class="rounded-md px-3 py-2 font-medium text-ink-soft hover:bg-mist hover:text-ink aria-[current=page]:text-action"
+          >
+            {v.tekst}
+          </a>
+        ))
+      }
+      <a href={url(lang, "new-campaign")} class="ml-2 inline-flex min-h-11 items-center gap-2 rounded-md bg-action px-4 font-semibold text-paper hover:bg-action-strong">
+        <Plus size={18} aria-hidden="true" />
+        {t("nav.start")}
+      </a>
+      <a href={url(lang, "sign-in")} class="rounded-md px-3 py-2 font-medium text-action hover:bg-action/10">{t("nav.signIn")}</a>
+      <LanguageSwitcher lang={lang} class="ml-2" />
+    </nav>
+
+    <details class="relative ml-auto md:hidden">
+      <summary class="flex min-h-11 min-w-11 cursor-pointer list-none items-center justify-center rounded-md hover:bg-mist [&::-webkit-details-marker]:hidden">
+        <Menu size={24} aria-hidden="true" />
+        <span class="sr-only">{t("nav.menu")}</span>
+      </summary>
+      <nav aria-label={t("nav.main")} class="absolute right-0 z-10 mt-2 flex w-64 flex-col gap-1 rounded-lg bg-paper p-2 shadow-raised">
+        {veze.map((v) => <a href={v.href} class="rounded-md px-3 py-3 font-medium hover:bg-mist">{v.tekst}</a>)}
+        <a href={url(lang, "new-campaign")} class="rounded-md bg-action px-3 py-3 font-semibold text-paper hover:bg-action-strong">{t("nav.start")}</a>
+        <a href={url(lang, "sign-in")} class="rounded-md px-3 py-3 font-medium text-action hover:bg-action/10">{t("nav.signIn")}</a>
+        <LanguageSwitcher lang={lang} class="px-1 pt-2" />
+      </nav>
+    </details>
+  </div>
+</header>

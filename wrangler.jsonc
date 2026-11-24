@@ -1,0 +1,23 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "crowdfund-domovina-ai",
+  "main": "@astrojs/cloudflare/entrypoints/server",
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": ["nodejs_compat"],
+  // Do odluke o domeni i računu (S9) samo lokalno; nema account_id ni routes.
+  "workers_dev": true,
+
+  "assets": { "directory": "./dist", "binding": "ASSETS" },
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "crowdfund-dev",
+      // Lokalni placeholder: baza na računu ne postoji, radi se samo --local.
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations"
+    }
+  ],
+
+  "observability": { "enabled": true, "logs": { "enabled": true, "invocation_logs": false } }
+}

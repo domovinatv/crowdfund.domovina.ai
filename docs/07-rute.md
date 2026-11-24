@@ -13,8 +13,10 @@ inventar obilaska ([obilazak/README](research/obilazak/README.md)), javni pregle
 2. **Kratki linkovi su bez jezika:** `/{id}` (kampanja), `/s/{alias}` (kasica), `/z/{slug}` (link za praćenje).
    Preusmjeravaju na `/{lang}/…` istim redom kao `/` (odluka 301).
 3. **Javni ID kampanje** je 6 znakova Crockford base32 (odluka 212): abeceda `0–9 A–Z` bez `I L O U`, piše se
-   malim slovima, a čita neovisno o veličini. Svaki statični segment od 6 znakova mora sadržavati slovo izvan
-   abecede (`i`, `l`, `o`, `u`) ili crticu, pa se ne može sudariti s ID-om; test u S4 (odluka 302).
+   malim slovima, a čita neovisno o veličini. Statični segment od 6 znakova **na mjestu gdje može stajati ID**
+   (prvi segment iza `/{lang}/` i prvi segment rute bez jezika) mora sadržavati slovo izvan abecede (`i`, `l`,
+   `o`, `u`) ili crticu, pa se ne može sudariti s ID-om; test u S4 (odluke 302, 401). Dublji segmenti
+   (`manage`, `stream`, `drafts`, `events`) ne mogu se sudariti i izuzeti su.
 4. **Upravljanje kampanjom je ispod nje:** `/hr/{id}/upravljanje/…`; organizacija ispod `/hr/o/{slug}/…`;
    osobno ispod `/hr/moje/…` i `/hr/postavke/…`.
 5. **Radnje su `POST` na istu rutu** (obrazac radi i bez JS-a) ili na `/api/…` za otoke; nema `GET` koji mijenja
@@ -103,7 +105,7 @@ flowchart LR
 | `/hr/kako-radi/ponude` | `/en/how-it-works/offers` | J | kupnja i prodaja ponuda; „nije u fazi 1” | pregled §12 |
 | `/hr/troskovi` | `/en/costs` | J | 0 % provizije, napojnica, trošak SEPA-e, što plaća organizator | pregled §7 |
 | `/hr/cesta-pitanja` | `/en/faq` | J | FAQ po kategorijama; `/hr/cesta-pitanja/{kategorija}` | pregled §12 |
-| `/hr/sigurnost` | `/en/safety` | J | tko drži novac (Safe organizacije, Monerium/Swan), verifikacija, prijave | pregled §12 |
+| `/hr/sigurnost` | `/en/security` | J | tko drži novac (Safe organizacije, Monerium/Swan), verifikacija, prijave | pregled §12 |
 | `/hr/uvjeti` | `/en/terms` | J | uvjeti platforme | — |
 | `/hr/privatnost` | `/en/privacy` | J | politika privatnosti | — |
 | `/hr/pravila-prikaza` | `/en/ranking` | J | DSA: kriteriji rangiranja i redoslijeda u katalogu | pregled §8.1 |

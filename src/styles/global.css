@@ -1,0 +1,123 @@
+/*
+ * Tokeni i osnova (docs/08 §2, odluke 305–308).
+ * PRAVILO: svako vlastito pravilo stoji u @layer base / components / utilities,
+ * inače (kao neslojevit CSS) gazi Tailwindove utility klase.
+ */
+@import "tailwindcss";
+
+/* Inter samohostan (odluka 308): samo latin + latin-ext iz @fontsource-variable/inter, bez CDN-a. */
+@font-face {
+  font-family: "Inter Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("@fontsource-variable/inter/files/inter-latin-ext-wght-normal.woff2") format("woff2-variations");
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+@font-face {
+  font-family: "Inter Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("@fontsource-variable/inter/files/inter-latin-wght-normal.woff2") format("woff2-variations");
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+@layer base {
+  :root {
+    /* Brend: jedino mjesto gdje stoje navy i crvena (6 tokena, odluka 305). RGB kanali (odluka 306). */
+    --brand-navy: 0 47 108; /* #002F6C */
+    --brand-navy-deep: 0 34 79; /* #00224F */
+    --brand-red: 255 0 0; /* #FF0000, samo dekor (odluka 307) */
+    --brand-red-text: 200 16 46; /* #C8102E, crvena koja nosi tekst ili ikonu */
+    --brand-paper: 255 255 255; /* #FFFFFF */
+    --brand-mist: 243 245 249; /* #F3F5F9 */
+
+    /* Semantika: pokazuje na brend ili ima vlastitu vrijednost; komponente znaju samo za ovo. */
+    --paper: var(--brand-paper);
+    --mist: var(--brand-mist);
+    --ink: 11 27 51; /* #0B1B33 */
+    --ink-soft: 59 74 97; /* #3B4A61 */
+    --ink-muted: 91 102 120; /* #5B6678 */
+    --success: 21 105 62; /* #15693E */
+    --success-bg: 232 245 238; /* #E8F5EE */
+    --warning: 138 83 0; /* #8A5300 */
+    --warning-bg: 255 244 220; /* #FFF4DC */
+    --danger: 180 35 24; /* #B42318, greška nije brend crvena (odluka 307) */
+    --danger-bg: 253 236 234; /* #FDECEA */
+    --action: var(--brand-navy);
+    --action-strong: var(--brand-navy-deep);
+    --progress: var(--brand-navy);
+    --accent: var(--brand-red);
+    --accent-text: var(--brand-red-text);
+  }
+}
+
+/* Tailwind v4: boje iz kanala, pa bg-action/10 i slično rade (color-mix nad rgb()). */
+@theme inline {
+  --color-paper: rgb(var(--paper));
+  --color-mist: rgb(var(--mist));
+  --color-line: rgb(var(--brand-navy) / 0.14);
+  --color-ink: rgb(var(--ink));
+  --color-ink-soft: rgb(var(--ink-soft));
+  --color-ink-muted: rgb(var(--ink-muted));
+  --color-success: rgb(var(--success));
+  --color-success-bg: rgb(var(--success-bg));
+  --color-warning: rgb(var(--warning));
+  --color-warning-bg: rgb(var(--warning-bg));
+  --color-danger: rgb(var(--danger));
+  --color-danger-bg: rgb(var(--danger-bg));
+  --color-action: rgb(var(--action));
+  --color-action-strong: rgb(var(--action-strong));
+  --color-progress: rgb(var(--progress));
+  --color-accent: rgb(var(--accent));
+  --color-accent-text: rgb(var(--accent-text));
+
+  --font-sans: "Inter Variable", system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+
+  --shadow-card: 0 0 0 1px rgb(var(--brand-navy) / 0.14), 0 1px 3px rgb(var(--ink) / 0.06);
+  --shadow-raised: 0 0 0 1px rgb(var(--brand-navy) / 0.14), 0 8px 24px rgb(var(--ink) / 0.12);
+
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+
+  --container-content: 1200px;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    color: rgb(var(--ink));
+    background: rgb(var(--paper));
+    line-height: 1.5;
+    -webkit-text-size-adjust: 100%;
+  }
+  h1, h2, h3 {
+    line-height: 1.2;
+  }
+  :focus-visible {
+    outline: 2px solid rgb(var(--action));
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  .page-title {
+    font-size: clamp(1.5rem, 4vw, 2.25rem);
+    font-weight: 700;
+    line-height: 1.2;
+  }
+}

@@ -1,0 +1,36 @@
+---
+// hr/en, čuva put i upit (docs/08 §3.1): isti zapis u tablici ruta na drugom jeziku.
+import Globe from "@lucide/astro/icons/globe";
+import { LANGS, prevoditelj, type Lang } from "../i18n";
+import { prevediPut } from "../lib/rute";
+
+interface Props {
+  lang: Lang;
+  class?: string;
+}
+const { lang, class: klasa } = Astro.props;
+const t = prevoditelj(lang);
+const puni = Astro.url.pathname + Astro.url.search;
+---
+<nav aria-label={t("lang.label")} class:list={["flex items-center gap-1 text-sm", klasa]}>
+  <Globe size={16} aria-hidden="true" class="text-ink-muted" />
+  {
+    LANGS.map((l) =>
+      l === lang ? (
+        <span aria-current="true" class="rounded-sm px-2 py-1 font-semibold uppercase">
+          {l}
+        </span>
+      ) : (
+        <a
+          href={prevediPut(puni, l)}
+          hreflang={l}
+          lang={l}
+          class="rounded-sm px-2 py-1 uppercase text-action underline-offset-4 hover:underline"
+          title={t(`lang.${l}`)}
+        >
+          {l}
+        </a>
+      ),
+    )
+  }
+</nav>

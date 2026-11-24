@@ -1,0 +1,52 @@
+---
+import "../styles/global.css";
+import DemoBar from "../components/DemoBar.astro";
+import SiteHeader from "../components/SiteHeader.astro";
+import SiteFooter from "../components/SiteFooter.astro";
+import { LANGS, prevoditelj, type Lang } from "../i18n";
+import { prevediPut } from "../lib/rute";
+
+interface Props {
+  lang: Lang;
+  title?: string;
+  description?: string;
+  /** noindex za neindeksirane i tokenske stranice (docs/07). */
+  noindex?: boolean;
+}
+
+const { lang, title, description, noindex = false } = Astro.props;
+const t = prevoditelj(lang);
+const ime = t("site.name");
+const naslov = title ? `${title} · ${ime}` : `${ime} · ${t("site.tagline")}`;
+const opis = description ?? t("meta.description");
+const puni = Astro.url.pathname + Astro.url.search;
+const site = Astro.site ?? Astro.url;
+const apsolutno = (put: string) => new URL(put, site).href;
+const alternativni = LANGS.map((l) => ({ l, href: apsolutno(prevediPut(puni, l)) }));
+const kanonski = apsolutno(prevediPut(puni, lang));
+---
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{naslov}</title>
+    <meta name="description" content={opis} />
+    {noindex && <meta name="robots" content="noindex" />}
+    <link rel="canonical" href={kanonski} />
+    {alternativni.map(({ l, href }) => <link rel="alternate" hreflang={l} href={href} />)}
+    <link rel="alternate" hreflang="x-default" href={apsolutno("/")} />
+    <meta property="og:title" content={naslov} />
+    <meta property="og:description" content={opis} />
+    <meta property="og:locale" content={lang === "hr" ? "hr_HR" : "en_GB"} />
+    <meta name="theme-color" content="#002F6C" />
+  </head>
+  <body class="flex min-h-dvh flex-col bg-paper text-ink antialiased">
+    <DemoBar lang={lang} />
+    <SiteHeader lang={lang} />
+    <main id="sadrzaj" class="mx-auto w-full max-w-(--container-content) flex-1 px-4 py-8 sm:px-6">
+      <slot />
+    </main>
+    <SiteFooter lang={lang} />
+  </body>
+</html>
