@@ -43,4 +43,4 @@ tunel ili ručni `simulate` + pull statusa).
 
 ## Gdje smo
 
-S0–S4 gotovi (24. 11. 2026.): istraživanje, obilazak 4funda (27 ekrana), specifikacija (03, 04, 05, 09), rute (07), dizajn sustav (08), kostur Astro 7 + Cloudflare + D1 s migracijama (52 tablice), seedom (24 kampanje) i i18n hr/en; `npm run check` zelen (odluke 400–410). Ime i brend i dalje čekaju korisnika (radno ime, odluka 305). Sljedeće: S5, javni dio.
+S0–S5 gotovi (24. 11. 2026.): istraživanje, obilazak 4funda (27 ekrana), specifikacija (03, 04, 05, 09), rute (07), dizajn sustav (08), kostur Astro 7 + Cloudflare + D1 (52 tablice, seed), javni dio: naslovnica, katalog (filtri, 7 redoslijeda), stranica kampanje sa svim sekcijama, QR/plakat/widget/embed, kasice, kratki linkovi, profili, 19 statičnih stranica hr/en; `npm run check` zelen, 85/85 javnih ruta, Playwright 146 passed (odluke 500–532). Ime i brend i dalje čekaju korisnika (radno ime, odluka 305). Sljedeće: S6, organizator.

@@ -27,7 +27,7 @@ Plan je u [`docs/plan.md`](../plan.md). Svaka sesija ima svoj handoff `SN.md`. K
 | S2 | Specifikacija | gotovo | d097151 | `scripts/provjera-docs.sh`: mermaid 20 blokova / 0 neispravnih, SQL 42 tablice (37 platformskih + 5 stubova) | 03, 04 (12 tokova), 05, 09; 27/27 ekrana s entitetom; odluke 200–216; 3 prijedloga za campaign-core (odluka 213) |
 | S3 | Rute i dizajn sustav | gotovo, vrata ime/brend otvorena | 5730472 | `scripts/provjera-docs.sh`: mermaid 21 / 0 neispravnih, SQL 42 tablice, rute 4funda 85 / 0 bez retka u 07 | 07 (sitemap hr/en, pristup po ruti), 08 (tokeni, 74 retka komponenti, 8 žičanih okvira); odluke 300–313; ime: 5 prijedloga, radno ime vrijedi (odluka 305), pitanje na vrhu S4 |
 | S4 | Kostur Astro + D1 | gotovo, vrata ime/brend i dalje otvorena | 6fa6131 | `npm run check`: astro check 0 errors (30 datoteka), vitest 5 datoteka / 34 testa / 0 skipped, build complete; seed 24 kampanje (`wrangler d1 execute crowdfund-dev --local --command "SELECT count(*) FROM campaigns"`) | 52 tablice, 0001 generiran iz campaign-core v0.2.0; `wrangler dev`: `/` 302 → `/hr`, `/hr/` 200 s 12 kartica; `/en/safety` → `/en/security`; odluke 400–410 |
-| S5 | Javni dio | | | | |
+| S5 | Javni dio | gotovo, vrata ime/brend i dalje otvorena | 4412e25 | `npm run check`: astro check 0 errors, vitest 12 datoteka / 203 testa / 0 skipped, build complete; `npm run routes` 85/85 (3 izostavljene, S7); `npx playwright test` 146 passed | dispečer ruta (500), katalog sa 7 redoslijeda, stranica kampanje, QR/plakat/widget/embed, kasice, kratki linkovi, profili, 19 statičnih stranica hr/en; odluke 500–532 |
 | S6 | Organizator | | | | |
 | S7 | Uplata kroz MPT sandbox | | | | |
 | S8 | Hibrid i ostatak | | | | |
