@@ -22,3 +22,14 @@ DB="$(mktemp -t crowdfund-sql)"; rm -f "$DB"
 } | sqlite3 -bail "$DB"
 echo "SQL: $(sqlite3 "$DB" "select count(*) from sqlite_master where type='table'") tablica (5 stubova jezgre), kategorija $(sqlite3 "$DB" 'select count(*) from categories')"
 rm -f "$DB"
+
+# 3. svaka ruta 4funda (mapa stranice + obilazak) ima red u docs/07-rute.md (S3, odluka 309)
+R="$ROOT/docs/07-rute.md"; n=0; miss=0
+for f in "$ROOT/docs/research/forfund-route-templates.txt" "$ROOT/docs/research/forfund-rute-obilazak.txt"; do
+  while read -r route; do
+    [ -z "$route" ] && continue; n=$((n+1))
+    grep -qF "| \`$route\` |" "$R" || { echo "NEMA RETKA U 07: $route"; miss=$((miss+1)); }
+  done < <(sed -E 's/^ *[0-9]+ //' "$f")
+done
+echo "Rute 4funda: $n, bez retka u 07: $miss"
+[ "$miss" -eq 0 ]
