@@ -367,3 +367,7 @@ koja se na nju poziva. Blokovi brojeva po sesiji: S1 od 100, S1b od 150, S2 od 2
 656. **Telefon:** uklanjanje uvijek, dodavanje i promjena samo verificiranom.
 657. **Statistika linkova i dijeljenja** iz `contribution_attributions` + plaćenih doprinosa (isto kao upravljanje kampanjom).
 658. **Odjava ostalih uređaja** opoziva njihove sesije i javlja broj.
+659. **Neizmijenjen rok u „Uredi”** zadržava spremljenu vrijednost (inače bi prošli rok rušio svako spremanje).
+660. **Upravljanje, sitno:** prekidač novih uplata promatraču (viewer) je onemogućen s objašnjenjem; „Pošalji na
+     pregled” uvijek aktivan, grešku „nema dokumenata” daje poslužitelj; zahvala nove kasice sprema se samo uz
+     kućicu; „Pravila kasica” vode na uvjete (zasebne rute nema). (potvrditi)
