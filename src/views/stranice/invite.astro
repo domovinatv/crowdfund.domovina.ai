@@ -1,0 +1,92 @@
+---
+// Pozivnica /hr/pozivnica/{token} (T, prihvat P, odluka 150): organizacija, uloga, tko poziva i rok. Prihvat i
+// odbijanje traže prijavu računom s e-poštom pozivnice; istekla, prihvaćena ili opozvana pozivnica samo se opisuje.
+import LogIn from "@lucide/astro/icons/log-in";
+import Mail from "@lucide/astro/icons/mail";
+import Base from "../../layouts/Base.astro";
+import Greska from "../../components/prijava/Greska.astro";
+import Poruka from "../../components/organizacija/Poruka.astro";
+import { GUMB, GUMB_RUB, datum } from "../../components/organizacija/ucitavanje";
+import { urlPrijave } from "../../lib/pristup";
+import { url } from "../../lib/rute";
+import { ORGANIZACIJA, umetni } from "../sadrzaj/organizacija";
+import type { PropsStranice } from "../tipovi";
+import type { PodaciPozivnice } from "./invite.ucitaj";
+
+type Props = PropsStranice<PodaciPozivnice>;
+const { lang, podaci } = Astro.props;
+const O = ORGANIZACIJA[lang];
+const T = O.pozivnica;
+const p = podaci.pozivnica;
+const ovdje = url(lang, "invite", { token: podaci.token });
+const naCekanju = p.stanje === "pending";
+const ista = podaci.korisnik !== null && podaci.korisnik.email.toLowerCase() === p.email.toLowerCase();
+const ishod = podaci.ishod;
+---
+<Base lang={lang} title={T.naslov} noindex>
+  <div class="mx-auto max-w-xl">
+    <h1 class="page-title flex items-center gap-2 text-ink">
+      <Mail size={28} aria-hidden="true" class="text-action" />
+      {T.naslov}
+    </h1>
+    <p class="mt-2 text-ink-soft">{T.uvod}</p>
+
+    {ishod === "odbijena" && <Poruka poruka={T.ishodi.odbijena} />}
+    {ishod && ishod !== "odbijena" && ishod !== "prihvacena" && <Greska poruka={T.ishodi[ishod]} />}
+
+    <dl class="mt-6 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 rounded-md border border-line p-4">
+      <dt class="text-ink-muted">{T.organizacija}</dt>
+      <dd class="font-semibold text-ink">
+        {
+          p.organizacija.status === "active" ? (
+            <a href={url(lang, "org", { slug: p.organizacija.slug })} class="text-action underline underline-offset-2">{p.organizacija.naziv}</a>
+          ) : (
+            p.organizacija.naziv
+          )
+        }
+      </dd>
+      <dt class="text-ink-muted">{T.uloga}</dt>
+      <dd class="text-ink">
+        {O.uloge[p.uloga]} <span class="text-sm text-ink-muted">({O.opisUloga[p.uloga]})</span>
+      </dd>
+      <dt class="text-ink-muted">{T.pozvao}</dt>
+      <dd class="text-ink">{p.pozvao}</dd>
+      <dt class="text-ink-muted">{T.istjece}</dt>
+      <dd class="text-ink">{datum(p.istjece, lang)}</dd>
+    </dl>
+
+    {
+      !naCekanju && ishod !== "odbijena" && (
+        <p role="status" class="mt-4 rounded-md bg-mist p-4 text-ink-soft">{T.stanja[p.stanje as "expired" | "accepted" | "revoked"]}</p>
+      )
+    }
+
+    {
+      naCekanju && !podaci.korisnik && (
+        <p class="mt-6">
+          <a href={urlPrijave(lang, Astro.url)} class={GUMB}>
+            <LogIn size={18} aria-hidden="true" />
+            {T.prijaviSe}
+          </a>
+        </p>
+      )
+    }
+
+    {naCekanju && podaci.korisnik && !ista && <p class="mt-4 rounded-md bg-warning-bg p-4 text-sm text-warning">{umetni(T.drugaEposta, { email: p.email })}</p>}
+
+    {
+      naCekanju && ista && (
+        <div class="mt-6 flex flex-wrap gap-3">
+          <form method="post" action={ovdje}>
+            <input type="hidden" name="radnja" value="prihvati" />
+            <button type="submit" class={GUMB}>{T.prihvati}</button>
+          </form>
+          <form method="post" action={ovdje}>
+            <input type="hidden" name="radnja" value="odbij" />
+            <button type="submit" class={GUMB_RUB}>{T.odbij}</button>
+          </form>
+        </div>
+      )
+    }
+  </div>
+</Base>

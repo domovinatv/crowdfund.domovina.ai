@@ -1,0 +1,115 @@
+---
+// Odobravanje /hr/o/{slug}/odobravanje (U:admin, tok 3, ekran 20 „Fixed Beneficiary”): kampanje drugih u
+// `review` za ovu organizaciju (najstarije prve), odobri ili odbij s razlogom (10–500 znakova), zadnje odluke.
+// Registracija kampanje u MPT-u je mock (S7).
+import Check from "@lucide/astro/icons/check";
+import X from "@lucide/astro/icons/x";
+import Greska from "../../components/prijava/Greska.astro";
+import OkvirOrganizacije from "../../components/organizacija/OkvirOrganizacije.astro";
+import Polje from "../../components/organizacija/Polje.astro";
+import Poruka from "../../components/organizacija/Poruka.astro";
+import { GUMB, GUMB_OPASNO, KLASA_POLJA, datum, iznos, opisano, rub } from "../../components/organizacija/ucitavanje";
+import { url } from "../../lib/rute";
+import { ORGANIZACIJA } from "../sadrzaj/organizacija";
+import type { PropsStranice } from "../tipovi";
+import type { PodaciOdobravanja } from "./org.approvals.ucitaj";
+
+type Props = PropsStranice<PodaciOdobravanja>;
+const { lang, podaci } = Astro.props;
+const O = ORGANIZACIJA[lang];
+const T = O.odobravanje;
+const ovdje = url(lang, "org.approvals", { slug: podaci.organizacija.slug });
+const greskaZa = (publicId: string) => (podaci.greska && podaci.greska.kampanja === publicId.toLowerCase() ? podaci.greska : null);
+const nepoznata = podaci.greska && !podaci.naCekanju.some((k) => k.publicId.toLowerCase() === podaci.greska!.kampanja) ? T.greske[podaci.greska.greska] : null;
+const RAZLOG = ["razlog_prazan", "razlog_kratak", "razlog_dug"];
+const kratko = (s: string | null) => (s && s.length > 280 ? `${s.slice(0, 280)}…` : s);
+---
+<OkvirOrganizacije lang={lang} naslov={T.naslov} uvod={T.uvod} organizacija={podaci.organizacija} uloga={podaci.uloga} aktivna="org.approvals">
+  {podaci.poruka && <Poruka poruka={podaci.poruka.odluka === "odobrena" ? T.odobrenaPoruka : T.odbijenaPoruka} />}
+  {nepoznata && <Greska poruka={nepoznata} />}
+  {!podaci.organizacija.isFixedBeneficiary && <p class="mt-4 rounded-md bg-warning-bg p-4 text-sm text-warning">{T.nijePrima}</p>}
+
+  <section aria-labelledby="na-cekanju" class="mt-6">
+    <h2 id="na-cekanju" class="sr-only">{O.stanjeKampanje.review}</h2>
+    {
+      podaci.naCekanju.length === 0 ? (
+        <p class="rounded-md bg-mist px-4 py-6 text-sm text-ink-muted">{T.nema}</p>
+      ) : (
+        <ul class="space-y-4">
+          {podaci.naCekanju.map((k) => {
+            const g = greskaZa(k.publicId);
+            const gRazlog = g && RAZLOG.includes(g.greska) ? T.greske[g.greska] : null;
+            const id = `razlog-${k.publicId}`;
+            return (
+              <li class="rounded-md border border-line p-4">
+                <h3 class="text-lg font-semibold text-ink">{k.naslov}</h3>
+                <dl class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                  <div class="flex gap-1">
+                    <dt class="text-ink-muted">{T.autor}:</dt>
+                    <dd class="text-ink">{k.autor}</dd>
+                  </div>
+                  <div class="flex gap-1">
+                    <dt class="text-ink-muted">{T.cilj}:</dt>
+                    <dd class="text-ink">{k.ciljCenti !== null ? iznos(k.ciljCenti, lang, k.valuta) : T.bezCilja}</dd>
+                  </div>
+                  <div class="flex gap-1">
+                    <dt class="text-ink-muted">{T.poslano}:</dt>
+                    <dd class="text-ink">{datum(k.stvorena, lang)}</dd>
+                  </div>
+                </dl>
+                <p class="mt-2 whitespace-pre-line text-sm text-ink-soft">{kratko(k.opis) ?? O.opce.bezOpisa}</p>
+                <a href={url(lang, "campaign.manage", { id: k.publicId })} class="mt-2 inline-flex min-h-11 items-center font-medium text-action underline underline-offset-2">
+                  {T.otvori}
+                </a>
+                {g && !gRazlog && <Greska poruka={T.greske[g.greska]} />}
+                <div class="mt-3 grid gap-4 sm:grid-cols-[auto_1fr] sm:items-start">
+                  <form method="post" action={ovdje}>
+                    <input type="hidden" name="radnja" value="odobri" />
+                    <input type="hidden" name="kampanja" value={k.publicId} />
+                    <button type="submit" class={GUMB}>
+                      <Check size={18} aria-hidden="true" />
+                      {T.odobri}
+                    </button>
+                  </form>
+                  <form method="post" action={ovdje} class="space-y-2" novalidate>
+                    <input type="hidden" name="radnja" value="odbij" />
+                    <input type="hidden" name="kampanja" value={k.publicId} />
+                    <Polje id={id} label={T.razlog} pomoc={T.razlogPomoc} greska={gRazlog}>
+                      <textarea id={id} name="razlog" rows="2" required minlength="10" maxlength="500" aria-invalid={gRazlog ? "true" : undefined} aria-describedby={opisano(id, true, gRazlog)} class:list={[KLASA_POLJA, rub(gRazlog)]}>{g ? g.razlog : ""}</textarea>
+                    </Polje>
+                    <button type="submit" class={GUMB_OPASNO}>
+                      <X size={18} aria-hidden="true" />
+                      {T.odbij}
+                    </button>
+                  </form>
+                </div>
+                <p class="mt-2 text-xs text-ink-muted">{T.mpt}</p>
+              </li>
+            );
+          })}
+        </ul>
+      )
+    }
+  </section>
+
+  {
+    podaci.odluke.length > 0 && (
+      <section aria-labelledby="povijest" class="mt-8">
+        <h2 id="povijest" class="text-lg font-semibold text-ink">{T.povijest}</h2>
+        <ul class="mt-2 divide-y divide-line rounded-md border border-line text-sm">
+          {podaci.odluke.map((d) => (
+            <li class="p-3">
+              <p class="text-ink">
+                <span class="font-medium">{d.naslov}</span> · {d.autor}
+              </p>
+              <p class="text-ink-muted">
+                <span class:list={["font-semibold", d.odluka === "odobrena" ? "text-success" : "text-danger"]}>{d.odluka === "odobrena" ? T.odobrena : T.odbijena}</span> · {datum(d.kada, lang)}
+                {d.razlog && <span> · {d.razlog}</span>}
+              </p>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )
+  }
+</OkvirOrganizacije>

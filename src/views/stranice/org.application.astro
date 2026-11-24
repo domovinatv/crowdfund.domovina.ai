@@ -1,0 +1,148 @@
+---
+// Stanje zahtjeva organizacije /hr/o/{slug}/zahtjev (U:owner, ekran 26, tok 2): „N / 5” s koracima, KYB
+// (mock pružatelj, odluku simulira moderator), Safe organizacije nakon KYB-a i ponovno slanje odbijenog zahtjeva.
+import CircleCheck from "@lucide/astro/icons/circle-check";
+import Clock from "@lucide/astro/icons/clock";
+import Hourglass from "@lucide/astro/icons/hourglass";
+import Wallet from "@lucide/astro/icons/wallet";
+import Greska from "../../components/prijava/Greska.astro";
+import OkvirOrganizacije from "../../components/organizacija/OkvirOrganizacije.astro";
+import Polje from "../../components/organizacija/Polje.astro";
+import Poruka from "../../components/organizacija/Poruka.astro";
+import { GUMB, GUMB_RUB, KLASA_POLJA, datum, opisano, rub } from "../../components/organizacija/ucitavanje";
+import { url } from "../../lib/rute";
+import { ORGANIZACIJA, umetni } from "../sadrzaj/organizacija";
+import type { PropsStranice } from "../tipovi";
+import type { PodaciZahtjeva } from "./org.application.ucitaj";
+
+type Props = PropsStranice<PodaciZahtjeva>;
+const { lang, podaci } = Astro.props;
+const O = ORGANIZACIJA[lang];
+const T = O.zahtjev;
+const { stanje, safe } = podaci;
+const org = stanje.organizacija;
+const z = stanje.zahtjev;
+const koraci = (["1", "2", "3", "4", "5"] as const).map((k, i) => {
+  const n = i + 1;
+  const s: "gotovo" | "uTijeku" | "ceka" = n <= stanje.korak ? "gotovo" : n === stanje.korak + 1 ? "uTijeku" : "ceka";
+  return { n, ...T.koraci[k], s };
+});
+const g = safe.greske;
+const gr = (k: keyof typeof g) => (g[k] ? (O.greske[g[k]!] ?? O.greske.neispravno) : null);
+const lanci = Object.keys(T.lanci) as (keyof typeof T.lanci)[];
+const aktivna = org.status === "active";
+---
+<OkvirOrganizacije lang={lang} naslov={T.naslov} organizacija={podaci.organizacija} uloga={podaci.uloga} aktivna="org.application">
+  {podaci.poruka === "poslano" && <Poruka poruka={T.poslano} />}
+  {podaci.poruka === "spremljeno" && <Poruka poruka={O.opce.spremljeno} />}
+
+  <section aria-labelledby="koraci" class="mt-6">
+    <h2 id="koraci" class="text-lg font-semibold text-ink">{umetni(T.brojac, { n: stanje.korak })}</h2>
+    {z && <p class="mt-1 text-sm text-ink-soft">{O.statusZahtjeva[z.status]} · {datum(z.azuriran, lang)}</p>}
+    <ol class="mt-4 space-y-3">
+      {
+        koraci.map((k) => (
+          <li class="flex gap-3 rounded-md border border-line p-3">
+            <span class:list={["mt-0.5 shrink-0", k.s === "gotovo" ? "text-success" : k.s === "uTijeku" ? "text-action" : "text-ink-muted"]}>
+              {k.s === "gotovo" ? <CircleCheck size={20} aria-hidden="true" /> : k.s === "uTijeku" ? <Hourglass size={20} aria-hidden="true" /> : <Clock size={20} aria-hidden="true" />}
+            </span>
+            <div class="min-w-0">
+              <p class="font-semibold text-ink">
+                {k.n}. {k.naslov} <span class="text-sm font-normal text-ink-muted">({T[k.s]})</span>
+              </p>
+              <p class="text-sm text-ink-soft">{k.opis}</p>
+            </div>
+          </li>
+        ))
+      }
+    </ol>
+  </section>
+
+  {
+    podaci.imaNacrt && (
+      <p class="mt-4">
+        <a href={url(lang, "organisation.new")} class={GUMB}>{T.nastaviNacrt}</a>
+      </p>
+    )
+  }
+
+  {
+    z?.status === "rejected" && (
+      <section aria-labelledby="odbijen" class="mt-6 rounded-md bg-danger-bg p-4 ring-1 ring-danger/20 ring-inset">
+        <h2 id="odbijen" class="font-semibold text-danger">{O.statusZahtjeva.rejected}</h2>
+        {z.razlog && (
+          <p class="mt-1 text-sm text-ink">
+            {T.razlog}: {z.razlog}
+          </p>
+        )}
+        {org.status === "pending" && (
+          <form method="post" action={url(lang, "org.application", { slug: org.slug })} class="mt-3">
+            <input type="hidden" name="radnja" value="ponovno" />
+            <button type="submit" class={GUMB_RUB}>{T.ponovno}</button>
+          </form>
+        )}
+      </section>
+    )
+  }
+
+  {
+    stanje.kyb && (
+      <section aria-labelledby="kyb" class="mt-6 rounded-md border border-line p-4">
+        <h2 id="kyb" class="font-semibold text-ink">
+          {T.kyb}: {O.statusVerifikacije[stanje.kyb.status]}
+        </h2>
+        <dl class="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+          <dt class="text-ink-muted">{T.pruzatelj}</dt>
+          <dd class="text-ink">
+            {stanje.kyb.pruzatelj} <span class="text-ink-muted">({O.opce.mock})</span>
+          </dd>
+          <dt class="text-ink-muted">{T.zatrazeno}</dt>
+          <dd class="text-ink">{datum(stanje.kyb.zatrazeno, lang)}</dd>
+          {stanje.kyb.odluceno !== null && <dt class="text-ink-muted">{T.odluceno}</dt>}
+          {stanje.kyb.odluceno !== null && <dd class="text-ink">{datum(stanje.kyb.odluceno, lang)}</dd>}
+          {stanje.kyb.razlog && <dt class="text-ink-muted">{T.razlog}</dt>}
+          {stanje.kyb.razlog && <dd class="text-ink">{stanje.kyb.razlog}</dd>}
+        </dl>
+        <p class="mt-2 text-sm text-ink-muted">{T.odlukaKodModeratora}</p>
+      </section>
+    )
+  }
+
+  <section aria-labelledby="safe" class="mt-6 rounded-md border border-line p-4">
+    <h2 id="safe" class="flex items-center gap-2 font-semibold text-ink">
+      <Wallet size={18} aria-hidden="true" class="text-action" />
+      {T.safeNaslov}
+    </h2>
+    <p class="mt-1 text-sm text-ink-soft">{T.safeUvod}</p>
+    <p class="mt-2 text-sm">
+      <span class="text-ink-muted">{T.safeTrenutni}:</span>{" "}
+      {org.safeAdresa ? <code class="break-all text-ink">{org.safeAdresa}</code> : <span class="text-ink-soft">{T.safeNema}</span>}
+      {org.safeAdresa && org.safeLanac !== null && <span class="text-ink-muted"> ({T.lanci[String(org.safeLanac) as keyof typeof T.lanci] ?? org.safeLanac})</span>}
+    </p>
+    {
+      aktivna ? (
+        <form method="post" action={url(lang, "org.application", { slug: org.slug })} class="mt-4 space-y-4" novalidate>
+          <input type="hidden" name="radnja" value="safe" />
+          {gr("stanje") && <Greska poruka={gr("stanje")!} />}
+          <Polje id="adresa" label={T.safeAdresa} greska={gr("adresa")}>
+            <input id="adresa" name="adresa" required maxlength="42" value={safe.adresa} placeholder="0x…" spellcheck="false" autocomplete="off" aria-invalid={g.adresa ? "true" : undefined} aria-describedby={opisano("adresa", false, g.adresa)} class:list={[KLASA_POLJA, "font-mono", rub(g.adresa)]} />
+          </Polje>
+          <Polje id="lanac" label={T.safeLanac} greska={gr("lanac")}>
+            <select id="lanac" name="lanac" aria-invalid={g.lanac ? "true" : undefined} aria-describedby={opisano("lanac", false, g.lanac)} class:list={[KLASA_POLJA, rub(g.lanac)]}>
+              {lanci.map((l) => <option value={l} selected={safe.lanac === l}>{T.lanci[l]}</option>)}
+            </select>
+          </Polje>
+          <button type="submit" class={GUMB}>{T.safeSpremi}</button>
+        </form>
+      ) : (
+        <p class="mt-3 text-sm text-ink-muted">{T.safeNakonKyb}</p>
+      )
+    }
+  </section>
+
+  <section aria-labelledby="prima" class="mt-6 rounded-md border border-line p-4">
+    <h2 id="prima" class="font-semibold text-ink">{T.primaNaslov}</h2>
+    <p class="mt-1 text-sm text-ink-soft">{org.primaKampanjeDrugih ? T.primaUkljuceno : T.primaIskljuceno}</p>
+    <a href={url(lang, "org.settings", { slug: org.slug })} class="mt-2 inline-flex min-h-11 items-center font-medium text-action underline underline-offset-2">{T.primaPostavke}</a>
+  </section>
+</OkvirOrganizacije>

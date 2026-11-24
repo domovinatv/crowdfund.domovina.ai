@@ -146,3 +146,29 @@ describe("učitavač /hr/o/{slug}/odobravanje (U:admin)", () => {
     expect(poslije.podaci.poruka).toEqual({ odluka: "odobrena", kampanja: ZA_ODOBRENJE });
   });
 });
+
+describe("učitavač /hr/o/{slug}/odobravanje: uloge i odbijanje", () => {
+  it("bez prijave 302, editor 404; admin odbija s razlogom 303 ?odbijena= pa poruka i povijest", async () => {
+    const { sqlite, db, orgId, kampanja } = svjeze();
+    const novi = (await korisnikSesije(db, primjeri.demoSesijaNovi, sad))!;
+    const x = (await korisnikPoEmailu(db, "petra.probic@demo.invalid"))!;
+    const admin = { id: x.id, email: x.email, ime: x.ime, platformRole: x.platformRole };
+    const params = { slug: SVJETIONIK };
+    const put = `/hr/o/${SVJETIONIK}/odobravanje`;
+    const bez = await ucitajOdobravanje(kontekst(db, put, { params }));
+    expect(bez instanceof Response && bez.status).toBe(302);
+    sqlite
+      .prepare("INSERT INTO memberships (user_id, organization_id, role, invited_by, created_at, updated_at) VALUES (?, ?, 'editor', NULL, ?, ?)")
+      .run(novi.id, orgId(SVJETIONIK), sad, sad);
+    const urednik = await ucitajOdobravanje(kontekst(db, put, { params, korisnik: novi }));
+    expect(urednik instanceof Response && urednik.status).toBe(404);
+    const razlog = "Opis ne odgovara svrsi organizacije.";
+    const r = await ucitajOdobravanje(kontekst(db, put, { params, korisnik: admin, obrazac: { radnja: "odbij", kampanja: ZA_ODOBRENJE, razlog } }));
+    expect(r instanceof Response && r.headers.get("Location")).toBe(`${put}?odbijena=${ZA_ODOBRENJE}`);
+    expect(kampanja(ZA_ODOBRENJE)).toMatchObject({ state: "cancelled", beneficiary_rejected_reason: razlog });
+    const poslije = (await ucitajOdobravanje(kontekst(db, `${put}?odbijena=${ZA_ODOBRENJE}`, { params, korisnik: admin }))) as { podaci: PodaciOdobravanja };
+    expect(poslije.podaci.poruka).toEqual({ odluka: "odbijena", kampanja: ZA_ODOBRENJE });
+    expect(poslije.podaci.naCekanju.map((k) => k.publicId)).not.toContain(ZA_ODOBRENJE);
+    expect(poslije.podaci.odluke.find((o) => o.publicId === ZA_ODOBRENJE)).toMatchObject({ odluka: "odbijena", razlog });
+  });
+});

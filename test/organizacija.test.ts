@@ -363,3 +363,142 @@ describe("učitavači organizacije (pristup i obrasci)", () => {
     expect(lokacija(r)).toBe(`/hr/o/${SVJETIONIK}/kampanje`);
   });
 });
+
+describe("učitavači organizacije: POST radnje i uloge po ruti", () => {
+  const baza = novaBaza({ seed: true });
+  const d = kaoD1(baza);
+  const ctx = (put: string, o: Parameters<typeof kontekst>[2] = {}) => kontekst(d, put, o);
+  const params = { slug: SVJETIONIK };
+  const svjetionik = orgId(SVJETIONIK);
+  /** `novi` dobiva ulogu u Svjetioniku (izravno u bazi, kao da je prihvatio pozivnicu). */
+  const ulogaNovog = (uloga: string) => {
+    baza.prepare("DELETE FROM memberships WHERE user_id = ? AND organization_id = ?").run(novi.id, svjetionik);
+    baza
+      .prepare("INSERT INTO memberships (user_id, organization_id, role, invited_by, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)")
+      .run(novi.id, svjetionik, uloga, organizator.id, sad, sad);
+  };
+  const bezNovog = () => baza.prepare("DELETE FROM memberships WHERE user_id = ? AND organization_id = ?").run(novi.id, svjetionik);
+  type S<T> = { podaci: T };
+
+  it("zahtjev: bez prijave 302; Safe greška 200 uz polje, uspjeh 303 ?spremljeno=1; poruka nakon 303", async () => {
+    const put = `/hr/o/${SVJETIONIK}/zahtjev`;
+    expect(status(await ucitajZahtjev(ctx(put, { params })))).toBe(302);
+    const lose = (await ucitajZahtjev(ctx(put, { params, korisnik: organizator, obrazac: { radnja: "safe", adresa: "0x12", lanac: "10200" } }))) as S<{ safe: { greske: object } }>;
+    expect(lose.podaci.safe.greske).toEqual({ adresa: "neispravno" });
+    const adresa = `0x${"ab".repeat(20)}`;
+    const r = await ucitajZahtjev(ctx(put, { params, korisnik: organizator, obrazac: { radnja: "safe", adresa, lanac: "100" } }));
+    expect(status(r)).toBe(303);
+    expect(lokacija(r)).toBe(`${put}?spremljeno=1`);
+    expect(redovi(baza, "SELECT safe_address, safe_chain_id FROM organizations WHERE id = ?", svjetionik)).toEqual([{ safe_address: adresa, safe_chain_id: 100 }]);
+    const poslije = (await ucitajZahtjev(ctx(`${put}?spremljeno=1`, { params, korisnik: organizator }))) as S<{ poruka: string; safe: { adresa: string; lanac: string } }>;
+    expect(poslije.podaci.poruka).toBe("spremljeno");
+    expect(poslije.podaci.safe).toMatchObject({ adresa, lanac: "100" });
+  });
+
+  it("zahtjev: odbijeni zahtjev organizacije na čekanju vlasnik šalje ponovno (303 ?poslano=1, status submitted)", async () => {
+    const slug = "demo-zeleni-kvart";
+    const id = orgId(slug);
+    const email = redovi<{ email: string }>(baza, "SELECT u.email FROM memberships m JOIN users u ON u.id = m.user_id WHERE m.organization_id = ? AND m.role = 'owner'", id)[0]!.email;
+    const vlasnik = await korisnik(email);
+    baza.prepare("UPDATE organization_applications SET status = 'rejected', reason = 'Nedostaje opis.' WHERE organization_id = ?").run(id);
+    const put = `/hr/o/${slug}/zahtjev`;
+    const get = (await ucitajZahtjev(ctx(put, { params: { slug }, korisnik: vlasnik }))) as S<{ stanje: { zahtjev: { status: string; razlog: string } } }>;
+    expect(get.podaci.stanje.zahtjev).toMatchObject({ status: "rejected", razlog: "Nedostaje opis." });
+    const r = await ucitajZahtjev(ctx(put, { params: { slug }, korisnik: vlasnik, obrazac: { radnja: "ponovno" } }));
+    expect(lokacija(r)).toBe(`${put}?poslano=1`);
+    expect(redovi(baza, "SELECT status, reason FROM organization_applications WHERE organization_id = ?", id)).toEqual([{ status: "submitted", reason: null }]);
+  });
+
+  it("postavke: editor 404; admin greška 200 uz polje, uspjeh 303 ?spremljeno=1", async () => {
+    const put = `/hr/o/${SVJETIONIK}/postavke`;
+    ulogaNovog("editor");
+    expect(status(await ucitajPostavke(ctx(put, { params, korisnik: novi })))).toBe(404);
+    bezNovog();
+    const lose = (await ucitajPostavke(ctx(put, { params, korisnik: adminSvjetionika, obrazac: { naziv: "", web: "ftp://x" } }))) as S<{ greske: object }>;
+    expect(lose.podaci.greske).toMatchObject({ naziv: "obavezno", web: "neispravno" });
+    const r = await ucitajPostavke(ctx(put, { params, korisnik: adminSvjetionika, obrazac: { naziv: "Svjetionik (novi naziv)", opis: "Opis.", web: "", mreze: "", kategorija: "charity", primaKampanjeDrugih: "1" } }));
+    expect(lokacija(r)).toBe(`${put}?spremljeno=1`);
+    expect((await postavkeOrganizacije(d, svjetionik))).toMatchObject({ naziv: "Svjetionik (novi naziv)", kategorija: "charity", primaKampanjeDrugih: true });
+  });
+
+  it("članovi: viewer vidi popis bez izmjena; vlasnik poziva (demo okvir s poveznicom), opoziva; nepoznata radnja 404", async () => {
+    const put = `/hr/o/${SVJETIONIK}/clanovi`;
+    ulogaNovog("viewer");
+    const gledatelj = (await ucitajClanove(ctx(put, { params, korisnik: novi }))) as S<PodaciClanova>;
+    expect(gledatelj.podaci.mozeUredjivati).toBe(false);
+    expect(gledatelj.podaci.pozivnice).toEqual([]);
+    expect(gledatelj.podaci.clanovi.map((c) => c.uloga)).toContain("viewer");
+    bezNovog();
+    const lose = (await ucitajClanove(ctx(put, { params, korisnik: organizator, obrazac: { radnja: "pozovi", email: "nije-email", uloga: "viewer" } }))) as S<PodaciClanova>;
+    expect(lose.podaci.poziv.greska).toBe("email_neispravan");
+    const c = ctx(put, { params, korisnik: organizator, obrazac: { radnja: "pozovi", email: "Demo.Okvir@demo.invalid", uloga: "editor" } });
+    expect(status(await ucitajClanove(c))).toBe(303);
+    const get = (await ucitajClanove(ctx(`${put}?spremljeno=1`, { params, korisnik: organizator, kolacici: c.cookies }))) as S<PodaciClanova>;
+    expect(get.podaci.spremljeno).toBe(true);
+    expect(get.podaci.demo?.email).toBe("demo.okvir@demo.invalid");
+    expect(get.podaci.demo?.link).toMatch(/^\/hr\/pozivnica\/.+/);
+    const token = get.podaci.demo!.link.split("/").pop()!;
+    expect((await pozivnicaPoTokenu(d, token, sad))?.uloga).toBe("editor");
+    const p = get.podaci.pozivnice.find((x) => x.email === "demo.okvir@demo.invalid")!;
+    expect(status(await ucitajClanove(ctx(put, { params, korisnik: organizator, obrazac: { radnja: "opozovi", id: p.id } })))).toBe(303);
+    expect(redovi(baza, "SELECT status FROM membership_invites WHERE id = ?", p.id)).toEqual([{ status: "revoked" }]);
+    expect(status(await ucitajClanove(ctx(put, { params, korisnik: organizator, obrazac: { radnja: "nesto" } })))).toBe(404);
+  });
+
+  it("članovi uz svježu potvrdu (P+e member_role): promjena uloge i uklanjanje 303; zadnji vlasnik 200 s greškom", async () => {
+    const put = `/hr/o/${SVJETIONIK}/clanovi`;
+    baza
+      .prepare("INSERT INTO one_time_codes (id, user_id, email, purpose, action, code_hash, created_at, expires_at, used_at) VALUES (?, ?, ?, 'step_up', 'member_role', 'x', ?, ?, ?)")
+      .run("test-potvrda-member-role", organizator.id, organizator.email, sad, sad + 600_000, sad);
+    const r = await ucitajClanove(ctx(put, { params, korisnik: organizator, obrazac: { radnja: "uloga", userId: adminSvjetionika.id, uloga: "editor" } }));
+    expect(lokacija(r)).toBe(`${put}?spremljeno=1`);
+    expect(redovi(baza, "SELECT role FROM memberships WHERE user_id = ? AND organization_id = ?", adminSvjetionika.id, svjetionik)).toEqual([{ role: "editor" }]);
+    const zadnji = (await ucitajClanove(ctx(put, { params, korisnik: organizator, obrazac: { radnja: "ukloni", userId: organizator.id } }))) as S<PodaciClanova>;
+    expect(zadnji.podaci.greskaClana).toBe("zadnji_owner");
+    expect(status(await ucitajClanove(ctx(put, { params, korisnik: organizator, obrazac: { radnja: "ukloni", userId: adminSvjetionika.id } })))).toBe(303);
+    expect(broj(baza, "SELECT count(*) FROM memberships WHERE user_id = ? AND organization_id = ?", adminSvjetionika.id, svjetionik)).toBe(0);
+  });
+
+  it("vanjske: editor dodaje (greška 200, uspjeh 303 ?dodana=1), provjerava i uklanja (303); nepoznata radnja 404", async () => {
+    const put = `/hr/o/${SVJETIONIK}/vanjske`;
+    ulogaNovog("editor");
+    expect(status(await ucitajVanjske(ctx(put, { params, korisnik: novi })))).toBe(200);
+    const lose = (await ucitajVanjske(ctx(put, { params, korisnik: novi, obrazac: { radnja: "dodaj", url: "https://primjer.invalid/abc", naslov: "" } }))) as S<{ greske: object }>;
+    expect(lose.podaci.greske).toMatchObject({ url: "neispravno", naslov: "obavezno" });
+    const r = await ucitajVanjske(ctx(put, { params, korisnik: novi, obrazac: { radnja: "dodaj", url: "https://4fund.com/zz9yx8", naslov: "Vanjska iz testa", kategorija: "" } }));
+    expect(lokacija(r)).toBe(`${put}?dodana=1`);
+    const v = (await vanjskeOrganizacije(d, svjetionik)).find((x) => x.externalId === "zz9yx8")!;
+    expect(v.status).toBe("pending");
+    expect(lokacija(await ucitajVanjske(ctx(put, { params, korisnik: novi, obrazac: { radnja: "provjeri", id: v.id } })))).toBe(`${put}?spremljeno=1`);
+    expect((await vanjskeOrganizacije(d, svjetionik)).find((x) => x.id === v.id)?.status).toBe("active");
+    expect(status(await ucitajVanjske(ctx(put, { params, korisnik: novi, obrazac: { radnja: "ukloni", id: v.id } })))).toBe(303);
+    expect((await vanjskeOrganizacije(d, svjetionik)).find((x) => x.id === v.id)?.status ?? "removed").toBe("removed");
+    expect(status(await ucitajVanjske(ctx(put, { params, korisnik: novi, obrazac: { radnja: "nesto" } })))).toBe(404);
+    bezNovog();
+  });
+
+  it("kampanje: viewer 200 s vlastitim i tuđim kampanjama; bez prijave 302; bez uloge 404", async () => {
+    const put = `/hr/o/${SVJETIONIK}/kampanje`;
+    expect(status(await ucitajKampanje(ctx(put, { params })))).toBe(302);
+    expect(status(await ucitajKampanje(ctx(put, { params, korisnik: novi })))).toBe(404);
+    ulogaNovog("viewer");
+    const r = (await ucitajKampanje(ctx(put, { params, korisnik: novi }))) as S<{ kampanje: { zaOrganizaciju: boolean }[] }>;
+    expect(r.podaci.kampanje.length).toBeGreaterThan(0);
+    expect(r.podaci.kampanje.some((k) => k.zaOrganizaciju)).toBe(true);
+    bezNovog();
+  });
+
+  it("pozivnica: druga e-pošta 200 s ishodom; istekla se prikazuje (200); odbijanje 303 ?odbijena=1 pa poruka", async () => {
+    const put = `/hr/pozivnica/${primjeri.pozivnica}`;
+    const p = { token: primjeri.pozivnica };
+    const tudja = (await ucitajPozivnicu(ctx(put, { params: p, korisnik: organizator, obrazac: { radnja: "prihvati" } }))) as S<PodaciPozivnice>;
+    expect(tudja.podaci.ishod).toBe("druga_eposta");
+    const istekla = (await ucitajPozivnicu(ctx(`/hr/pozivnica/${primjeri.pozivnicaIstekla}`, { params: { token: primjeri.pozivnicaIstekla } }))) as S<PodaciPozivnice>;
+    expect(istekla.podaci.pozivnica.stanje).toBe("expired");
+    const r = await ucitajPozivnicu(ctx(put, { params: p, korisnik: novi, obrazac: { radnja: "odbij" } }));
+    expect(lokacija(r)).toBe(`${put}?odbijena=1`);
+    const poslije = (await ucitajPozivnicu(ctx(`${put}?odbijena=1`, { params: p }))) as S<PodaciPozivnice>;
+    expect(poslije.podaci.ishod).toBe("odbijena");
+    expect(poslije.podaci.pozivnica.stanje).toBe("revoked");
+  });
+});

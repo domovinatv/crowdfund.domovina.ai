@@ -12,6 +12,7 @@ vrijeme unix ms, skup = `CHECK (x IN (…))`, boolean `CHECK (x IN (0,1))`, JSON
 | `migrations/0002_platform.sql` | platformske tablice ispod | ovaj dokument |
 | `migrations/0003_seed_reference.sql` | kategorije | ovaj dokument |
 | `migrations/0004_s6.sql` | `users.slug`, `campaign_settings.contributions_list`, `campaign_follows` s e-poštom i tokenom, indeksi prijave | §0004 ispod (S6) |
+| `migrations/0007_s6_organizacija.sql` | odbijanje kampanje za organizaciju (`campaign_settings.beneficiary_rejected_*`), zastupnik u `organization_applications.representative` | §0007 ispod (S6) |
 
 S4 ima test koji uspoređuje `0001_core.sql` s opisom iz paketa (kao planirani J2 test u campaign-coreu), pa
 nova verzija paketa ruši build dok se migracija ne obnovi. Vertikale (`campaign_energy`,
@@ -612,6 +613,34 @@ poveznica: zaseban red iste svrhe s `action = 'link'` i `code_hash = SHA-256(tok
 radnjom u `action`), `sessions.id = SHA-256(token iz kolačića)`, `login_events` s `/24` ili `/48` prefiksom,
 `auth_identities` (`email_code`, `email_link`, `google` sa subjectom `mock-google:{e-pošta}`), `consents`
 (`terms_privacy`, `newsletter`, verzija `uvjeti-2026-11`). Token pozivnice: `membership_invites.token_hash = SHA-256(token)`.
+
+## 0007_s6_organizacija.sql
+
+S6, organizacija i odobravanje (tok 2 i tok 3). Samo `ALTER TABLE ... ADD COLUMN`; 0001–0004 se ne mijenjaju.
+Brojevi 0005 i 0006 rezervirani su za druge dijelove S6 (čarobnjak i upravljanje kampanjom), pa postoje samo ako
+su ti dijelovi trebali shemu.
+
+- **`campaign_settings.beneficiary_rejected_at` / `_by` / `_reason`**: organizacija odbija tuđu kampanju za sebe
+  (`review → cancelled`, docs/05). Stanje `cancelled` dolazi iz jezgre; razlog (1–500 znakova u bazi, 10–500 u
+  `src/lib/db/odobravanje.ts`) i tko je odbio nemaju drugo mjesto, jer `blocked_reason` pripada moderaciji i traži
+  `blocked_at`. Odobrenje koristi postojeće `beneficiary_approved_at` / `_by`.
+- **`organization_applications.representative`** (JSON, zadano `{}`): ono što zastupnik unese u koraku
+  „zastupnik” (`ime`, `prezime`, `funkcija`, `ovlast`). Zastupnik je korisnik iz `submitted_by`.
+
+```sql
+ALTER TABLE campaign_settings ADD COLUMN beneficiary_rejected_at INTEGER;
+ALTER TABLE campaign_settings ADD COLUMN beneficiary_rejected_by TEXT REFERENCES users(id);
+ALTER TABLE campaign_settings ADD COLUMN beneficiary_rejected_reason TEXT
+  CHECK (beneficiary_rejected_reason IS NULL OR length(beneficiary_rejected_reason) BETWEEN 1 AND 500);
+ALTER TABLE organization_applications ADD COLUMN representative TEXT NOT NULL DEFAULT '{}'
+  CHECK (json_valid(representative));
+```
+
+Organizacija (S6, `src/lib/db/{organizacija,clanovi,odobravanje}.ts`) inače koristi postojeće tablice:
+`organizations` (`status`, `safe_address`, `safe_chain_id`, `is_fixed_beneficiary`), `organization_applications`
+(`status`, `step`, `reason`), `verifications` (`org_kyb`, mock pružatelj), `memberships` (barem jedan `owner`),
+`membership_invites` (7 dana, `token_hash = SHA-256(token)`, istek se računa iz `expires_at` bez zapisa) i
+`external_campaigns` (kod vlasništva, mock provjera).
 
 ## Napomene za S4
 

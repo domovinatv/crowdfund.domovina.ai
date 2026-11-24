@@ -1,0 +1,101 @@
+---
+// Vanjske 4fund kampanje /hr/o/{slug}/vanjske (U:editor, tok 9, odluka 209): popis s kodom vlasništva,
+// „Provjeri” (mock: 4fund se ne dohvaća) i „Ukloni”, te obrazac za dodavanje (URL + naslov + kategorija).
+import ExternalLink from "@lucide/astro/icons/external-link";
+import Greska from "../../components/prijava/Greska.astro";
+import OkvirOrganizacije from "../../components/organizacija/OkvirOrganizacije.astro";
+import Polje from "../../components/organizacija/Polje.astro";
+import Poruka from "../../components/organizacija/Poruka.astro";
+import { GUMB, GUMB_OPASNO, GUMB_RUB, KLASA_POLJA, datum, opisano, rub } from "../../components/organizacija/ucitavanje";
+import { url } from "../../lib/rute";
+import { ORGANIZACIJA } from "../sadrzaj/organizacija";
+import type { PropsStranice } from "../tipovi";
+import type { PodaciVanjskih } from "./org.external.ucitaj";
+
+type Props = PropsStranice<PodaciVanjskih>;
+const { lang, podaci } = Astro.props;
+const O = ORGANIZACIJA[lang];
+const T = O.vanjske;
+const P = O.carobnjak.polja;
+const ovdje = url(lang, "org.external", { slug: podaci.organizacija.slug });
+const { vrijednosti: v, greske: g } = podaci;
+const gr = (k: keyof typeof g) => (g[k] ? (O.greske[g[k]!] ?? O.greske.neispravno) : null);
+const vidljive = podaci.vanjske.filter((x) => x.status !== "removed");
+---
+<OkvirOrganizacije lang={lang} naslov={T.naslov} uvod={T.uvod} organizacija={podaci.organizacija} uloga={podaci.uloga} aktivna="org.external">
+  {podaci.poruka === "dodana" && <Poruka poruka={T.dodana} />}
+  {podaci.poruka === "spremljeno" && <Poruka poruka={O.opce.spremljeno} />}
+
+  <section aria-labelledby="popis" class="mt-6">
+    <h2 id="popis" class="sr-only">{T.naslov}</h2>
+    {
+      vidljive.length === 0 ? (
+        <p class="rounded-md bg-mist px-4 py-6 text-sm text-ink-muted">{T.nema}</p>
+      ) : (
+        <ul class="space-y-4">
+          {vidljive.map((x) => (
+            <li class="rounded-md border border-line p-4">
+              <div class="flex flex-wrap items-start justify-between gap-2">
+                <div class="min-w-0">
+                  <p class="font-semibold break-words text-ink">{x.naslov}</p>
+                  <a href={x.url} rel="nofollow noopener" class="inline-flex items-center gap-1 text-sm break-all text-action underline underline-offset-2">
+                    {x.url}
+                    <ExternalLink size={14} aria-hidden="true" class="shrink-0" />
+                  </a>
+                </div>
+                <span class:list={["rounded-sm px-1.5 py-0.5 text-sm font-semibold", x.status === "active" ? "bg-success-bg text-success" : "bg-warning-bg text-warning"]}>
+                  {T.stanja[x.status]}
+                  {x.provjerena !== null && ` · ${datum(x.provjerena, lang)}`}
+                </span>
+              </div>
+              {x.status === "pending" && (
+                <div class="mt-3 rounded-sm bg-mist p-3 text-sm">
+                  <p class="text-ink-soft">{T.kodUvod}</p>
+                  <p class="mt-1 font-mono text-base font-semibold text-ink select-all">{x.kod}</p>
+                  <p class="mt-1 text-xs text-ink-muted">{T.provjeriMock}</p>
+                </div>
+              )}
+              <div class="mt-3 flex flex-wrap gap-2">
+                {x.status === "pending" && (
+                  <form method="post" action={ovdje}>
+                    <input type="hidden" name="radnja" value="provjeri" />
+                    <input type="hidden" name="id" value={x.id} />
+                    <button type="submit" class={GUMB_RUB}>{T.provjeri}</button>
+                  </form>
+                )}
+                <form method="post" action={ovdje}>
+                  <input type="hidden" name="radnja" value="ukloni" />
+                  <input type="hidden" name="id" value={x.id} />
+                  <button type="submit" class={GUMB_OPASNO} aria-label={`${T.ukloni}: ${x.naslov}`}>
+                    {T.ukloni}
+                  </button>
+                </form>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )
+    }
+  </section>
+
+  <section aria-labelledby="dodaj" class="mt-8 rounded-md border border-line p-4">
+    <h2 id="dodaj" class="text-lg font-semibold text-ink">{T.dodaj}</h2>
+    {Object.keys(g).length > 0 && <Greska poruka={O.greske.neispravno} />}
+    <form method="post" action={ovdje} class="mt-4 space-y-4" novalidate>
+      <input type="hidden" name="radnja" value="dodaj" />
+      <Polje id="url" label={T.url} pomoc={T.urlPomoc} greska={gr("url")}>
+        <input id="url" name="url" type="url" required maxlength="200" value={v.url} placeholder="https://4fund.com/" aria-invalid={g.url ? "true" : undefined} aria-describedby={opisano("url", true, g.url)} class:list={[KLASA_POLJA, rub(g.url)]} />
+      </Polje>
+      <Polje id="naslov" label={T.naslovPolje} greska={gr("naslov")}>
+        <input id="naslov" name="naslov" required maxlength="120" value={v.naslov} aria-invalid={g.naslov ? "true" : undefined} aria-describedby={opisano("naslov", false, g.naslov)} class:list={[KLASA_POLJA, rub(g.naslov)]} />
+      </Polje>
+      <Polje id="kategorija" label={P.kategorija} greska={gr("kategorija")} oznaka={O.opce.neobavezno}>
+        <select id="kategorija" name="kategorija" aria-invalid={g.kategorija ? "true" : undefined} aria-describedby={opisano("kategorija", false, g.kategorija)} class:list={[KLASA_POLJA, rub(g.kategorija)]}>
+          <option value="">{P.bezKategorije}</option>
+          {podaci.kategorije.map((k) => <option value={k.key} selected={v.kategorija === k.key}>{lang === "hr" ? k.nameHr : k.nameEn}</option>)}
+        </select>
+      </Polje>
+      <button type="submit" class={GUMB}>{T.dodaj}</button>
+    </form>
+  </section>
+</OkvirOrganizacije>

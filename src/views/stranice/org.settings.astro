@@ -1,0 +1,72 @@
+---
+// Postavke organizacije /hr/o/{slug}/postavke (U:admin): javni profil (naziv, opis, web, mreže, kategorija) i
+// „prima kampanje drugih” (samo `active`). Adresa profila se ne mijenja; logotip se u prototipu ne prenosi.
+import Greska from "../../components/prijava/Greska.astro";
+import OkvirOrganizacije from "../../components/organizacija/OkvirOrganizacije.astro";
+import Polje from "../../components/organizacija/Polje.astro";
+import Poruka from "../../components/organizacija/Poruka.astro";
+import { GUMB, KLASA_POLJA, opisano, rub } from "../../components/organizacija/ucitavanje";
+import { url } from "../../lib/rute";
+import { ORGANIZACIJA } from "../sadrzaj/organizacija";
+import type { PropsStranice } from "../tipovi";
+import type { PodaciPostavkiOrganizacije } from "./org.settings.ucitaj";
+
+type Props = PropsStranice<PodaciPostavkiOrganizacije>;
+const { lang, podaci } = Astro.props;
+const O = ORGANIZACIJA[lang];
+const T = O.postavke;
+const P = O.carobnjak.polja;
+const { vrijednosti: v, greske: g } = podaci;
+const gr = (k: keyof typeof g) => (g[k] ? (O.greske[g[k]!] ?? O.greske.neispravno) : null);
+const imaGresaka = Object.keys(g).length > 0;
+const neob = O.opce.neobavezno;
+const aktivna = v.status === "active";
+const slug = podaci.organizacija.slug;
+---
+<OkvirOrganizacije lang={lang} naslov={T.naslov} uvod={T.uvod} organizacija={podaci.organizacija} uloga={podaci.uloga} aktivna="org.settings">
+  {podaci.spremljeno && <Poruka poruka={O.opce.spremljeno} />}
+  {imaGresaka && <Greska poruka={O.greske.neispravno} />}
+  <form method="post" action={url(lang, "org.settings", { slug })} class="mt-6 space-y-5" novalidate>
+    <div>
+      <p class="font-semibold text-ink">{T.slug}</p>
+      <p class="mt-1.5 rounded-sm bg-mist px-3 py-2.5 text-ink-soft">/{lang}/o/{slug}</p>
+    </div>
+    <Polje id="naziv" label={P.naziv} greska={gr("naziv")}>
+      <input id="naziv" name="naziv" required maxlength="120" value={v.naziv} autocomplete="organization" aria-invalid={g.naziv ? "true" : undefined} aria-describedby={opisano("naziv", false, g.naziv)} class:list={[KLASA_POLJA, rub(g.naziv)]} />
+    </Polje>
+    <Polje id="opis" label={P.opis} greska={gr("opis")} oznaka={neob}>
+      <textarea id="opis" name="opis" rows="6" maxlength="2000" aria-invalid={g.opis ? "true" : undefined} aria-describedby={opisano("opis", false, g.opis)} class:list={[KLASA_POLJA, rub(g.opis)]}>{v.opis}</textarea>
+    </Polje>
+    <Polje id="web" label={P.web} greska={gr("web")} oznaka={neob}>
+      <input id="web" name="web" type="url" maxlength="200" value={v.web} placeholder="https://" aria-invalid={g.web ? "true" : undefined} aria-describedby={opisano("web", false, g.web)} class:list={[KLASA_POLJA, rub(g.web)]} />
+    </Polje>
+    <Polje id="mreze" label={P.mreze} pomoc={P.mrezePomoc} greska={gr("mreze")} oznaka={neob}>
+      <textarea id="mreze" name="mreze" rows="3" aria-invalid={g.mreze ? "true" : undefined} aria-describedby={opisano("mreze", true, g.mreze)} class:list={[KLASA_POLJA, rub(g.mreze)]}>{v.mreze.join("\n")}</textarea>
+    </Polje>
+    <Polje id="kategorija" label={P.kategorija} greska={gr("kategorija")} oznaka={neob}>
+      <select id="kategorija" name="kategorija" aria-invalid={g.kategorija ? "true" : undefined} aria-describedby={opisano("kategorija", false, g.kategorija)} class:list={[KLASA_POLJA, rub(g.kategorija)]}>
+        <option value="">{P.bezKategorije}</option>
+        {podaci.kategorije.map((k) => <option value={k.key} selected={v.kategorija === k.key}>{lang === "hr" ? k.nameHr : k.nameEn}</option>)}
+      </select>
+    </Polje>
+    <p class="text-sm text-ink-muted">{T.logo}</p>
+    <fieldset class="rounded-md border border-line p-4">
+      <legend class="px-1 font-semibold text-ink">{T.prima}</legend>
+      <label class="flex min-h-11 items-start gap-3">
+        <input
+          type="checkbox"
+          name="primaKampanjeDrugih"
+          value="1"
+          checked={v.primaKampanjeDrugih}
+          disabled={!aktivna && !v.primaKampanjeDrugih}
+          aria-describedby="prima-opis"
+          class="mt-1 size-5 shrink-0 accent-action"
+        />
+        <span id="prima-opis" class="text-ink-soft">{T.primaOpis}</span>
+      </label>
+      {!aktivna && <p class="mt-1 text-sm text-ink-muted">{T.primaSamoAktivna}</p>}
+      {gr("primaKampanjeDrugih") && <p class="mt-1 text-sm font-medium text-danger">{gr("primaKampanjeDrugih")}</p>}
+    </fieldset>
+    <button type="submit" class={GUMB}>{O.opce.spremi}</button>
+  </form>
+</OkvirOrganizacije>

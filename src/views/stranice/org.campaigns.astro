@@ -1,0 +1,73 @@
+---
+// Kampanje organizacije /hr/o/{slug}/kampanje (U:viewer): vlastite i tuđe za nju (Fixed Beneficiary), stanje s
+// preklopima (isključena / blokirana), prikupljeno prema cilju i poveznice na upravljanje i javnu stranicu.
+import Plus from "@lucide/astro/icons/plus";
+import OkvirOrganizacije from "../../components/organizacija/OkvirOrganizacije.astro";
+import { GUMB, iznos } from "../../components/organizacija/ucitavanje";
+import { imaUlogu } from "../../lib/pristup";
+import { url } from "../../lib/rute";
+import { ORGANIZACIJA, umetni } from "../sadrzaj/organizacija";
+import type { PropsStranice } from "../tipovi";
+import type { PodaciKampanjaOrganizacije } from "./org.campaigns.ucitaj";
+
+type Props = PropsStranice<PodaciKampanjaOrganizacije>;
+const { lang, podaci } = Astro.props;
+const O = ORGANIZACIJA[lang];
+const T = O.kampanje;
+const JAVNA = ["active", "funded", "closed"];
+const stanje = (k: (typeof podaci.kampanje)[number]): keyof typeof O.stanjeKampanje =>
+  k.blokirana ? "blocked" : k.pauzirana ? "paused" : k.state in O.stanjeKampanje ? (k.state as keyof typeof O.stanjeKampanje) : "draft";
+const boja = (s: string) =>
+  s === "active" || s === "funded" ? "bg-success-bg text-success" : s === "blocked" || s === "cancelled" ? "bg-danger-bg text-danger" : s === "review" || s === "paused" ? "bg-warning-bg text-warning" : "bg-mist text-ink-soft";
+const mozeNovu = imaUlogu(podaci.uloga, "editor") && podaci.organizacija.status === "active";
+---
+<OkvirOrganizacije lang={lang} naslov={T.naslov} uvod={T.uvod} organizacija={podaci.organizacija} uloga={podaci.uloga} aktivna="org.campaigns">
+  {
+    mozeNovu && (
+      <p class="mt-4">
+        <a href={url(lang, "new-campaign.type")} class={GUMB}>
+          <Plus size={18} aria-hidden="true" />
+          {T.nova}
+        </a>
+      </p>
+    )
+  }
+  {
+    podaci.kampanje.length === 0 ? (
+      <p class="mt-6 rounded-md bg-mist px-4 py-6 text-sm text-ink-muted">{T.nema}</p>
+    ) : (
+      <ul class="mt-6 divide-y divide-line rounded-md border border-line">
+        {podaci.kampanje.map((k) => {
+          const s = stanje(k);
+          return (
+            <li class="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div class="min-w-0">
+                <p class="font-semibold break-words text-ink">{k.naslov}</p>
+                {k.zaOrganizaciju && k.autor && <p class="text-sm text-ink-muted">{umetni(T.zaOrganizaciju, { ime: k.autor })}</p>}
+                <p class="mt-1 flex flex-wrap items-center gap-2 text-sm">
+                  <span class="sr-only">{T.stanje}:</span>
+                  <span class:list={["rounded-sm px-1.5 py-0.5 font-semibold", boja(s)]}>{O.stanjeKampanje[s]}</span>
+                  <span class="text-ink-soft">
+                    <span class="sr-only">{T.prikupljeno}:</span>
+                    {iznos(k.prikupljenoCenti, lang)}
+                    {k.ciljCenti !== null && <span class="text-ink-muted"> / {iznos(k.ciljCenti, lang)}</span>}
+                  </span>
+                </p>
+              </div>
+              <div class="flex shrink-0 flex-wrap gap-x-4">
+                <a href={url(lang, "campaign.manage", { id: k.publicId })} class="inline-flex min-h-11 items-center font-medium text-action underline underline-offset-2">
+                  {T.upravljaj}
+                </a>
+                {JAVNA.includes(k.state) && !k.blokirana && (
+                  <a href={url(lang, "campaign", { id: k.publicId })} class="inline-flex min-h-11 items-center font-medium text-action underline underline-offset-2">
+                    {T.javno}
+                  </a>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    )
+  }
+</OkvirOrganizacije>

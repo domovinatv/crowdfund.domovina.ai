@@ -1,0 +1,173 @@
+---
+// Članovi /hr/o/{slug}/clanovi (popis U:viewer, izmjene U:owner, docs/08 §5.7, odluka 150): tablica članova s
+// promjenom uloge i uklanjanjem (P+e `member_role`), pozivnice na čekanju, nova pozivnica s demo okvirom
+// poveznice (prototip ne šalje e-poštu) i opis uloga.
+import Mail from "@lucide/astro/icons/mail";
+import UserPlus from "@lucide/astro/icons/user-plus";
+import Greska from "../../components/prijava/Greska.astro";
+import OkvirOrganizacije from "../../components/organizacija/OkvirOrganizacije.astro";
+import Polje from "../../components/organizacija/Polje.astro";
+import Poruka from "../../components/organizacija/Poruka.astro";
+import { GUMB, GUMB_OPASNO, GUMB_RUB, KLASA_POLJA, datum, opisano, rub } from "../../components/organizacija/ucitavanje";
+import { ULOGE } from "../../lib/pristup";
+import { url } from "../../lib/rute";
+import { ORGANIZACIJA, umetni } from "../sadrzaj/organizacija";
+import type { PropsStranice } from "../tipovi";
+import type { PodaciClanova } from "./org.members.ucitaj";
+
+type Props = PropsStranice<PodaciClanova>;
+const { lang, podaci } = Astro.props;
+const O = ORGANIZACIJA[lang];
+const T = O.clanovi;
+const ovdje = url(lang, "org.members", { slug: podaci.organizacija.slug });
+const uloge = [...ULOGE].reverse();
+const DAN = 86_400_000;
+const greskaPoziva = podaci.poziv.greska ? (O.greske[podaci.poziv.greska] ?? O.greske.neispravno) : null;
+const greskaClana = podaci.greskaClana ? (O.greske[podaci.greskaClana] ?? O.greske.neispravno) : null;
+const kraticaUloge = "rounded-sm bg-mist px-1.5 py-0.5 text-sm font-medium text-ink-soft";
+---
+<OkvirOrganizacije lang={lang} naslov={T.naslov} uvod={T.uvod} organizacija={podaci.organizacija} uloga={podaci.uloga} aktivna="org.members">
+  {podaci.spremljeno && <Poruka poruka={O.opce.spremljeno} />}
+  {greskaClana && <Greska poruka={greskaClana} />}
+
+  {
+    podaci.demo && (
+      <aside aria-labelledby="demo-posta" class="mt-4 rounded-md border border-dashed border-action/50 bg-mist p-4">
+        <h2 id="demo-posta" class="flex items-center gap-2 font-semibold text-ink">
+          <Mail size={18} aria-hidden="true" class="text-action" />
+          {T.demoNaslov} <span class="text-sm font-normal text-ink-muted">({O.opce.demo})</span>
+        </h2>
+        <p class="mt-1 text-sm text-ink-soft">{umetni(T.demoTekst, { email: podaci.demo.email })}</p>
+        <a href={podaci.demo.link} class="mt-1 block break-all font-mono text-sm text-action underline underline-offset-2">{podaci.demo.link}</a>
+      </aside>
+    )
+  }
+
+  <section aria-labelledby="popis" class="mt-6">
+    <h2 id="popis" class="sr-only">{T.naslov}</h2>
+    {podaci.mozeUredjivati && <p class="text-sm text-ink-muted">{T.potvrdaNapomena}</p>}
+    <ul class="mt-2 divide-y divide-line rounded-md border border-line">
+      {
+        podaci.clanovi.map((c) => (
+          <li class="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div class="min-w-0">
+              <p class="font-semibold text-ink">
+                {c.ime}
+                {c.userId === podaci.ja && <span class="ml-1 text-sm font-normal text-ink-muted">({T.ti})</span>}
+              </p>
+              <p class="truncate text-sm text-ink-soft">{c.email}</p>
+              <p class="mt-1 text-sm text-ink-muted">
+                <span class={kraticaUloge}>{O.uloge[c.uloga]}</span> · {T.od} {datum(c.od, lang)}
+              </p>
+            </div>
+            {podaci.mozeUredjivati && (
+              <div class="flex flex-wrap items-end gap-2">
+                <form method="post" action={ovdje} class="flex items-end gap-2">
+                  <input type="hidden" name="radnja" value="uloga" />
+                  <input type="hidden" name="userId" value={c.userId} />
+                  <label class="sr-only" for={`uloga-${c.userId}`}>
+                    {T.uloga}: {c.ime}
+                  </label>
+                  <select id={`uloga-${c.userId}`} name="uloga" class="min-h-11 rounded-sm border border-ink-muted/60 bg-paper px-2 text-ink">
+                    {uloge.map((u) => (
+                      <option value={u} selected={u === c.uloga}>
+                        {O.uloge[u]}
+                      </option>
+                    ))}
+                  </select>
+                  <button type="submit" class={GUMB_RUB}>{T.promijeni}</button>
+                </form>
+                <form method="post" action={ovdje}>
+                  <input type="hidden" name="radnja" value="ukloni" />
+                  <input type="hidden" name="userId" value={c.userId} />
+                  <button type="submit" class={GUMB_OPASNO} aria-label={`${T.ukloni}: ${c.ime}`}>
+                    {T.ukloni}
+                  </button>
+                </form>
+              </div>
+            )}
+          </li>
+        ))
+      }
+    </ul>
+    {!podaci.mozeUredjivati && <p class="mt-3 text-sm text-ink-muted">{T.samoVlasnik}</p>}
+  </section>
+
+  {
+    podaci.mozeUredjivati && (
+      <section aria-labelledby="pozivnice" class="mt-8">
+        <h2 id="pozivnice" class="text-lg font-semibold text-ink">{T.pozivniceNaslov}</h2>
+        {podaci.pozivnice.length === 0 ? (
+          <p class="mt-2 text-sm text-ink-muted">{T.nemaPozivnica}</p>
+        ) : (
+          <ul class="mt-2 divide-y divide-line rounded-md border border-line">
+            {podaci.pozivnice.map((p) => {
+              const istekla = p.istjece <= podaci.sad;
+              const dana = Math.max(1, Math.ceil((p.istjece - podaci.sad) / DAN));
+              return (
+                <li class="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div class="min-w-0">
+                    <p class="truncate font-medium text-ink">{p.email}</p>
+                    <p class="text-sm text-ink-muted">
+                      <span class={kraticaUloge}>{O.uloge[p.uloga]}</span> · {istekla ? T.istekla : umetni(T.josDana, { dana })} · {p.pozvao}
+                    </p>
+                  </div>
+                  <form method="post" action={ovdje}>
+                    <input type="hidden" name="radnja" value="opozovi" />
+                    <input type="hidden" name="id" value={p.id} />
+                    <button type="submit" class={GUMB_RUB} aria-label={`${T.opozovi}: ${p.email}`}>
+                      {T.opozovi}
+                    </button>
+                  </form>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+    )
+  }
+
+  {
+    podaci.mozeUredjivati && (
+      <section aria-labelledby="pozovi" class="mt-8 rounded-md border border-line p-4">
+        <h2 id="pozovi" class="flex items-center gap-2 text-lg font-semibold text-ink">
+          <UserPlus size={20} aria-hidden="true" class="text-action" />
+          {T.pozoviNaslov}
+        </h2>
+        <form method="post" action={ovdje} class="mt-4 grid gap-4 sm:grid-cols-[2fr_1fr]" novalidate>
+          <input type="hidden" name="radnja" value="pozovi" />
+          <Polje id="email" label={T.email} greska={greskaPoziva}>
+            <input id="email" name="email" type="email" required maxlength="254" autocomplete="off" value={podaci.poziv.email} aria-invalid={greskaPoziva ? "true" : undefined} aria-describedby={opisano("email", false, greskaPoziva)} class:list={[KLASA_POLJA, rub(greskaPoziva)]} />
+          </Polje>
+          <Polje id="poziv-uloga" label={T.uloga}>
+            <select id="poziv-uloga" name="uloga" class:list={[KLASA_POLJA, rub(null)]}>
+              {uloge.map((u) => (
+                <option value={u} selected={u === podaci.poziv.uloga}>
+                  {O.uloge[u]}
+                </option>
+              ))}
+            </select>
+          </Polje>
+          <div class="sm:col-span-2">
+            <button type="submit" class={GUMB}>{T.pozovi}</button>
+          </div>
+        </form>
+      </section>
+    )
+  }
+
+  <section aria-labelledby="uloge" class="mt-8">
+    <h2 id="uloge" class="text-lg font-semibold text-ink">{T.uloge}</h2>
+    <dl class="mt-2 space-y-2 text-sm">
+      {
+        uloge.map((u) => (
+          <div class="flex flex-col sm:flex-row sm:gap-2">
+            <dt class="font-semibold text-ink sm:w-36 sm:shrink-0">{O.uloge[u]}</dt>
+            <dd class="text-ink-soft">{O.opisUloga[u]}</dd>
+          </div>
+        ))
+      }
+    </dl>
+  </section>
+</OkvirOrganizacije>
