@@ -1,0 +1,187 @@
+---
+// Prijava `/admin/prijave/{id}` (A, admin.report, docs/04 tok 8, docs/05 „Prijava”, odluka 645): detalj, preuzimanje,
+// odluka s obrazloženjem po DSA čl. 17 (radnja, činjenice, osnova, automatizirana sredstva, pravna sredstva), žalba
+// i odluka o žalbi, zatvaranje nakon roka. POST na istu rutu (`obrazac=preuzmi|odluka|zalba|zatvori`), 303.
+import { env } from "cloudflare:workers";
+import ArrowLeft from "@lucide/astro/icons/arrow-left";
+import Gavel from "@lucide/astro/icons/gavel";
+import Inbox from "@lucide/astro/icons/inbox";
+import NijePronadeno from "../../../components/NijePronadeno.astro";
+import Greska from "../../../components/prijava/Greska.astro";
+import OkvirModeracije from "../../../components/moderacija/OkvirModeracije.astro";
+import { ADMIN, CINJENICE_MAX, OSNOVE, ucitajPrijavu } from "../../../components/moderacija/ucitaj";
+import Polje from "../../../components/organizacija/Polje.astro";
+import Poruka from "../../../components/organizacija/Poruka.astro";
+import { GUMB, GUMB_RUB, KLASA_POLJA, datum, opisano, rub } from "../../../components/organizacija/ucitavanje";
+import { RADNJE } from "../../../lib/db/moderacija";
+import { url } from "../../../lib/rute";
+import type { RazlogPrijave } from "../../../lib/db/prijave";
+import { MODERACIJA, umetni, type VrstaCilja } from "../../../views/sadrzaj/moderacija";
+import { PRIJAVA } from "../../../views/sadrzaj/prijava-sadrzaja";
+
+const r = await ucitajPrijavu({ db: env.DB, url: Astro.url, request: Astro.request, korisnik: Astro.locals.korisnik ?? null }, Astro.params.id ?? "");
+if (r instanceof Response && r.status !== 404) return r;
+const podaci = r instanceof Response ? null : r.podaci;
+if (!podaci) Astro.response.status = 404;
+Astro.response.headers.set("Cache-Control", "private, no-store");
+const T = MODERACIJA.hr;
+const P = T.prijava;
+const p = podaci?.prijava;
+const g = podaci?.greska ?? null;
+const gOdluke = g?.obrazac === "odluka" ? g.polja : {};
+const v = g?.obrazac === "odluka" ? g.vrijednosti : { radnja: "", cinjenice: "", osnova: "", osnovaOpis: "" };
+const ovdje = p ? ADMIN.prijava(p.id) : "";
+const mozeOdluka = p ? p.status === "received" || p.status === "in_review" || p.status === "appealed" : false;
+const opca = g?.polja.opce ? T.greske[g.polja.opce] : null;
+const gR = gOdluke.radnja ? T.greske[gOdluke.radnja] : null;
+const gC = gOdluke.cinjenice ? T.greske[gOdluke.cinjenice] : null;
+const gO = gOdluke.osnova ? T.greske[gOdluke.osnova] : null;
+const gOO = gOdluke.osnovaOpis ? T.greske[gOdluke.osnovaOpis] : null;
+---
+{
+  podaci && p ? (
+    <OkvirModeracije naslov={`${P.naslov}: ${p.oznaka ?? p.ciljId}`} aktivna="prijave">
+      <a href={ADMIN.prijave} class="mt-4 inline-flex min-h-11 items-center gap-1.5 font-medium text-action underline underline-offset-2">
+        <ArrowLeft size={16} aria-hidden="true" />
+        {P.natrag}
+      </a>
+      {podaci.poruka && <Poruka poruka={T.poruke[podaci.poruka]} />}
+      {opca && <Greska poruka={opca} />}
+
+      <dl class="mt-4 grid gap-x-6 gap-y-2 rounded-md border border-line p-4 text-sm sm:grid-cols-[max-content_1fr]">
+        <dt class="text-ink-muted">{T.prijave.status}</dt>
+        <dd class="font-semibold text-ink">{T.statusPrijave[p.status]}</dd>
+        <dt class="text-ink-muted">{T.prijave.cilj}</dt>
+        <dd class="text-ink">{T.vrste[p.vrsta as VrstaCilja] ?? p.vrsta}: {p.oznaka ?? p.ciljId}</dd>
+        {p.kampanja && (
+          <>
+            <dt class="text-ink-muted">{P.kampanja}</dt>
+            <dd class="text-ink">
+              <a href={url("hr", "campaign", { id: p.kampanja.publicId })} class="text-action underline underline-offset-2">{p.kampanja.naslov}</a>
+              {p.kampanja.blokirana && <span class="ml-2 rounded-sm bg-danger-bg px-2 py-0.5 text-danger">{P.blokirana}</span>}
+            </dd>
+          </>
+        )}
+        <dt class="text-ink-muted">{T.prijave.razlog}</dt>
+        <dd class="text-ink">{PRIJAVA.hr.razlozi[p.razlog as RazlogPrijave] ?? p.razlog}</dd>
+        <dt class="text-ink-muted">{T.prijave.zaprimljena}</dt>
+        <dd class="text-ink">{datum(p.zaprimljena, "hr")}</dd>
+        <dt class="text-ink-muted">{P.prijavitelj}</dt>
+        <dd class="text-ink">{p.prijavitelj ?? "—"}</dd>
+        {p.telefon && (
+          <>
+            <dt class="text-ink-muted">{P.telefon}</dt>
+            <dd class="text-ink">{p.telefon}</dd>
+          </>
+        )}
+        {p.privitak && (
+          <>
+            <dt class="text-ink-muted">{P.privitak}</dt>
+            <dd class="text-ink">{P.da}</dd>
+          </>
+        )}
+        <dt class="text-ink-muted">{P.opis}</dt>
+        <dd class="whitespace-pre-line text-ink">{p.opis}</dd>
+      </dl>
+
+      {p.status === "received" && (
+        <form method="post" action={ovdje} class="mt-4 flex flex-wrap items-center gap-3">
+          <input type="hidden" name="obrazac" value="preuzmi" />
+          <button type="submit" class={GUMB_RUB}>
+            <Inbox size={18} aria-hidden="true" />
+            {P.preuzmi}
+          </button>
+          <span class="text-sm text-ink-muted">{P.preuzmiPomoc}</span>
+        </form>
+      )}
+
+      {mozeOdluka && (
+        <section aria-labelledby="odluka" class="mt-8">
+          <h2 id="odluka" class="text-lg font-semibold text-ink">{p.status === "appealed" ? P.odlukaZalba : P.odluka}</h2>
+          <p class="mt-1 text-sm text-ink-muted">{p.status === "appealed" ? P.zalbaUvod : P.odlukaUvod}</p>
+          <form method="post" action={ovdje} class="mt-4 space-y-5" novalidate>
+            <input type="hidden" name="obrazac" value="odluka" />
+            <Polje id="radnja" label={P.radnja} pomoc={P.radnjaPomoc} greska={gR}>
+              <select id="radnja" name="radnja" required aria-invalid={gR ? "true" : undefined} aria-describedby={opisano("radnja", true, gR)} class:list={[KLASA_POLJA, rub(gR)]}>
+                <option value="" selected={!v.radnja}>—</option>
+                {RADNJE.map((a) => <option value={a} selected={v.radnja === a}>{T.radnje[a]}</option>)}
+              </select>
+            </Polje>
+            <Polje id="cinjenice" label={P.cinjenice} pomoc={P.cinjenicePomoc} greska={gC}>
+              <textarea id="cinjenice" name="cinjenice" rows="4" required minlength="20" maxlength={CINJENICE_MAX} aria-invalid={gC ? "true" : undefined} aria-describedby={opisano("cinjenice", true, gC)} class:list={[KLASA_POLJA, rub(gC)]}>{v.cinjenice}</textarea>
+            </Polje>
+            <fieldset aria-describedby={gO ? "osnova-greska" : undefined}>
+              <legend class="font-semibold text-ink">{P.osnova}</legend>
+              <div class="mt-1.5 flex flex-wrap gap-x-6 gap-y-2">
+                {OSNOVE.map((o) => (
+                  <label class="inline-flex min-h-11 items-center gap-2 text-ink">
+                    <input type="radio" name="osnova" value={o} checked={v.osnova === o} required class="size-4 accent-action" />
+                    {T.osnove[o]}
+                  </label>
+                ))}
+              </div>
+              {gO && <p id="osnova-greska" class="mt-1 text-sm font-medium text-danger">{gO}</p>}
+            </fieldset>
+            <Polje id="osnovaOpis" label={P.osnovaOpis} pomoc={P.osnovaOpisPomoc} greska={gOO}>
+              <input id="osnovaOpis" name="osnovaOpis" type="text" required minlength="3" maxlength="200" value={v.osnovaOpis} aria-invalid={gOO ? "true" : undefined} aria-describedby={opisano("osnovaOpis", true, gOO)} class:list={[KLASA_POLJA, rub(gOO)]} />
+            </Polje>
+            <dl class="grid gap-x-6 gap-y-1 rounded-md bg-mist p-4 text-sm sm:grid-cols-[max-content_1fr]">
+              <dt class="text-ink-muted">{P.automatizirano}</dt>
+              <dd class="text-ink">{P.dijelovi.automatiziranoNe}</dd>
+              <dt class="text-ink-muted">{P.pravniLijek}</dt>
+              <dd class="text-ink">{P.pravniLijekTekst}</dd>
+            </dl>
+            <p class="text-xs text-ink-muted">{T.opce.obavijesti}</p>
+            <button type="submit" class={GUMB}>
+              <Gavel size={18} aria-hidden="true" />
+              {P.donesi}
+            </button>
+          </form>
+        </section>
+      )}
+
+      {p.status === "decided" && podaci.rokZalbe !== null && (
+        <section aria-labelledby="zalba" class="mt-8 rounded-md border border-line p-4">
+          <h2 id="zalba" class="font-semibold text-ink">{umetni(P.rokZalbe, { datum: datum(podaci.rokZalbe, "hr") })}</h2>
+          {podaci.mozeZalba && (
+            <form method="post" action={ovdje} class="mt-3">
+              <input type="hidden" name="obrazac" value="zalba" />
+              <button type="submit" class={GUMB_RUB}>{P.zabiljeziZalbu}</button>
+              <p class="mt-1.5 text-sm text-ink-muted">{P.zabiljeziZalbuPomoc}</p>
+            </form>
+          )}
+          {podaci.mozeZatvoriti && (
+            <form method="post" action={ovdje} class="mt-3">
+              <input type="hidden" name="obrazac" value="zatvori" />
+              <button type="submit" class={GUMB_RUB}>{P.zatvori}</button>
+              <p class="mt-1.5 text-sm text-ink-muted">{P.zatvoriPomoc}</p>
+            </form>
+          )}
+        </section>
+      )}
+      {p.status === "closed" && <p class="mt-8 rounded-md bg-mist px-4 py-3 text-sm text-ink-soft">{P.zatvorena}</p>}
+
+      <section aria-labelledby="odluke" class="mt-8">
+        <h2 id="odluke" class="text-lg font-semibold text-ink">{P.odluke}</h2>
+        {p.odluke.length === 0 ? (
+          <p class="mt-2 text-sm text-ink-muted">{P.nemaOdluka}</p>
+        ) : (
+          <ol class="mt-2 divide-y divide-line rounded-md border border-line text-sm">
+            {p.odluke.map((d) => (
+              <li class="p-4">
+                <p class="text-ink">
+                  <span class="font-semibold">{T.radnje[d.radnja]}</span>
+                  {d.zalba && <span class="ml-2 rounded-sm bg-mist px-2 py-0.5 text-ink-soft">{P.zalbaOznaka}</span>}
+                  <span class="text-ink-muted"> · {d.moderator} · {datum(d.kada, "hr")}</span>
+                </p>
+                <p class="mt-1 whitespace-pre-line text-ink-soft">{d.obrazlozenje}</p>
+              </li>
+            ))}
+          </ol>
+        )}
+      </section>
+    </OkvirModeracije>
+  ) : (
+    <NijePronadeno lang="hr" />
+  )
+}

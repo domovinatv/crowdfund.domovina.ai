@@ -1,0 +1,46 @@
+---
+// Okvir stranica moderacije `/admin/*` (S6, A): Base (hr, noindex), naslov, navigacija odjeljaka, napomena o
+// prototipu. Samo hrvatski (docs/07).
+import Ban from "@lucide/astro/icons/ban";
+import Building from "@lucide/astro/icons/building";
+import FileCheck from "@lucide/astro/icons/file-check";
+import Flag from "@lucide/astro/icons/flag";
+import Base from "../../layouts/Base.astro";
+import { MODERACIJA } from "../../views/sadrzaj/moderacija";
+import { ADMIN } from "./ucitaj";
+
+interface Props {
+  naslov: string;
+  uvod?: string | undefined;
+  aktivna: "prijave" | "organizacije" | "verifikacije" | "kampanje";
+}
+const { naslov, uvod, aktivna } = Astro.props;
+const T = MODERACIJA.hr;
+const veze = [
+  { k: "prijave", href: ADMIN.prijave, tekst: T.nav.prijave, Ikona: Flag },
+  { k: "organizacije", href: ADMIN.organizacije, tekst: T.nav.organizacije, Ikona: Building },
+  { k: "verifikacije", href: ADMIN.verifikacije, tekst: T.nav.verifikacije, Ikona: FileCheck },
+  { k: "kampanje", href: ADMIN.kampanje, tekst: T.nav.kampanje, Ikona: Ban },
+] as const;
+---
+<Base lang="hr" title={`${naslov} · ${T.naslov}`} noindex>
+  <p class="text-sm font-semibold tracking-wide text-ink-muted uppercase">{T.naslov}</p>
+  <h1 class="mt-1 text-2xl font-bold text-ink sm:text-3xl">{naslov}</h1>
+  <nav aria-label={T.naslov} class="mt-4 flex flex-wrap gap-1 border-b border-line">
+    {
+      veze.map(({ k, href, tekst, Ikona }) => (
+        <a
+          href={href}
+          aria-current={k === aktivna ? "page" : undefined}
+          class="-mb-px inline-flex min-h-11 items-center gap-2 border-b-2 border-transparent px-3 font-medium text-ink-soft hover:text-ink aria-[current=page]:border-action aria-[current=page]:text-action"
+        >
+          <Ikona size={16} aria-hidden="true" />
+          {tekst}
+        </a>
+      ))
+    }
+  </nav>
+  {uvod && <p class="mt-4 max-w-prose text-ink-soft">{uvod}</p>}
+  <p class="mt-2 text-xs text-ink-muted">{T.opce.prototip}</p>
+  <slot />
+</Base>

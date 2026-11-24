@@ -1,11 +1,13 @@
 ---
 // Zaglavlje (docs/08 §3.1). Mobilni izbornik je <details>, radi bez JS-a.
 // S6: prijavljenom (`Astro.locals.korisnik`) ime, „Moje kampanje” i odjava (POST obrazac); inače „Prijava”.
+// Moderatoru (`platformRole = moderator`) i „Moderacija” na `/admin/prijave`.
 import LogOut from "@lucide/astro/icons/log-out";
 import Menu from "@lucide/astro/icons/menu";
 import Plus from "@lucide/astro/icons/plus";
 import LanguageSwitcher from "./LanguageSwitcher.astro";
 import { prevoditelj, type Lang } from "../i18n";
+import { jeModerator } from "../lib/pristup";
 import { url } from "../lib/rute";
 
 interface Props {
@@ -19,6 +21,7 @@ const veze = [
 ];
 const put = Astro.url.pathname;
 const korisnik = Astro.locals.korisnik ?? null;
+const moderator = jeModerator(korisnik);
 ---
 <header class="border-b border-line bg-paper">
   <div class="mx-auto flex max-w-(--container-content) items-center gap-4 px-4 py-3 sm:px-6">
@@ -47,6 +50,7 @@ const korisnik = Astro.locals.korisnik ?? null;
         korisnik ? (
           <>
             <a href={url(lang, "my.campaigns")} class="rounded-md px-3 py-2 font-medium text-action hover:bg-action/10">{t("nav.myCampaigns")}</a>
+            {moderator && <a href="/admin/prijave" class="rounded-md px-3 py-2 font-medium text-action hover:bg-action/10">{t("nav.moderation")}</a>}
             <span class="max-w-40 truncate px-2 text-sm text-ink-soft" title={korisnik.email}>
               <span class="sr-only">{t("nav.signedInAs")} </span>{korisnik.ime}
             </span>
@@ -76,6 +80,7 @@ const korisnik = Astro.locals.korisnik ?? null;
             <>
               <p class="truncate px-3 pt-2 text-sm text-ink-muted">{t("nav.signedInAs")} <span class="font-medium text-ink">{korisnik.ime}</span></p>
               <a href={url(lang, "my.campaigns")} class="rounded-md px-3 py-3 font-medium text-action hover:bg-action/10">{t("nav.myCampaigns")}</a>
+              {moderator && <a href="/admin/prijave" class="rounded-md px-3 py-3 font-medium text-action hover:bg-action/10">{t("nav.moderation")}</a>}
               <form method="post" action={url(lang, "sign-out")}>
                 <button type="submit" class="flex w-full items-center gap-2 rounded-md px-3 py-3 text-left font-medium hover:bg-mist">
                   <LogOut size={16} aria-hidden="true" />{t("nav.signOut")}

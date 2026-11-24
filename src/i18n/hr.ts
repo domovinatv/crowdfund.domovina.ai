@@ -18,6 +18,7 @@ export const hr = {
   "nav.start": "Pokreni kampanju",
   "nav.signIn": "Prijava",
   "nav.myCampaigns": "Moje kampanje",
+  "nav.moderation": "Moderacija",
   "nav.signOut": "Odjava",
   "nav.account": "Račun",
   "nav.signedInAs": "Prijavljeni ste kao",

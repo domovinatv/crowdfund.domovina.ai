@@ -19,6 +19,8 @@ export const OBRAZLOZENJE_MAX = 2000;
 export const RAZLOG_MAX = 500;
 /** Rok za dokumente namjene nakon blokade (docs/05 „requested → expired: 14 dana”). */
 export const ROK_DOKUMENATA = 14 * DAN;
+/** Rok za žalbu od zadnje odluke (docs/05 „žalba u 14 dana”). */
+export const ROK_ZALBE = 14 * DAN;
 
 const promjena = (r: D1Result) => (r.meta as { changes?: number }).changes ?? 0;
 
@@ -157,9 +159,34 @@ export async function preuzmiPrijavu(db: D1Database, id: string, sad: number = D
   return promjena(await db.prepare("UPDATE reports SET status = 'in_review', updated_at = ? WHERE id = ? AND status = 'received'").bind(sad, id).run()) === 1;
 }
 
-/** Rok za žalbu je prošao: `decided → closed`. */
+/** Vrijeme zadnje odluke o prijavi (od njega teče rok za žalbu). */
+const ZADNJA_ODLUKA = "(SELECT max(d.decided_at) FROM moderation_decisions d WHERE d.report_id = reports.id)";
+
+/** Rok za žalbu je prošao: `decided → closed` (tek nakon `ROK_ZALBE` od zadnje odluke). */
 export async function zatvoriPrijavu(db: D1Database, id: string, sad: number = Date.now()): Promise<boolean> {
-  return promjena(await db.prepare("UPDATE reports SET status = 'closed', updated_at = ? WHERE id = ? AND status = 'decided'").bind(sad, id).run()) === 1;
+  return (
+    promjena(
+      await db
+        .prepare(`UPDATE reports SET status = 'closed', updated_at = ? WHERE id = ? AND status = 'decided' AND ${ZADNJA_ODLUKA} <= ?`)
+        .bind(sad, id, sad - ROK_ZALBE)
+        .run(),
+    ) === 1
+  );
+}
+
+/**
+ * Žalba na odluku: `decided → appealed`, samo unutar `ROK_ZALBE` od zadnje odluke. Organizatorov obrazac žalbe
+ * (docs/04 tok 8, `POST /odluke/:id/zalba`) još nema rutu, pa je u prototipu moderator bilježi (primljena e-poštom).
+ */
+export async function zabiljeziZalbu(db: D1Database, id: string, sad: number = Date.now()): Promise<boolean> {
+  return (
+    promjena(
+      await db
+        .prepare(`UPDATE reports SET status = 'appealed', updated_at = ? WHERE id = ? AND status = 'decided' AND ${ZADNJA_ODLUKA} > ?`)
+        .bind(sad, id, sad - ROK_ZALBE)
+        .run(),
+    ) === 1
+  );
 }
 
 export type GreskaOdluke = "nema" | "stanje" | "radnja" | "radnja_cilj" | "obrazlozenje_kratko" | "obrazlozenje_dugo";

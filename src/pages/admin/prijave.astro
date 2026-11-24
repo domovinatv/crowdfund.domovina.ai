@@ -1,0 +1,65 @@
+---
+// Red prijava `/admin/prijave` (A, admin.reports, docs/04 tok 8, DSA čl. 16): otvorene prve, najstarija prva,
+// filtar po statusu (GET, radi bez JS-a). Logika: src/components/moderacija/ucitaj.ts.
+import { env } from "cloudflare:workers";
+import NijePronadeno from "../../components/NijePronadeno.astro";
+import OkvirModeracije from "../../components/moderacija/OkvirModeracije.astro";
+import { ADMIN, ucitajPrijave } from "../../components/moderacija/ucitaj";
+import { KLASA_POLJA, GUMB_RUB, datum } from "../../components/organizacija/ucitavanje";
+import { STATUSI_PRIJAVE } from "../../lib/db/moderacija";
+import type { RazlogPrijave } from "../../lib/db/prijave";
+import { MODERACIJA, type VrstaCilja } from "../../views/sadrzaj/moderacija";
+import { PRIJAVA } from "../../views/sadrzaj/prijava-sadrzaja";
+
+const r = await ucitajPrijave({ db: env.DB, url: Astro.url, request: Astro.request, korisnik: Astro.locals.korisnik ?? null });
+if (r instanceof Response && r.status !== 404) return r;
+const podaci = r instanceof Response ? null : r.podaci;
+if (!podaci) Astro.response.status = 404;
+Astro.response.headers.set("Cache-Control", "private, no-store");
+const T = MODERACIJA.hr;
+const otvorena = (s: string) => s === "received" || s === "appealed" || s === "in_review";
+---
+{
+  podaci ? (
+    <OkvirModeracije naslov={T.prijave.naslov} uvod={T.prijave.uvod} aktivna="prijave">
+      <form method="get" action={ADMIN.prijave} class="mt-6 flex flex-wrap items-end gap-3">
+        <div>
+          <label for="status" class="font-semibold text-ink">{T.prijave.filtar}</label>
+          <select id="status" name="status" class={KLASA_POLJA + " border-ink-muted/60"}>
+            <option value="" selected={!podaci.status}>{T.prijave.sve}</option>
+            {STATUSI_PRIJAVE.map((s) => <option value={s} selected={podaci.status === s}>{T.statusPrijave[s]}</option>)}
+          </select>
+        </div>
+        <button type="submit" class={GUMB_RUB}>{T.prijave.filtriraj}</button>
+      </form>
+
+      {podaci.stavke.length === 0 ? (
+        <p class="mt-6 rounded-md bg-mist px-4 py-6 text-sm text-ink-muted">{T.prijave.nema}</p>
+      ) : (
+        <ul class="mt-6 divide-y divide-line rounded-md border border-line">
+          {podaci.stavke.map((p) => (
+            <li class="flex flex-wrap items-center gap-x-4 gap-y-1 p-4">
+              <div class="min-w-0 flex-1">
+                <p class="text-ink">
+                  <span class="text-sm text-ink-muted">{T.vrste[p.vrsta as VrstaCilja] ?? p.vrsta}:</span>{" "}
+                  <span class="font-medium">{p.oznaka ?? p.ciljId}</span>
+                </p>
+                <p class="text-sm text-ink-muted">
+                  {PRIJAVA.hr.razlozi[p.razlog as RazlogPrijave] ?? p.razlog} · {T.prijave.zaprimljena} {datum(p.zaprimljena, "hr")}
+                </p>
+              </div>
+              <span class:list={["rounded-sm px-2 py-0.5 text-sm font-medium", otvorena(p.status) ? "bg-warning-bg text-warning" : "bg-mist text-ink-soft"]}>
+                {T.statusPrijave[p.status]}
+              </span>
+              <a href={ADMIN.prijava(p.id)} class="inline-flex min-h-11 items-center font-medium text-action underline underline-offset-2">
+                {T.prijave.otvori}<span class="sr-only">: {p.oznaka ?? p.ciljId}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+    </OkvirModeracije>
+  ) : (
+    <NijePronadeno lang="hr" />
+  )
+}

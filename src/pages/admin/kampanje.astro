@@ -1,0 +1,104 @@
+---
+// Kampanje `/admin/kampanje` (A, admin.campaigns, odluke 204 i 645): blokirane prve, pa s otvorenim prijavama;
+// traženje po naslovu ili ID-u (GET `q`). Blokada i deblokada po službenoj dužnosti s razlogom (≥ 20 znakova),
+// svaka piše `moderation_decisions`; blokada otvara zahtjev za dokumente namjene (14 dana). POST → 303.
+import { env } from "cloudflare:workers";
+import Ban from "@lucide/astro/icons/ban";
+import LockOpen from "@lucide/astro/icons/lock-open";
+import Search from "@lucide/astro/icons/search";
+import NijePronadeno from "../../components/NijePronadeno.astro";
+import Greska from "../../components/prijava/Greska.astro";
+import OkvirModeracije from "../../components/moderacija/OkvirModeracije.astro";
+import { ADMIN, ucitajKampanje } from "../../components/moderacija/ucitaj";
+import Polje from "../../components/organizacija/Polje.astro";
+import Poruka from "../../components/organizacija/Poruka.astro";
+import { GUMB_OPASNO, GUMB_RUB, KLASA_POLJA, datum, opisano, rub } from "../../components/organizacija/ucitavanje";
+import { url } from "../../lib/rute";
+import { MODERACIJA, umetni } from "../../views/sadrzaj/moderacija";
+import { ORGANIZACIJA } from "../../views/sadrzaj/organizacija";
+
+const r = await ucitajKampanje({ db: env.DB, url: Astro.url, request: Astro.request, korisnik: Astro.locals.korisnik ?? null });
+if (r instanceof Response && r.status !== 404) return r;
+const podaci = r instanceof Response ? null : r.podaci;
+if (!podaci) Astro.response.status = 404;
+Astro.response.headers.set("Cache-Control", "private, no-store");
+const T = MODERACIJA.hr;
+const K = T.kampanje;
+const SK = ORGANIZACIJA.hr.stanjeKampanje;
+const g = podaci?.greska ?? null;
+const nepoznata = g && podaci && !podaci.kampanje.some((k) => k.id === g.id) ? T.greske[g.greska] : null;
+const akcija = podaci?.q ? `${ADMIN.kampanje}?q=${encodeURIComponent(podaci.q)}` : ADMIN.kampanje;
+const stanje = (s: string) => (s in SK ? SK[s as keyof typeof SK] : s);
+---
+{
+  podaci ? (
+    <OkvirModeracije naslov={K.naslov} uvod={K.uvod} aktivna="kampanje">
+      {podaci.poruka && <Poruka poruka={T.poruke[podaci.poruka]} />}
+      {nepoznata && <Greska poruka={nepoznata} />}
+      <form method="get" action={ADMIN.kampanje} role="search" class="mt-6 flex flex-wrap items-end gap-3">
+        <div class="min-w-60 flex-1">
+          <label for="q" class="font-semibold text-ink">{K.trazi}</label>
+          <input id="q" name="q" type="search" value={podaci.q} maxlength="100" class={KLASA_POLJA + " border-ink-muted/60"} />
+        </div>
+        <button type="submit" class={GUMB_RUB}>
+          <Search size={18} aria-hidden="true" />
+          {K.traziGumb}
+        </button>
+      </form>
+      {podaci.kampanje.length === 0 ? (
+        <p class="mt-6 rounded-md bg-mist px-4 py-6 text-sm text-ink-muted">{K.nema}</p>
+      ) : (
+        <ul class="mt-6 space-y-4">
+          {podaci.kampanje.map((k) => {
+            const ge = g && g.id === k.id ? g : null;
+            const gRazlog = ge && ge.greska === "razlog_kratko" ? T.greske.razlog_kratko : null;
+            const id = `razlog-${k.publicId}`;
+            const blokirana = k.blokirana !== null;
+            return (
+              <li class:list={["rounded-md border p-4", blokirana ? "border-danger/40" : "border-line"]}>
+                <h2 class="text-lg font-semibold text-ink">
+                  <a href={url("hr", "campaign", { id: k.publicId })} class="hover:underline">{k.naslov}</a>
+                  <span class="ml-2 text-sm font-normal text-ink-muted">{k.publicId}</span>
+                </h2>
+                <p class="mt-1 text-sm text-ink-soft">
+                  {k.organizacija} · {K.stanje}: {stanje(k.state)}
+                  {k.prijava > 0 && <span class="text-warning"> · {umetni(K.prijava, { n: k.prijava })}</span>}
+                </p>
+                {blokirana && (
+                  <p class="mt-2 text-sm text-danger">
+                    <span class="font-semibold">{umetni(K.blokirana, { datum: datum(k.blokirana!, "hr") })}</span>
+                    {k.razlogBlokade && <span>: {k.razlogBlokade}</span>}
+                  </p>
+                )}
+                {ge && !gRazlog && <Greska poruka={T.greske[ge.greska]} />}
+                <details class="mt-3" open={ge ? true : undefined}>
+                  <summary class="inline-flex min-h-11 cursor-pointer items-center font-medium text-action">{blokirana ? K.deblokiraj : K.blokiraj}…</summary>
+                  <form method="post" action={akcija} class="mt-2 space-y-2" novalidate>
+                    <input type="hidden" name="campaignId" value={k.id} />
+                    <input type="hidden" name="odluka" value={blokirana ? "deblokiraj" : "blokiraj"} />
+                    <Polje id={id} label={blokirana ? T.opce.razlog : K.razlogBlokade} pomoc={T.opce.razlogPomoc} greska={gRazlog}>
+                      <textarea id={id} name="razlog" rows="2" required minlength="20" maxlength="2000" aria-invalid={gRazlog ? "true" : undefined} aria-describedby={opisano(id, true, gRazlog)} class:list={[KLASA_POLJA, rub(gRazlog)]}>{ge ? ge.razlog : ""}</textarea>
+                    </Polje>
+                    {blokirana ? (
+                      <button type="submit" class={GUMB_RUB}>
+                        <LockOpen size={18} aria-hidden="true" />
+                        {K.deblokiraj}
+                      </button>
+                    ) : (
+                      <button type="submit" class={GUMB_OPASNO}>
+                        <Ban size={18} aria-hidden="true" />
+                        {K.blokiraj}
+                      </button>
+                    )}
+                  </form>
+                </details>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </OkvirModeracije>
+  ) : (
+    <NijePronadeno lang="hr" />
+  )
+}

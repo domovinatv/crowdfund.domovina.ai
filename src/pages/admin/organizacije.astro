@@ -1,0 +1,113 @@
+---
+// Zahtjevi organizacija i KYB `/admin/organizacije` (A, admin.organisations, docs/04 tok 2, docs/05 „Verifikacija”):
+// popis zahtjeva (otvoreni KYB prvi) i simulirana odluka pružatelja platnih usluga. POST `orgId`,
+// `odluka=odobri|odbij`, `razlog` (obavezan uz odbijanje) → 303. Odobrenje: organizacija `active`.
+import { env } from "cloudflare:workers";
+import Check from "@lucide/astro/icons/check";
+import X from "@lucide/astro/icons/x";
+import NijePronadeno from "../../components/NijePronadeno.astro";
+import Greska from "../../components/prijava/Greska.astro";
+import OkvirModeracije from "../../components/moderacija/OkvirModeracije.astro";
+import { ADMIN, ucitajOrganizacije } from "../../components/moderacija/ucitaj";
+import Polje from "../../components/organizacija/Polje.astro";
+import Poruka from "../../components/organizacija/Poruka.astro";
+import { GUMB, GUMB_OPASNO, KLASA_POLJA, datum, opisano, rub } from "../../components/organizacija/ucitavanje";
+import { url } from "../../lib/rute";
+import { MODERACIJA, umetni } from "../../views/sadrzaj/moderacija";
+import { ORGANIZACIJA } from "../../views/sadrzaj/organizacija";
+
+const r = await ucitajOrganizacije({ db: env.DB, url: Astro.url, request: Astro.request, korisnik: Astro.locals.korisnik ?? null });
+if (r instanceof Response && r.status !== 404) return r;
+const podaci = r instanceof Response ? null : r.podaci;
+if (!podaci) Astro.response.status = 404;
+Astro.response.headers.set("Cache-Control", "private, no-store");
+const T = MODERACIJA.hr;
+const O = T.organizacije;
+const OR = ORGANIZACIJA.hr;
+const g = podaci?.greska ?? null;
+const nepoznata = g && podaci && !podaci.zahtjevi.some((z) => z.orgId === g.id) ? T.greske[g.greska] : null;
+const otvoren = (s: string | undefined) => s === "submitted" || s === "in_review";
+const naziv = <K extends string>(m: Record<K, string>, k: string) => (k in m ? m[k as K] : k);
+---
+{
+  podaci ? (
+    <OkvirModeracije naslov={O.naslov} uvod={O.uvod} aktivna="organizacije">
+      {podaci.poruka && <Poruka poruka={T.poruke[podaci.poruka]} />}
+      {nepoznata && <Greska poruka={nepoznata} />}
+      {podaci.zahtjevi.length === 0 ? (
+        <p class="mt-6 rounded-md bg-mist px-4 py-6 text-sm text-ink-muted">{O.nema}</p>
+      ) : (
+        <ul class="mt-6 space-y-4">
+          {podaci.zahtjevi.map((z) => {
+            const ge = g && g.id === z.orgId ? g : null;
+            const gRazlog = ge && ge.greska === "razlog" ? T.greske.razlog : null;
+            const id = `razlog-${z.slug}`;
+            return (
+              <li class="rounded-md border border-line p-4">
+                <h2 class="text-lg font-semibold text-ink">
+                  <a href={url("hr", "org", { slug: z.slug })} class="hover:underline">{z.naziv}</a>
+                </h2>
+                <dl class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                  <div class="flex gap-1"><dt class="text-ink-muted">{O.oblik}:</dt><dd class="text-ink">{naziv(OR.oblici, z.pravniOblik)}</dd></div>
+                  <div class="flex gap-1"><dt class="text-ink-muted">{O.oib}:</dt><dd class="text-ink">{z.oib ?? "—"}</dd></div>
+                  <div class="flex gap-1"><dt class="text-ink-muted">{O.status}:</dt><dd class="font-medium text-ink">{naziv(OR.statusOrganizacije, z.status)}</dd></div>
+                </dl>
+                {z.zahtjev && (
+                  <div class="mt-3 text-sm">
+                    <p class="text-ink">
+                      <span class="text-ink-muted">{O.zahtjev}:</span> {naziv(OR.statusZahtjeva, z.zahtjev.status)} ({umetni(O.korak, { n: z.zahtjev.korak })}) · {datum(z.zahtjev.poslan, "hr")}
+                      {z.zahtjev.podnositelj && <span> · {O.podnositelj}: {z.zahtjev.podnositelj}</span>}
+                    </p>
+                    {z.zahtjev.ocekivaneUplate && <p class="text-ink-soft">{O.uplate}: {naziv(OR.uplate, z.zahtjev.ocekivaneUplate)}</p>}
+                    {z.zahtjev.opisProjekta && <p class="mt-1 whitespace-pre-line text-ink-soft">{z.zahtjev.opisProjekta}</p>}
+                    {z.zahtjev.razlog && <p class="mt-1 text-danger">{T.opce.razlog}: {z.zahtjev.razlog}</p>}
+                  </div>
+                )}
+                <p class="mt-3 text-sm text-ink">
+                  <span class="text-ink-muted">{O.kyb}:</span>{" "}
+                  {z.kyb ? (
+                    <>
+                      <span class="font-medium">{naziv(OR.statusVerifikacije, z.kyb.status)}</span> · {O.pruzatelj} {z.kyb.pruzatelj} · {T.opce.zatrazeno} {datum(z.kyb.zatrazeno, "hr")}
+                      {z.kyb.razlog && <span class="text-danger"> · {z.kyb.razlog}</span>}
+                    </>
+                  ) : (
+                    O.nemaKyb
+                  )}
+                </p>
+                {ge && !gRazlog && <Greska poruka={T.greske[ge.greska]} />}
+                {otvoren(z.kyb?.status) && (
+                  <div class="mt-4 rounded-md bg-mist p-4">
+                    <h3 class="font-semibold text-ink">{O.simulacija}</h3>
+                    <div class="mt-3 grid gap-4 sm:grid-cols-[auto_1fr] sm:items-start">
+                      <form method="post" action={ADMIN.organizacije}>
+                        <input type="hidden" name="orgId" value={z.orgId} />
+                        <input type="hidden" name="odluka" value="odobri" />
+                        <button type="submit" class={GUMB}>
+                          <Check size={18} aria-hidden="true" />
+                          {O.odobriKyb}
+                        </button>
+                      </form>
+                      <form method="post" action={ADMIN.organizacije} class="space-y-2" novalidate>
+                        <input type="hidden" name="orgId" value={z.orgId} />
+                        <input type="hidden" name="odluka" value="odbij" />
+                        <Polje id={id} label={T.opce.razlog} greska={gRazlog}>
+                          <textarea id={id} name="razlog" rows="2" required maxlength="500" aria-invalid={gRazlog ? "true" : undefined} aria-describedby={opisano(id, false, gRazlog)} class:list={[KLASA_POLJA, rub(gRazlog)]}>{ge ? ge.razlog : ""}</textarea>
+                        </Polje>
+                        <button type="submit" class={GUMB_OPASNO}>
+                          <X size={18} aria-hidden="true" />
+                          {O.odbijKyb}
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </OkvirModeracije>
+  ) : (
+    <NijePronadeno lang="hr" />
+  )
+}

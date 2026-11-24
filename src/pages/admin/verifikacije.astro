@@ -1,0 +1,95 @@
+---
+// Verifikacije namjene `/admin/verifikacije` (A, admin.verifications, odluka 18, docs/05 „Verifikacija”): otvorene
+// prve. Odluka samo kad su dokumenti poslani (`submitted`, `in_review`). Odobri: `purpose_verified`; odbij (razlog
+// ≥ 20 znakova): blokada kampanje + odluka moderacije s istim obrazloženjem. POST `id`, `odluka`, `razlog` → 303.
+import { env } from "cloudflare:workers";
+import Check from "@lucide/astro/icons/check";
+import X from "@lucide/astro/icons/x";
+import NijePronadeno from "../../components/NijePronadeno.astro";
+import Greska from "../../components/prijava/Greska.astro";
+import OkvirModeracije from "../../components/moderacija/OkvirModeracije.astro";
+import { ADMIN, ucitajVerifikacije } from "../../components/moderacija/ucitaj";
+import Polje from "../../components/organizacija/Polje.astro";
+import Poruka from "../../components/organizacija/Poruka.astro";
+import { GUMB, GUMB_OPASNO, KLASA_POLJA, datum, iznos, opisano, rub } from "../../components/organizacija/ucitavanje";
+import { url } from "../../lib/rute";
+import { MODERACIJA } from "../../views/sadrzaj/moderacija";
+import { ORGANIZACIJA } from "../../views/sadrzaj/organizacija";
+
+const r = await ucitajVerifikacije({ db: env.DB, url: Astro.url, request: Astro.request, korisnik: Astro.locals.korisnik ?? null });
+if (r instanceof Response && r.status !== 404) return r;
+const podaci = r instanceof Response ? null : r.podaci;
+if (!podaci) Astro.response.status = 404;
+Astro.response.headers.set("Cache-Control", "private, no-store");
+const T = MODERACIJA.hr;
+const V = T.verifikacije;
+const SV = ORGANIZACIJA.hr.statusVerifikacije;
+const g = podaci?.greska ?? null;
+const nepoznata = g && podaci && !podaci.verifikacije.some((x) => x.id === g.id) ? T.greske[g.greska] : null;
+const status = (s: string) => (s in SV ? SV[s as keyof typeof SV] : s);
+---
+{
+  podaci ? (
+    <OkvirModeracije naslov={V.naslov} uvod={V.uvod} aktivna="verifikacije">
+      {podaci.poruka && <Poruka poruka={T.poruke[podaci.poruka]} />}
+      {nepoznata && <Greska poruka={nepoznata} />}
+      {podaci.verifikacije.length === 0 ? (
+        <p class="mt-6 rounded-md bg-mist px-4 py-6 text-sm text-ink-muted">{V.nema}</p>
+      ) : (
+        <ul class="mt-6 space-y-4">
+          {podaci.verifikacije.map((x) => {
+            const ge = g && g.id === x.id ? g : null;
+            const gRazlog = ge && ge.greska === "razlog_kratko" ? T.greske.razlog_kratko : null;
+            const id = `razlog-${x.id}`;
+            const odluciva = x.status === "submitted" || x.status === "in_review";
+            return (
+              <li class="rounded-md border border-line p-4">
+                <h2 class="text-lg font-semibold text-ink">
+                  <a href={url("hr", "campaign", { id: x.kampanja.publicId })} class="hover:underline">{x.kampanja.naslov}</a>
+                  {x.kampanja.blokirana && <span class="ml-2 rounded-sm bg-danger-bg px-2 py-0.5 align-middle text-sm font-medium text-danger">{T.prijava.blokirana}</span>}
+                </h2>
+                <dl class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                  <div class="flex gap-1"><dt class="text-ink-muted">{V.organizacija}:</dt><dd class="text-ink">{x.kampanja.organizacija}</dd></div>
+                  <div class="flex gap-1"><dt class="text-ink-muted">{V.prikupljeno}:</dt><dd class="text-ink">{iznos(x.kampanja.prikupljenoCenti, "hr")}</dd></div>
+                  <div class="flex gap-1"><dt class="text-ink-muted">{V.povod}:</dt><dd class="text-ink">{x.povod ? (V.povodi[x.povod] ?? x.povod) : "—"}</dd></div>
+                  <div class="flex gap-1"><dt class="text-ink-muted">{T.prijave.status}:</dt><dd class="font-medium text-ink">{status(x.status)}</dd></div>
+                  <div class="flex gap-1"><dt class="text-ink-muted">{T.opce.zatrazeno}:</dt><dd class="text-ink">{datum(x.zatrazeno, "hr")}</dd></div>
+                  {x.rok !== null && !x.odluceno && <div class="flex gap-1"><dt class="text-ink-muted">{T.opce.rok}:</dt><dd class="text-ink">{datum(x.rok, "hr")}</dd></div>}
+                  {x.odluceno !== null && <div class="flex gap-1"><dt class="text-ink-muted">{T.opce.odluceno}:</dt><dd class="text-ink">{datum(x.odluceno, "hr")}</dd></div>}
+                </dl>
+                {x.razlog && <p class="mt-2 text-sm text-danger">{T.opce.razlog}: {x.razlog}</p>}
+                {x.status === "requested" && <p class="mt-2 text-sm text-ink-muted">{V.ceka}</p>}
+                {ge && !gRazlog && <Greska poruka={T.greske[ge.greska]} />}
+                {odluciva && (
+                  <div class="mt-3 grid gap-4 sm:grid-cols-[auto_1fr] sm:items-start">
+                    <form method="post" action={ADMIN.verifikacije}>
+                      <input type="hidden" name="id" value={x.id} />
+                      <input type="hidden" name="odluka" value="odobri" />
+                      <button type="submit" class={GUMB}>
+                        <Check size={18} aria-hidden="true" />
+                        {T.opce.odobri}
+                      </button>
+                    </form>
+                    <form method="post" action={ADMIN.verifikacije} class="space-y-2" novalidate>
+                      <input type="hidden" name="id" value={x.id} />
+                      <input type="hidden" name="odluka" value="odbij" />
+                      <Polje id={id} label={T.opce.razlog} pomoc={V.odbijPomoc} greska={gRazlog}>
+                        <textarea id={id} name="razlog" rows="2" required minlength="20" maxlength="500" aria-invalid={gRazlog ? "true" : undefined} aria-describedby={opisano(id, true, gRazlog)} class:list={[KLASA_POLJA, rub(gRazlog)]}>{ge ? ge.razlog : ""}</textarea>
+                      </Polje>
+                      <button type="submit" class={GUMB_OPASNO}>
+                        <X size={18} aria-hidden="true" />
+                        {T.opce.odbij}
+                      </button>
+                    </form>
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </OkvirModeracije>
+  ) : (
+    <NijePronadeno lang="hr" />
+  )
+}
