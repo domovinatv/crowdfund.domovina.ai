@@ -63,3 +63,21 @@ koja se na nju poziva. Blokovi brojeva po sesiji: S1 od 100, S1b od 150, S2 od 2
      Na obrascu s popunjenim obaveznim poljima se ne klikće. (potvrditi)
 105. **Popis polja bez vrijednosti:** JS izvlači `name`, `type`, `maxlength`, `required` i labelu, a za
      vrijednost samo „FILLED/empty”. Tablica prijava i donacije drugih ljudi se ne prepisuju.
+
+## S1b — 24. 11. 2026.
+
+150. **Organizacije s članovima i ulogama, kao GitHub.** Jedna osoba može biti član više organizacija, s ulogom
+     po organizaciji, bez dijeljene prijave. 4fund to nema: organizacija je zaseban račun s vlastitom e-poštom,
+     privatni račun se ne može pretvoriti, a više ljudi radi samo kroz punomoć/dijeljeni login ili kao vanjski
+     organizatori prema Fixed Beneficiaryju. *Razlog:* korisnikova odluka (odgovor „d” na vrata S1b).
+     *Ulaz za S2:* entiteti `organizations`, `memberships(user, org, role)`, kampanja pripada organizaciji ili osobi.
+151. **MPT kampanja se ne objavljuje s osobnog 4fund računa.** Nacrt ostaje; korisnik sam otvara račun pravne
+     osobe (ITalk d.o.o.), a kampanja ide kao „fundraiser for organisation” kroz Fixed Beneficiary. Iznimka od
+     odluke 4 vrijedi samo za tu jednu kampanju i samo uz potvrdu prije svakog „Submit/Publish”.
+152. **Odluka 102 je ispravljena:** nacrt čarobnjaka nije u računu nego u `localStorage` preglednika
+     (`sbs-fundraiserState`) i prelazi na sljedeći prijavljeni račun ([25](research/obilazak/25-anonimni.md)).
+     Kod nas: nacrt lokalno do prijave, pa na poslužitelj, uz jasnu oznaku izvora.
+153. **Neprijavljeni donator** na 4fundu: e-pošta obavezna, ime neobavezno, „kao tvrtka” = samo naziv, obavezan
+     prihvat uvjeta. Prijavljenom se „kao tvrtka” ne nudi. Preuzimamo tok, dodajemo neobavezan OIB (faza 2). (potvrditi)
+154. **Klik na izbornik „Start anew”** u čarobnjaku je dopušten kad nacrt sadrži samo izmišljene podatke iz S1
+     (obrisan je testni nacrt prije MPT nacrta). (potvrditi)

@@ -35,11 +35,19 @@ Povlačenje klizača na 0 % radi bez modala i bez dodatnog pitanja; oznaka iznad
 uz „Support for the 4fund.com team” pojavi link **„(change)”**. Zadano je ipak 20 %, pa je 0 aktivna radnja
 (UOKiK slučaj, odluka 7).
 
-## „Donate as a company”
+## „Donate as a company” i neprijavljeni donator
 
-Na 4fundu **nije prikazano**. U konfiguraciji portala u HTML-u stranice stoji
-`features.user.invoices.allowed_for_companies: false` i `user.type.organization: false`
-(dohvat bez kolačića). To je funkcija Zrzutke.pl koja je na 4fundu isključena; polja (naziv, porezni broj) nisu viđena.
+**Prijavljenom korisniku se ne prikazuje** (E-mail i Donor su popunjeni iz računa). U konfiguraciji portala stoji
+`features.user.invoices.allowed_for_companies: false`, dakle tvrtka ne dobiva račun.
+
+**Neprijavljenom** (dio C, nakon odjave) sažetak ima:
+
+| polje | tip | obavezno | napomena |
+|---|---|---|---|
+| E-mail | email | **da** | – |
+| First name (Optional), Last name (Optional) | text | ne | zamjenjuju se kad je uključeno „kao tvrtka” |
+| Donate as a company | checkbox | – | uključeno: umjesto imena i prezimena **samo „Company name (Optional)”**, bez poreznog broja i adrese |
+| Accept Terms and Conditions of 4fund.com [1], Privacy Policy [2] | checkbox | **da** | samo neprijavljenom; prijavljeni je prihvatio pri registraciji |
 
 ## „Donated by me” i potvrda
 
@@ -50,4 +58,5 @@ Kartica doniranog i njen „More” su u [08](08-moje-kampanje.md). PDF potvrda 
 Polja preuzimamo polje po polje (odluka 6): valuta samo EUR, iznosi po kampanji, poruka 300 znakova, dvije
 oznake skrivanja, odvojen marketinški pristanak. Plaćanje je jedan način (MPT intent: QR, IBAN, referenca), a
 napojnica zaseban intent sa **zadanih 0** ili s ravnopravnim izborom bez zadanog (odluka 7). „Kao tvrtka”
-radimo kao polje za R1 podatke (naziv, OIB) jer HR udruge to traže za knjiženje, s oznakom „faza 2”.
+je kod njih samo naziv tvrtke na popisu; mi dodajemo OIB kao neobavezno polje za potvrdu o doprinosu (faza 2).
+Neprijavljeni donator: e-pošta obavezna, ime neobavezno, prihvat uvjeta obavezan.
