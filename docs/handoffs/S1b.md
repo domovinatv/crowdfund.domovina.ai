@@ -36,7 +36,7 @@ Pročitaj prvo: docs/handoffs/README.md (lanac i pravila), docs/plan.md, docs/de
 
 # S1b: prijavljeni obilazak 4fund.com, dio B
 
-Polazni commit: COMMIT. Odluke od **150**. Ista pravila obilaska kao S1 (odluka 4),
+Polazni commit: 2312e75. Odluke od **150**. Ista pravila obilaska kao S1 (odluka 4),
 korisnik mora biti prijavljen.
 
 Paket (grupe iz §12):
