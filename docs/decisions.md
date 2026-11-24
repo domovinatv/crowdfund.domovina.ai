@@ -81,3 +81,47 @@ koja se na nju poziva. Blokovi brojeva po sesiji: S1 od 100, S1b od 150, S2 od 2
      prihvat uvjeta. Prijavljenom se „kao tvrtka” ne nudi. Preuzimamo tok, dodajemo neobavezan OIB (faza 2). (potvrditi)
 154. **Klik na izbornik „Start anew”** u čarobnjaku je dopušten kad nacrt sadrži samo izmišljene podatke iz S1
      (obrisan je testni nacrt prije MPT nacrta). (potvrditi)
+
+## S2 — 24. 11. 2026.
+
+200. **campaign-core v0.2.0 se koristi bez izmjene** kao izvor 15 tablica jezgre; vertikale se ne stvaraju.
+     J2 (migracije) u campaign-coreu ne postoji, pa S4 generira `0001_core.sql` iz `contract.ts` paketa i
+     testom ga drži jednakim opisu. *Revizija:* campaign-core objavi J2.
+201. **Kampanja pripada organizatoru jezgre, a organizator je 1:1 s platformskom organizacijom** (javni profil,
+     članovi). Osobna kampanja (faza 2) je organizacija `kind = personal` s jednim članom i `holder_type = person`.
+     *Razlog:* jezgra ostaje bez korisnika (energy docs/19 D5), a odluka 150 se drži na platformi.
+202. **Uloge u organizaciji:** `owner` (članovi, KYB, brisanje), `admin` (objava, odobravanje tuđih kampanja),
+     `editor` (kampanje, ažuriranja, komentari), `viewer` (financije, izvoz). Barem jedan `owner`. (potvrditi)
+203. **Jedan MPT tenant platforme**, sve kampanje na njemu; Safe kampanje je Safe organizacije s 0 platformskih
+     potpisnika (`mode = byo`, `platform_signer_count = 0`, `rails = platform`). Bankovni račun organizatora kao
+     odredište (Swan) je faza 2. (potvrditi)
+204. **4fund „Disabled” i blokada moderacije su preklopi** (`campaign_settings.paused_at`, `blocked_at`), ne nova
+     stanja jezgre. Cilj ne zatvara kampanju, `funded` se u fazi 1 ne koristi, nakon roka kampanja ostaje `active`
+     (kao 4fund). `closed` je samo ručno zatvaranje organizatora.
+205. **Platformske tablice smiju imati `DEFAULT`** (jezgra nema nijedan); vrijeme unix ms, novac centi kao jezgra.
+206. **Preslikavanje intenta na doprinos:** `open`/`underpaid` → `pending`, `paid` → `paid`, `late` → `paid`,
+     `underpaid_expired` → `paid` + `underpaid = 1` (novac je na Safeu), `expired` → `expired`, `payment.rejected`
+     → `failed`; `refunded` samo iz platformskog povrata. Logičko stanje intenta doslovno u `checkouts.intent_state`.
+     (potvrditi)
+207. **Napojnica u fiksnim iznosima** (0, 1, 2, 5 € ili svoj), ne postotak; ništa nije unaprijed odabrano osim
+     ako korisnik ne klikne, „0” jednako istaknut; drugi intent na Safe platforme, drugi QR kao zaseban korak.
+     *Razlog:* postotak s klizačem je mehanizam iz UOKiK slučaja (odluka 7). (potvrditi)
+208. **Bez lozinke:** prijava magic linkom ili kodom e-poštom; ekran 13 (lozinka) postaje „načini prijave”.
+     Dodatna autentikacija samo e-poštom (nema SMS-a), samo za osjetljive radnje (povrat, brisanje, uloge).
+209. **Vanjska kampanja je zasebna platformska tablica**, ne core kampanja (nema Safe ni doprinosa). Vlasništvo se
+     dokazuje kodom koji organizator upiše u opis 4fund kampanje. (potvrditi)
+210. **Povrat je zapis organizatora** (Safe tx ili bankovna referenca), platforma ništa ne vraća; doprinos postaje
+     `refunded` kad je zapis potvrđen. IBAN uplatitelja ne znamo (samo HMAC).
+211. **Nacrt čarobnjaka je JSON u `campaign_drafts`**; red u `campaigns` nastaje tek na „Objavi” (jezgra traži
+     organizatora, slug i stanje, a nacrt ih još nema). Nadopuna odluke 152.
+212. **ID-evi:** UUIDv7 za sve; javni ID kampanje 6 znakova Crockford base32 (`/{public_id}`); sid intenta 22 znaka
+     base64url koji generira Worker (idempotentno ponavljanje kroz `409 sid_already_exists`).
+213. **Prijedlozi za campaign-core** (ne rade se, prototip radi bez njih): `foundation` u `HOLDER_TYPES`,
+     `purpose_evidence` u `DOCUMENT_KINDS`, `contribution_profiles.amount_hidden`, te J2 migracije. Odluku donosi
+     vlasnik jezgre (energy docs/19 §6).
+214. **Provjera dokumenata** dok nema builda: `scripts/provjera-docs.sh` (mermaid parse svih blokova u `docs/` uz
+     jsdom u privremenoj mapi + SQL iz `09` u sqlite3 nad stubovima jezgre).
+215. **Ponavljanje:** `recurring_pledges` s danom u mjesecu 1–28, Cron Trigger šalje podsjetnik s novim intentom
+     (vrijedi 24 h); 3 propuštena mjeseca → `paused`. Alternativa: trajni QR + trajni nalog. (potvrditi)
+216. **Kategorije:** 8 iz čarobnjaka 4funda (s „Ostalo”), jedna lista za kampanje i organizacije; 15 tema
+     naslovnice kao ključevi, ilustracije naše.
