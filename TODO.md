@@ -15,14 +15,15 @@ Legenda: `[x]` gotovo · `[ ]` otvoreno · `[~]` u radu · `(!)` traži korisnik
 - [x] Baza znanja 00, 01, 02, 06 + plan, odluke, handoffi → S0
 - [x] Korisnik prijavljen na 4fund u Brave profilu (Google) → S1
 - [x] Obilazak A: račun, verifikacija, čarobnjak, My fundraisers, postavke (18 ekrana) → S1
-- [ ] (!) Objava testne kampanje za Edit / More / Statistics / Verify fundraisers (vrata) → S1b
-- [ ] Anonimni obilazak: modal prijave, potvrda e-pošte, reset lozinke, odjavljeni čarobnjak → S1b dio C
-- [ ] Obilazak B: checkout, financije, isplata (forme), kasica, tracking, ponude/razine, organizacija, prijave → S1b
-- [ ] `02-4fund-na-mpt.md` stupac „Prototip” potvrđen → S1b
+- [x] Vrata objave: korisnik odlučio „d”: bez objave s osobnog računa, ITalk d.o.o. kao organizacija (odluke 150–151) → S1b
+- [ ] (!) Edit / More / Statistics / Finances / Fixed Beneficiary nakon što 4fund odobri ITalk (čeka 4fund, vrh S2)
+- [x] Anonimni obilazak: modal prijave, potvrda e-pošte, reset lozinke, odjavljeni čarobnjak → S1b dio C
+- [x] Obilazak B: checkout, financije, isplata (forme), kasica, tracking, ponude/razine, organizacija, prijave → S1b
+- [x] `02-4fund-na-mpt.md` stupac „Prototip” potvrđen → S1b
 
 ## F1 — Specifikacija
 
-- [ ] `docs/03-domenski-model.md` s erDiagramom → S2
+- [ ] `docs/03-domenski-model.md` s erDiagramom, organizacije s članovima i ulogama (odluka 150) → S2
 - [ ] `docs/04-tokovi.md` (sequence po toku) → S2
 - [ ] `docs/05-zivotni-ciklus.md` (kampanja, doprinos, verifikacija, prijava) → S2
 - [ ] Razlika prema campaign-core + nacrt D1 migracija → S2

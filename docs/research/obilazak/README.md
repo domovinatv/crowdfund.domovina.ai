@@ -3,6 +3,8 @@
 Obilazak sučelja 4funda korisnikovim računom (Brave, profil iz globalnog CLAUDE.md), samo čitanjem (odluka 4).
 Snimke ekrana su samo lokalno u `snimke/` (gitignore). Osobni podaci korisnika i drugih ljudi nisu zapisani.
 
+**S1b, 24. 11. 2026.:** checkout tuđe kampanje, organizacija, kontakt, Observe/Report, ponude, kasica, anonimni dio C (nakon odjave), te račun pravne osobe ITalk d.o.o. koji je korisnik otvorio sam: company application poslan, čeka 4fund (3/5). MPT kampanja nije objavljena; nacrt je u localStorageu preglednika.
+
 **S1, 24. 11. 2026.:** račun prijavljen preko Googlea, neverificiran, bez vlastitih kampanja, s jednom donacijom.
 Čarobnjak je prijeđen izmišljenim podacima do pregleda, a „Publish fundraiser” nije kliknut.
 
@@ -35,19 +37,24 @@ Snimke ekrana su samo lokalno u `snimke/` (gitignore). Osobni podaci korisnika i
 | 23 | Ponude: odabir kampanje, Founder's Offer traži verifikaciju | `/whip-rounds/add-awards`, `…/award-access-status/public/add-awards` | 8 | [23-ponude-founders-offer](23-ponude-founders-offer.md) |
 | 24 | Kasica: obrazac | `/{id}/add-moneybox` | 9 | [24-kasica-obrazac](24-kasica-obrazac.md) |
 | 25 | Anonimno: Sign in, kod e-poštom, reset lozinke, čarobnjak i checkout bez prijave | modal, `/fundraiser/create/*`, `/{id}/pay` | 1, 2, 10 | [25-anonimni](25-anonimni.md) |
+| 26 | Company application: obrazac tvrtke, stanje „3 / 5” nakon slanja | `/company-application/{form,steps}` | 11 | [26-company-application-poslano](26-company-application-poslano.md) |
+| 27 | Isplata: dodatna autorizacija kodom e-poštom (verificiran račun) | `/safety/additional-authorization/{token}` | 5 | [27-isplata-dodatna-autorizacija](27-isplata-dodatna-autorizacija.md) |
 
-**Broj ekrana:** 18 datoteka (`ls docs/research/obilazak/[0-9]*.md | wc -l`). U njima je opisano 21 ruta.
+**Broj ekrana:** 27 datoteka (S1: 18, S1b: 9) (`ls docs/research/obilazak/[0-9]*.md | wc -l`). U njima je opisano 21 ruta.
 
-## Nije viđeno u S1 (prenosi se u S1b)
+## Nije viđeno nakon S1b (čeka odobrenje ITalka na 4fundu)
 
-| ekran | zašto | gdje |
-|---|---|---|
-| „Edit” kampanje (vidljivost, skrivanje iznosa, minimum, zahvala, kasice, tuđe ponude, recurring, lokacija, datum) | treba objavljena kampanja | vrata na vrhu `S1b.md` |
-| „More” vlastite kampanje (Finances, Notifications, Tracking link, QR, Widget, Poster, Turn off, Delete), „Statistics” | isto | isto |
-| Obrazac „Verify fundraisers” s dokumentima | isto | isto |
-| Onfido korak verifikacije | traži spremanje obrasca s pravim podacima | ostaje iz javnog pregleda §2 |
-| Modal prijave, potvrda e-pošte, reset lozinke | korisnik je prijavljen; modal je klijentski | anonimni obilazak (S1b dio C) |
-| Invoices, Become a Fixed Beneficiary u postavkama | nema u izborniku ovog računa | S1b grupa 11 |
+| ekran | grupa | zašto | do tada |
+|---|---|---|---|
+| „Edit” kampanje (sve opcije), „More” vlastite kampanje (Finances, Notifications, Tracking link, QR, Widget, Poster, Turn off, Delete), „Statistics” | 2–3 | treba objavljena vlastita kampanja; s osobnog računa se ne objavljuje (odluka 151) | javni pregled §4 |
+| Finances: popis uplata, stupci XLS izvoza, „Return selected” | 4 | isto | javni pregled §6, S1 popis |
+| Isplata: kartica, IBAN, 0,10 €, limiti, povijest | 5 | traži kod e-poštom ([27](27-isplata-dodatna-autorizacija.md)) i saldo | javni pregled §6 |
+| Promote, delegirane zahvale, razine podrške, kasica i tracking link vlastite kampanje (statistika, stranica `+`) | 7–9 | treba objavljena kampanja | javni pregled §3–4, [24](24-kasica-obrazac.md), [16](16-postavke-linkovi.md) |
+| Obrazac Founder's Offer | 8 | traži verificiran profil ([23](23-ponude-founders-offer.md)); sad moguće na računu ITalka, nije obiđeno | javni pregled §3 |
+| Fixed Beneficiary pogled (odobravanje tuđih kampanja), korak 4–5 company application | 11 | čeka ručni pregled 4funda ([26](26-company-application-poslano.md)) | javni pregled §2.4 |
+| „Verify fundraisers” obrazac s dokumentima | 6 | treba kampanja | [15](15-postavke-verifikacija-kampanja.md) |
+| Ekran PayU/ZEN, potvrda uplate i PDF | 10 | bi pokrenulo uplatu | javni pregled §5 |
+| Onfido, potvrda e-pošte | 1 | osobni podaci, pošta | javni pregled §2 |
 
 ## Metoda
 
