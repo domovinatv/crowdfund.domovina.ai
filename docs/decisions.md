@@ -125,3 +125,34 @@ koja se na nju poziva. Blokovi brojeva po sesiji: S1 od 100, S1b od 150, S2 od 2
      (vrijedi 24 h); 3 propuštena mjeseca → `paused`. Alternativa: trajni QR + trajni nalog. (potvrditi)
 216. **Kategorije:** 8 iz čarobnjaka 4funda (s „Ostalo”), jedna lista za kampanje i organizacije; 15 tema
      naslovnice kao ključevi, ilustracije naše.
+
+## S3 — 24. 11. 2026.
+
+300. **Jezik je prvi segment rute** (`/hr/…`, `/en/…`) s prevedenim segmentima; `/` preusmjerava po kolačiću
+     `lang`, pa `Accept-Language`, zadano `hr`. *Razlog:* jasan `hreflang`, hrvatski URL-ovi za hrvatsku publiku.
+301. **Kratki linkovi su bez jezika** (`/{id}`, `/s/{alias}`, `/z/{slug}`) i preusmjeravaju na jezičnu rutu.
+     *Razlog:* isti oblik kao 4fund, kratki za QR i plakat.
+302. **Statični segment od 6 znakova mora sadržavati `i`, `l`, `o`, `u` ili crticu** (slova izvan Crockford
+     abecede), pa se ne sudara s javnim ID-om kampanje; S4 to drži testom nad tablicom ruta.
+303. **Ključevi upitnih parametara su engleski u oba jezika** (`q`, `category`, `type`, `sort`, `page`), vrijednosti
+     su ključevi iz baze. *Razlog:* jedan parser, linkovi rade preko jezika. (potvrditi)
+304. **Statistika linka za praćenje** (4fund `/z/{slug}+`) vidljiva je samo vlasniku linka i timu kampanje, ne
+     javno; 4fundova javnost te stranice nije provjerena. (potvrditi)
+305. **Radno ime `crowdfund.domovina.ai` i DOMOVINA paleta** (navy `#002F6C`, crvena `#FF0000`) vrijede privremeno,
+     do korisnikove odluke o imenu i brendu (vrata S3, vrh `S4.md`; prijedlozi u [08](08-dizajn-sustav.md) §6).
+     Paleta je u 6 brend tokena ispod semantičkih, pa je zamjena jedna datoteka. *Revizija:* odgovor korisnika.
+306. **Samo svijetla tema; tokeni kao CSS varijable s RGB kanalima.** *Razlog:* jedan skup provjerenih kontrasta,
+     Tailwind modifikatori prozirnosti (pouka energy 09 §4).
+307. **Crvena `#FF0000` je samo dekor** (4,00:1 na bijelom, ne prolazi AA za normalan tekst ni bijeli tekst na
+     crvenom gumbu); tekst u crvenoj je `#C8102E` (5,88:1), primarni gumb je navy, greška ima vlastitu boju
+     `#B42318`. *Razlog:* izmjereni kontrast, brend se ne miješa s greškom.
+308. **Inter samohostan, Lucide ikone, bez Google Fonts CDN-a i bez emojija u sučelju.** (potvrditi)
+309. **`scripts/provjera-docs.sh` traži red u `07-rute.md` za svaku rutu 4funda** iz mape stranice i obilaska
+     (`research/forfund-rute-obilazak.txt`); 85 ruta, 0 bez retka.
+310. **ID checkouta u URL-u je sposobnost** (`/hr/{id}/podrzi/{checkout}`): tko ima link vidi iznos, QR i stanje,
+     ali ne e-poštu ni ime. ID je UUIDv7 (nepogodiv), stranica `noindex`. (potvrditi)
+311. **Komponente su `.astro` bez stanja, React samo za otoke**; React komponente energyja i mpt-landinga prenose
+     se kao otoci s izvornim repoom i commitom u zaglavlju (nadopuna odluke 11). Tokeni energyja se ne preuzimaju.
+312. **✗ u fazi 1:** premium alias (`/{alias}`), why-us, EK brošura, press, blog, katalog kreatora, fakture,
+     Facebook prijava, javni API, promocija i delegirane zahvale. Razlog po retku u [07](07-rute.md).
+313. **Moderacija platforme je `/admin/*`, samo hrvatski**, uloga `moderator` je mock u prototipu.

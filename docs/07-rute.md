@@ -3,7 +3,7 @@
 Sitemap prototipa (hr + en), zahtjev prijave po ruti i preslikavanje svake rute 4funda na našu rutu ili ✗ s
 razlogom. Ulazi: [forfund-route-templates](research/forfund-route-templates.txt) (mapa stranice 4funda),
 inventar obilaska ([obilazak/README](research/obilazak/README.md)), javni pregled §12, pokrivenost ekrana u
-[03](03-domenski-model.md) i tokovi u [04](04-tokovi.md). Odluke 300–309 u [decisions](decisions.md).
+[03](03-domenski-model.md) i tokovi u [04](04-tokovi.md). Odluke 300–304, 309–310, 312–313 u [decisions](decisions.md).
 
 ## Konvencije
 
