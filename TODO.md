@@ -13,8 +13,10 @@ Legenda: `[x]` gotovo · `[ ]` otvoreno · `[~]` u radu · `(!)` traži korisnik
 - [x] Pravni i poslovni okvir (`docs/research/2026-11-24-pravni-i-poslovni-okvir.md`) → S0
 - [x] Mapa ponovne upotrebe naših repoa → S0
 - [x] Baza znanja 00, 01, 02, 06 + plan, odluke, handoffi → S0
-- [ ] (!) Korisnik prijavljen na 4fund u Brave profilu → S1
-- [ ] Obilazak A: račun, verifikacija, čarobnjak, uređivanje, My fundraisers, statistika, postavke → S1
+- [x] Korisnik prijavljen na 4fund u Brave profilu (Google) → S1
+- [x] Obilazak A: račun, verifikacija, čarobnjak, My fundraisers, postavke (18 ekrana) → S1
+- [ ] (!) Objava testne kampanje za Edit / More / Statistics / Verify fundraisers (vrata) → S1b
+- [ ] Anonimni obilazak: modal prijave, potvrda e-pošte, reset lozinke, odjavljeni čarobnjak → S1b dio C
 - [ ] Obilazak B: checkout, financije, isplata (forme), kasica, tracking, ponude/razine, organizacija, prijave → S1b
 - [ ] `02-4fund-na-mpt.md` stupac „Prototip” potvrđen → S1b
 

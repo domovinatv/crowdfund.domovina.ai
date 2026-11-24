@@ -1,3 +1,33 @@
+## PITANJE ZA KORISNIKA (vrata, iz S1)
+
+Ekrani „Edit” kampanje, izbornik „More” vlastite kampanje (Finances, Notifications, Tracking link, QR,
+Widget, Poster, Turn off, Delete), „Statistics” i obrazac „Verify fundraisers” postoje tek uz
+**objavljenu** kampanju. Korisnik je nema, a odluka 4 zabranjuje objavu. Uz to i grupe 4–5 i 9 iz §12
+(financije, kasica, tracking link vlastite kampanje) traže vlastitu kampanju.
+
+- **a)** Korisnik sam objavi jednu testnu kampanju (izmišljen naslov/opis, cilj 1 €) na svom računu. S1b
+  je obiđe samo čitanjem, a na kraju je korisnik sam isključi („Turn off”) ili obriše. Kampanja je javna
+  na `/{id}` dok postoji, ali neverificiran profil nije u katalogu.
+- **b)** Korisnik izričito dopusti S1b da sam klikne „Publish fundraiser” na testnoj kampanji i na kraju
+  „Turn off”. To je iznimka od odluke 4 i treba je zapisati kao novu odluku.
+- **c)** Bez objave: ti ekrani ostaju iz javnog pregleda §4 i FAQ-a, a u S1b se obilaze samo tuđe kampanje
+  (checkout) i ekrani bez vlastite kampanje.
+
+Preporuka: **a**. Objava je vanjska radnja na korisnikovom računu, pa je radi korisnik, a obilazak ostaje samo čitanje.
+
+## Prijenos iz S1
+
+- S1 gotov: 18 ekrana u `docs/research/obilazak/` (inventar u `README.md` tamo), odluke 100–105.
+- Ako je odgovor a ili b, prvo obiđi grupe 2–3 koje su ostale (Edit sa svim opcijama, More, Statistics,
+  Verify fundraisers), i to kao datoteke od `19-…` nadalje.
+- Zamka: 404 stranica 4funda uvijek pokazuje anonimno zaglavlje; prijavu provjeri izbornikom računa (odluka 100).
+- Alat `javascript_tool` vraća `[BLOCKED: Cookie/query string data]` kad izlaz sadrži hrefove s upitom ili
+  tokene. Tada koristi `get_page_text`, a hrefove reži na `split(/[?#]/)[0]`.
+- **Dio C, anonimni obilazak** (zahtjev korisnika u S1): modal prijave (`#log-in`), reset lozinke,
+  potvrda e-pošte i čarobnjak kao neprijavljen korisnik (dokle dopušta prije prijave). Ne odjavljuj
+  korisnika bez dogovora; prvo probaj dohvat bez kolačića (odluka 101). Ako to ne ide, pitaj
+  korisnika da se odjavi i ponovno prijavi Googleom (sam, lozinku ne upisuješ).
+
 Gradimo UI prototip hrvatske P2P crowdfunding platforme s funkcionalnom strukturom 4fund.com (EU Zrzutka.pl), ali s plaćanjem kroz MPT (SEPA → Monerium/Swan → račun ili Safe kampanje), bez provizije i bez držanja novca.
 
 Repo: /Users/ms/git/domovinatv/crowdfund.domovina.ai (main, lokalan bez remotea, wrap-up samo commita).
@@ -6,7 +36,7 @@ Pročitaj prvo: docs/handoffs/README.md (lanac i pravila), docs/plan.md, docs/de
 
 # S1b: prijavljeni obilazak 4fund.com, dio B
 
-Polazni commit: (upisuje S1). Odluke od **150**. Ista pravila obilaska kao S1 (odluka 4),
+Polazni commit: COMMIT. Odluke od **150**. Ista pravila obilaska kao S1 (odluka 4),
 korisnik mora biti prijavljen.
 
 Paket (grupe iz §12):

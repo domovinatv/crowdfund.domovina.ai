@@ -35,3 +35,13 @@ Oznake: **=** isto · **≈** isto ponašanje, drukčiji mehanizam · **✗** ne
 | Financije: popis uplata, XLS izvoz (S1 popis) | iz `contributions` (webhook MPT) + CSV | = | da |
 | Javni API, 10.000 zahtjeva/h (§10) | javni read API (campaign-core J4) | = | kasnije |
 | Hibrid: kampanja s 4funda | vanjska kampanja, gumb vodi na 4fund `/pay` | novo | da |
+| Čarobnjak 5 koraka, nacrt se pamti, „Start anew” (S1 [03](research/obilazak/03-carobnjak-tip.md)) | isto; nacrt u D1 po korisniku | = | da |
+| AI „Improve” naslova, 4 prijedloga (S1 [04](research/obilazak/04-carobnjak-naslov-cilj.md)) | prijedlog kroz LLM, opcionalan | faza 2 | označeno |
+| Gotove naslovnice, 15 tema (S1 [05](research/obilazak/05-carobnjak-mediji.md)) | naše ilustracije, iste teme | = | da |
+| PEP izjava s 3 podvrste i izjavom o kaznenoj odgovornosti (S1 [02](research/obilazak/02-verifikacija-racuna.md)) | dio KYC-a kod EMI-ja; mi samo status | ≈ | obrazac |
+| Dodatna autentikacija: 6-znamenkasti kod SMS/e-pošta (S1 [14](research/obilazak/14-postavke-limiti.md)) | kod e-poštom za osjetljive radnje organizatora | ≈ | mock |
+| Dnevni limit isplate i SMS obavijest (S1 [14](research/obilazak/14-postavke-limiti.md)) | nema isplate | ✗ | – |
+| Vidljivost profila, 10 prekidača + indeksiranje (S1 [12](research/obilazak/12-postavke-profil.md)) | isto | = | da |
+| Automatski linkovi dijeljenja (S1 [16](research/obilazak/16-postavke-linkovi.md)) | `?ref=` po korisniku + popis | = | da |
+| Povijest prijava (S1 [18](research/obilazak/18-postavke-povijest-prijava.md)) | tek uz pravi login | ≈ | statično |
+| Brisanje računa vraća buduće donacije (S1 [12](research/obilazak/12-postavke-profil.md)) | brisanje gasi kampanje; novac nije kod nas | ≈ | da |

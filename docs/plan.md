@@ -43,4 +43,4 @@ tunel ili ručni `simulate` + pull statusa).
 
 ## Gdje smo
 
-S0 gotov (24. 11. 2026.): istraživanja, baza znanja, plan. Koda nema. Sljedeće: S1.
+S0 i S1 gotovi (24. 11. 2026.): istraživanje, plan, prijavljeni obilazak A (18 ekrana). Koda nema. Sljedeće: S1b, vrata: testna kampanja.

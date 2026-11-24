@@ -46,3 +46,20 @@ koja se na nju poziva. Blokovi brojeva po sesiji: S1 od 100, S1b od 150, S2 od 2
 18. **Pragovi verifikacije namjene** kao 4fund (5.000 € po kampanji, 12.500 € po organizatoru)
     → zastava i ručni pregled, ne blokada.
 19. **Snimke ekrana 4funda se ne objavljuju** ni u artefaktima ni u javnom repou.
+
+## S1 — 24. 11. 2026.
+
+100. **Prijava se provjerava izbornikom računa na stvarnoj stranici, ne na 404.** 404 stranica 4funda
+     uvijek ima anonimno zaglavlje. *Razlog:* lažni „nije prijavljen” na početku S1.
+101. **Anonimni ekrani** (registracija) čitaju se dohvatom HTML-a bez kolačića (`credentials:'omit'`)
+     umjesto odjave korisnika. Klijentski modali (prijava, reset lozinke) idu u anonimni obilazak,
+     S1b dio C (zahtjev korisnika u S1).
+102. **Čarobnjak se smije proći izmišljenim podacima do pregleda.** Nacrt ostaje u korisnikovom računu
+     (4fund ga pamti), a „Start anew” ga briše. „Publish fundraiser” se ne klikće ni na koraku opisa.
+103. **Ekrani „Edit”, „More”, „Statistics” i obrazac „Verify fundraisers”** traže objavljenu kampanju, pa
+     su u S1 ostali neviđeni. Objava testne kampanje su vrata za korisnika (vrh `S1b.md`).
+     Do odgovora S2 za njih koristi javni pregled §4.
+104. **Klik „Next step” na praznom obrascu verifikacije** je dopušten jer HTML5 `required` zaustavlja slanje.
+     Na obrascu s popunjenim obaveznim poljima se ne klikće. (potvrditi)
+105. **Popis polja bez vrijednosti:** JS izvlači `name`, `type`, `maxlength`, `required` i labelu, a za
+     vrijednost samo „FILLED/empty”. Tablica prijava i donacije drugih ljudi se ne prepisuju.
