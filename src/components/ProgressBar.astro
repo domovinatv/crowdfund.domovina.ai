@@ -1,0 +1,43 @@
+---
+// Traka napretka (docs/08 §3.2): role="progressbar", iznad 100 % puna + tekst „premašen cilj”.
+// `raised` null (skriveni iznos, odluka 406) → ništa se ne crta.
+import type { Lang } from "../i18n";
+
+interface Props {
+  lang: Lang;
+  raisedCents: number | null;
+  goalCents: number | null;
+  /** Vidljiva oznaka uz traku (postotak / premašeno). */
+  showLabel?: boolean;
+  class?: string;
+}
+const { lang, raisedCents, goalCents, showLabel = false, class: klasa = "" } = Astro.props;
+const T = {
+  hr: { traka: "Napredak prema cilju", premasen: "premašen cilj" },
+  en: { traka: "Progress towards the goal", premasen: "goal exceeded" },
+}[lang];
+const postotak = raisedCents !== null && goalCents ? Math.round((raisedCents / goalCents) * 100) : null;
+const sirina = postotak === null ? 0 : Math.min(100, postotak);
+---
+{
+  postotak !== null && (
+    <div class={`flex items-center gap-3 ${klasa}`}>
+      <div
+        class="h-2 flex-1 overflow-hidden rounded-full bg-progress/15"
+        role="progressbar"
+        aria-label={T.traka}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={sirina}
+        aria-valuetext={postotak > 100 ? `${postotak} %, ${T.premasen}` : `${postotak} %`}
+      >
+        <div class="h-full rounded-full bg-progress" style={`width: ${sirina}%`} />
+      </div>
+      {showLabel && (
+        <span class="shrink-0 text-sm font-semibold tabular-nums text-ink">
+          {postotak} %{postotak > 100 && <span class="ml-1 font-normal text-success">· {T.premasen}</span>}
+        </span>
+      )}
+    </div>
+  )
+}
