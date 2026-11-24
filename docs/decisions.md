@@ -310,3 +310,21 @@ koja se na nju poziva. Blokovi brojeva po sesiji: S1 od 100, S1b od 150, S2 od 2
 623. **Upload dokaza namjene je mock** (red `files` s ključem `mock/…`, `purpose_evidence` + `campaign_documents`);
      „pošalji na pregled” traži barem jedan dokument, bez verifikacije stvara je s `trigger = user`.
 624. **Brisanje kampanje** gasi linkove za praćenje, kasice → `deleted`, traži upis ID-a kampanje i P+e.
+625. **Nacrt neprijavljenog je u kolačićima `nacrt0`–`nacrt3`** (base64url JSON, HttpOnly, 30 dana, ~11 kB), ne u
+     `localStorage`, pa čarobnjak radi bez JS-a. Mijenja način iz 152, ne načelo. (potvrditi)
+626. **Lokalni nacrt prelazi na račun** pri prvom otvaranju čarobnjaka prijavljenog korisnika (`source = 'local'`,
+     oznaka „nacrt iz ovog preglednika”), ne pri samoj prijavi.
+627. **Tekući nacrt** = zadnji ažurirani neobjavljeni red `campaign_drafts`; „Kreni ispočetka” ga briše. Koraci
+     nikad ne preusmjeravaju unatrag; koračnik i pregled pokazuju što nedostaje.
+628. **Neprijavljeni smije ostaviti „tko prikuplja” prazno;** „Objavi” neprijavljenog vodi na prijavu s `next` na pregled.
+629. **Opis je čisti tekst, 50–5.000 znakova.** Zabranjene riječi samo na početku riječi (pa „doprinos” prolazi):
+     invest, ulag, ulož, ulaž, dionic, dividend, kamat, prinos, equity, shareholder, kriptovalut, zajam, zajm.
+630. **Fotografije su označeni mock** (nema R2); video je https YouTube/Vimeo poveznica u `campaign_media`.
+631. **Nakon objave:** `active` → `/{id}?objavljeno=1`, `review` → `moje/kampanje?objavljeno={id}`.
+632. **Autor koji je admin/owner organizacije** objavljuje za nju odmah `active`, zabilježeno kao njegovo odobrenje.
+633. **Organizacija bez Safea** dobiva mock adresu `0xde5afe…` na lancu 10200; `campaign_safes` prag 1, vlasnici
+     `[]`, `verified_at` samo kad je `active`. MPT registracija je mock (S7).
+634. **Nova kampanja:** tenant `sbx-crowdfund-demo`, `demo = 0`, slug iz naslova (`-2`, `-3` …), prazan `campaign_stats`.
+635. **Prag namjene:** `campaign_purpose` s `provider = 'platform'`; zbroj organizatora = aktivne kampanje + nova.
+636. **Osobna organizacija** (kampanja fizičke osobe, „nije u fazi 1”): slug `osoba-<ime>-<6 znakova>`, `active`,
+     `owner` članstvo; objava traži `person_kyc approved`.
