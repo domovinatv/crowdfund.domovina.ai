@@ -21,7 +21,7 @@ Plan je u [`docs/plan.md`](../plan.md). Svaka sesija ima svoj handoff `SN.md`. K
 
 | Sesija | Paket | Stanje | Commit | Testovi | Napomena |
 | --- | --- | --- | --- | --- | --- |
-| S0 | Istraživanje, baza znanja, plan | gotovo | (upisuje S0) | – | odluke 1–19 |
+| S0 | Istraživanje, baza znanja, plan | gotovo | 7cd97c3 | – | odluke 1–19 |
 | S1 | Prijavljeni obilazak A | vrata: prijava u Brave | | | |
 | S1b | Prijavljeni obilazak B | | | | |
 | S2 | Specifikacija | | | | |
