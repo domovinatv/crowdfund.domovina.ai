@@ -6,9 +6,9 @@
  * `pristup` je doslovno stupac „Pristup” iz 07 (razine J, J*, P, P+e, U:uloga, K, V, T, A).
  * Implementirane su samo `/`, `/hr`, `/en` (S4); ostalo dolazi u S5/S6.
  *
- * Retci su prepisani iz 07 (sve rute s izričitim hr i en oblikom). Podkoraci koje 07 navodi
- * samo u stupcu „Sadržaj” (npr. `…/odjava`, `organizacija/nova/…`, `postavke/verifikacija/…`,
- * `cesta-pitanja/{kategorija}`) nemaju en oblik u 07 i zato nisu ovdje.
+ * Retci su prepisani iz 07 (sve rute s izričitim hr i en oblikom). S5 je dodao en oblik za
+ * `pracenje/{token}/odjava` i `cesta-pitanja/{category}` (odluka 502); podkoraci S6
+ * (`organizacija/nova/…`, `postavke/verifikacija/…`) dolaze sa S6.
  */
 import type { Lang } from "../i18n";
 
@@ -46,6 +46,7 @@ export const RUTE = [
   { kljuc: "external.campaign", hr: "vanjska/{id}", en: "external/{id}", pristup: "J", faza: "S5" },
   { kljuc: "report", hr: "prijavi-sadrzaj", en: "report", pristup: "J*", faza: "S5" },
   { kljuc: "follow", hr: "pracenje/{token}", en: "follow/{token}", pristup: "T", faza: "S5" },
+  { kljuc: "follow.unsubscribe", hr: "pracenje/{token}/odjava", en: "follow/{token}/unsubscribe", pristup: "T", faza: "S5" },
   { kljuc: "how-it-works", hr: "kako-radi", en: "how-it-works", pristup: "J", faza: "S5" },
   { kljuc: "how-it-works.for-others", hr: "kako-radi/za-druge", en: "how-it-works/for-others", pristup: "J", faza: "S5" },
   { kljuc: "how-it-works.donate", hr: "kako-radi/doniranje", en: "how-it-works/donate", pristup: "J", faza: "S5" },
@@ -54,6 +55,7 @@ export const RUTE = [
   { kljuc: "how-it-works.offers", hr: "kako-radi/ponude", en: "how-it-works/offers", pristup: "J", faza: "S5" },
   { kljuc: "costs", hr: "troskovi", en: "costs", pristup: "J", faza: "S5" },
   { kljuc: "faq", hr: "cesta-pitanja", en: "faq", pristup: "J", faza: "S5" },
+  { kljuc: "faq.category", hr: "cesta-pitanja/{category}", en: "faq/{category}", pristup: "J", faza: "S5" },
   { kljuc: "safety", hr: "sigurnost", en: "security", pristup: "J", faza: "S5" },
   { kljuc: "terms", hr: "uvjeti", en: "terms", pristup: "J", faza: "S5" },
   { kljuc: "privacy", hr: "privatnost", en: "privacy", pristup: "J", faza: "S5" },

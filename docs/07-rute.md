@@ -96,7 +96,8 @@ flowchart LR
 | `/hr/o/{slug}` | `/en/o/{slug}` | J | javni profil organizacije: opis, kampanje, vanjske kampanje, verifikacija | 20 |
 | `/hr/vanjska/{id}` | `/en/external/{id}` | J | vanjska 4fund kampanja: oznaka, opis, gumb na njihov `/pay` | tok 9 |
 | `/hr/prijavi-sadrzaj` | `/en/report` | J* | DSA obrazac: `?target=campaign\|comment\|update\|moneybox\|user\|organization&id=` | 22, tok 8 |
-| `/hr/pracenje/{token}` | `/en/follow/{token}` | T | potvrda praćenja e-poštom i odjava (`…/odjava`) za neprijavljene | 22 |
+| `/hr/pracenje/{token}` | `/en/follow/{token}` | T | potvrda praćenja e-poštom za neprijavljene | 22 |
+| `/hr/pracenje/{token}/odjava` | `/en/follow/{token}/unsubscribe` | T | odjava praćenja (`POST`), odluka 502 | 22 |
 | `/hr/kako-radi` | `/en/how-it-works` | J | prikupljanje (za udruge i organizacije, faza 1) | pregled §12 |
 | `/hr/kako-radi/za-druge` | `/en/how-it-works/for-others` | J | kampanja za drugoga, suglasnost korisnika („nije u fazi 1”) | pregled §12 |
 | `/hr/kako-radi/doniranje` | `/en/how-it-works/donate` | J | kako donirati: SEPA, QR (HUB3/EPC), referenca, napojnica | pregled §12 |
@@ -104,7 +105,8 @@ flowchart LR
 | `/hr/kako-radi/dijeljenje` | `/en/how-it-works/sharing` | J | dijeljenje, QR, plakat, widget, link za praćenje | pregled §12 |
 | `/hr/kako-radi/ponude` | `/en/how-it-works/offers` | J | kupnja i prodaja ponuda; „nije u fazi 1” | pregled §12 |
 | `/hr/troskovi` | `/en/costs` | J | 0 % provizije, napojnica, trošak SEPA-e, što plaća organizator | pregled §7 |
-| `/hr/cesta-pitanja` | `/en/faq` | J | FAQ po kategorijama; `/hr/cesta-pitanja/{kategorija}` | pregled §12 |
+| `/hr/cesta-pitanja` | `/en/faq` | J | FAQ po kategorijama | pregled §12 |
+| `/hr/cesta-pitanja/{category}` | `/en/faq/{category}` | J | pitanja jedne kategorije; ključ kategorije je engleski u oba jezika (odluka 502) | pregled §12 |
 | `/hr/sigurnost` | `/en/security` | J | tko drži novac (Safe organizacije, Monerium/Swan), verifikacija, prijave | pregled §12 |
 | `/hr/uvjeti` | `/en/terms` | J | uvjeti platforme | — |
 | `/hr/privatnost` | `/en/privacy` | J | politika privatnosti | — |

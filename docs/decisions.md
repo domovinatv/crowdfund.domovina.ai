@@ -186,3 +186,16 @@ koja se na nju poziva. Blokovi brojeva po sesiji: S1 od 100, S1b od 150, S2 od 2
      `cesta-pitanja/{kategorija}`). S5/S6 ih dodaju s en oblikom u 07.
 410. **Lockfile vuče campaign-core kao `git+ssh`** (commit 0bc0069 = tag v0.2.0); stroj bez SSH ključa za GitHub
      može pasti na `npm ci`. Popravak (https URL u lockfileu) kad repo dobije remote/CI. (potvrditi)
+
+## S5 — 24. 11. 2026.
+
+500. **Jezične rute idu kroz jedan dispečer** `src/pages/[lang]/[...put].astro`: `prepoznaj()` iz `rute.ts` →
+     pogled `src/views/stranice/<kljuc>.astro` + opcionalni učitavač `<kljuc>.ucitaj.ts` (`import.meta.glob`,
+     bez ručnog registra). Učitavač vraća `Response` (404, 302) ili `{ podaci }`; pogled ne mijenja status.
+     Ruta bez pogleda vraća 404, pa je pokrivenost vidljiva skriptom ruta. Rute bez jezika (`/{id}`, `/s/…`,
+     `/z/…`, `/embed/…`) su obične Astro stranice.
+501. **Sedam redoslijeda kataloga** (`src/lib/redoslijedi.ts`): `most` (zadano), `popular` (zadnja 24 h),
+     `least`, `newest`, `oldest`, `ending` (bez roka na kraj), `updated` (zadnja novost); jednaki po novijem
+     `created_at`, pa `id`. Isti tekst opisuje ih u katalogu i na `/hr/pravila-prikaza`.
+502. **En oblici koji su nedostajali u 07:** `/en/follow/{token}/unsubscribe` (hr `pracenje/{token}/odjava`) i
+     `/en/faq/{category}` (hr `cesta-pitanja/{category}`, ključ kategorije engleski u oba jezika, kao odluka 303).
