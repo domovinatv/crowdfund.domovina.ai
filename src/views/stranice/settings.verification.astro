@@ -1,0 +1,45 @@
+---
+// Verifikacija računa (ekran 02): stanje zadnje person_kyc verifikacije i sljedeći korak.
+import BadgeCheck from "@lucide/astro/icons/badge-check";
+import OkvirPostavki from "../../components/postavke/OkvirPostavki.astro";
+import { datum } from "../../components/katalog/oblik";
+import { url } from "../../lib/rute";
+import { POSTAVKE } from "../sadrzaj/postavke";
+import type { PropsStranice } from "../tipovi";
+import type { PodaciVerifikacije } from "./settings.verification.ucitaj";
+
+type Props = PropsStranice<PodaciVerifikacije>;
+const { lang, podaci } = Astro.props;
+const v = podaci.verifikacija;
+const T = POSTAVKE[lang];
+const P = T.verifikacija;
+const stanje = v?.status ?? "nije";
+const sljedece = stanje === "in_review" ? P.sljedece.submitted : stanje === "expired" ? P.sljedece.rejected : (P.sljedece as Record<string, string>)[stanje] ?? null;
+const ponovo = stanje === "nije" || stanje === "rejected" || stanje === "expired" || stanje === "requested";
+---
+<OkvirPostavki lang={lang} aktivna="settings.verification" naslov={P.naslov} uvod={P.uvod}>
+  <dl class="mt-6 grid max-w-xl grid-cols-[auto_1fr] gap-x-6 gap-y-2">
+    <dt class="text-ink-muted">{P.stanje}</dt>
+    <dd class:list={["font-semibold", stanje === "approved" ? "text-success" : stanje === "rejected" ? "text-danger" : "text-ink"]}>
+      {stanje === "approved" && <BadgeCheck size={16} aria-hidden="true" class="mr-1 inline" />}{P.stanja[stanje]}
+    </dd>
+    {v && <dt class="text-ink-muted">{P.poslano}</dt>}
+    {v && <dd>{datum(lang, v.requestedAt)}</dd>}
+    {v?.reason && <dt class="text-ink-muted">{P.razlog}</dt>}
+    {v?.reason && <dd>{v.reason}</dd>}
+  </dl>
+  {sljedece && <p class="mt-4 max-w-prose text-ink-soft">{sljedece}</p>}
+  <p class="mt-6 flex flex-wrap gap-3">
+    {
+      ponovo ? (
+        <a href={url(lang, "settings.verification.type")} class="inline-flex min-h-11 items-center gap-2 rounded-md bg-action px-5 font-semibold text-paper hover:bg-action-strong">
+          {stanje === "nije" ? P.pokreni : P.ponovo}
+        </a>
+      ) : (
+        <a href={url(lang, "settings.verification.review")} class="inline-flex min-h-11 items-center gap-2 rounded-md bg-action px-5 font-semibold text-paper hover:bg-action-strong">
+          {P.pregled}
+        </a>
+      )
+    }
+  </p>
+</OkvirPostavki>

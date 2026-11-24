@@ -1,0 +1,75 @@
+---
+// Pregled verifikacije osobe (ekran 02 korak 4): stanje, mock referenca, razlog; simulacija odluke EMI-ja
+// (jasno označen mock, odluka 6: KYC radi EMI, platforma drži samo stanje).
+import CircleCheck from "@lucide/astro/icons/circle-check";
+import CircleX from "@lucide/astro/icons/circle-x";
+import { datum } from "../../components/katalog/oblik";
+import KoraciVerifikacije from "../../components/postavke/KoraciVerifikacije.astro";
+import MockOznaka from "../../components/postavke/MockOznaka.astro";
+import OkvirPostavki from "../../components/postavke/OkvirPostavki.astro";
+import { url } from "../../lib/rute";
+import { POSTAVKE } from "../sadrzaj/postavke";
+import type { PropsStranice } from "../tipovi";
+import type { PodaciPregledaKyc } from "./settings.verification.review.ucitaj";
+
+type Props = PropsStranice<PodaciPregledaKyc>;
+const { lang, podaci } = Astro.props;
+const { verifikacija: v, greska, ok } = podaci;
+const T = POSTAVKE[lang];
+const P = T.verifikacija;
+const ceka = v?.status === "submitted" || v?.status === "in_review";
+---
+<OkvirPostavki lang={lang} aktivna="settings.verification" naslov={P.pregledNaslov}
+  uspjeh={ok === "odluceno" ? P.odluceno : null} greska={greska ? P.greskaStanja : null}>
+  <KoraciVerifikacije lang={lang} trenutni="pregled" />
+  {
+    v ? (
+      <dl class="mt-6 grid max-w-xl grid-cols-[auto_1fr] gap-x-6 gap-y-2">
+        <dt class="text-ink-muted">{P.stanje}</dt>
+        <dd class:list={["font-semibold", v.status === "approved" ? "text-success" : v.status === "rejected" ? "text-danger" : "text-ink"]}>{P.stanja[v.status]}</dd>
+        <dt class="text-ink-muted">{P.pruzatelj}</dt>
+        <dd>{v.provider === "mock" ? `EMI (${P.mock})` : v.provider}</dd>
+        {v.providerRef && <dt class="text-ink-muted">{P.referenca}</dt>}
+        {v.providerRef && <dd class="font-mono">{v.providerRef}</dd>}
+        <dt class="text-ink-muted">{P.poslano}</dt>
+        <dd>{datum(lang, v.requestedAt)}</dd>
+        {v.decidedAt && <dt class="text-ink-muted">{P.odlukaDatum}</dt>}
+        {v.decidedAt && <dd>{datum(lang, v.decidedAt)}</dd>}
+        {v.reason && <dt class="text-ink-muted">{P.razlog}</dt>}
+        {v.reason && <dd>{v.reason}</dd>}
+      </dl>
+    ) : (
+      <p class="mt-6 text-ink-soft">
+        {P.nijePokrenuto}{" "}
+        <a href={url(lang, "settings.verification.type")} class="font-medium text-action underline underline-offset-2">{P.pokreni}</a>
+      </p>
+    )
+  }
+  {v && v.status === "submitted" && <p class="mt-4 text-ink-soft">{P.sljedece.submitted}</p>}
+  {v && (v.status === "rejected" || v.status === "expired") && (
+    <p class="mt-4 text-ink-soft">
+      {P.sljedece.rejected}{" "}
+      <a href={url(lang, "settings.verification.details")} class="font-medium text-action underline underline-offset-2">{P.ponovo}</a>
+    </p>
+  )}
+  {
+    ceka && (
+      <MockOznaka naslov={P.mockNaslov} tekst={P.mockTekst} oznaka={P.mock}>
+        <div class="mt-4 flex flex-wrap gap-3">
+          <form method="post" action={url(lang, "settings.verification.review")}>
+            <input type="hidden" name="odluka" value="approved" />
+            <button type="submit" class="inline-flex min-h-11 items-center gap-2 rounded-md border border-ink-muted/60 px-4 font-medium text-ink hover:bg-mist">
+              <CircleCheck size={18} aria-hidden="true" class="text-success" />{P.odobri}
+            </button>
+          </form>
+          <form method="post" action={url(lang, "settings.verification.review")}>
+            <input type="hidden" name="odluka" value="rejected" />
+            <button type="submit" class="inline-flex min-h-11 items-center gap-2 rounded-md border border-ink-muted/60 px-4 font-medium text-ink hover:bg-mist">
+              <CircleX size={18} aria-hidden="true" class="text-danger" />{P.odbij}
+            </button>
+          </form>
+        </div>
+      </MockOznaka>
+    )
+  }
+</OkvirPostavki>

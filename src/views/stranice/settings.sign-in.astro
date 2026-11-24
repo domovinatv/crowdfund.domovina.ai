@@ -1,0 +1,44 @@
+---
+// Načini prijave (ekran 13 → odluka 208): bez lozinke; popis načina i uklanjanje (ne zadnjeg).
+import KeyRound from "@lucide/astro/icons/key-round";
+import OkvirPostavki from "../../components/postavke/OkvirPostavki.astro";
+import { datum } from "../../components/katalog/oblik";
+import { url } from "../../lib/rute";
+import { POSTAVKE } from "../sadrzaj/postavke";
+import type { PropsStranice } from "../tipovi";
+import type { PodaciNacinaPrijave } from "./settings.sign-in.ucitaj";
+
+type Props = PropsStranice<PodaciNacinaPrijave>;
+const { lang, podaci } = Astro.props;
+const { email, nacini, greska, ok } = podaci;
+const T = POSTAVKE[lang];
+const P = T.prijava;
+---
+<OkvirPostavki lang={lang} aktivna="settings.sign-in" naslov={P.naslov} uvod={P.uvod.replace("{email}", email)}
+  uspjeh={ok ? T.spremljeno : null} greska={greska === "zadnji" ? P.zadnji : greska ? T.greske.nema : null}>
+  <ul class="mt-6 divide-y divide-line rounded-md border border-line">
+    {
+      nacini.map((n) => (
+        <li class="flex flex-wrap items-center justify-between gap-3 p-4">
+          <div class="flex items-start gap-3">
+            <KeyRound size={20} aria-hidden="true" class="mt-0.5 text-ink-muted" />
+            <div>
+              <p class="font-semibold text-ink">{P.nacini[n.provider]}</p>
+              <p class="text-sm text-ink-muted">
+                {P.dodan}: {datum(lang, n.createdAt)} · {P.koristen}: {n.lastUsedAt ? datum(lang, n.lastUsedAt) : P.nikad}
+              </p>
+            </div>
+          </div>
+          {
+            nacini.length > 1 && (
+              <form method="post" action={url(lang, "settings.sign-in")}>
+                <input type="hidden" name="ukloni" value={n.id} />
+                <button type="submit" class="inline-flex min-h-11 items-center rounded-md border border-ink-muted/60 px-4 font-medium text-ink hover:bg-mist">{P.ukloni}</button>
+              </form>
+            )
+          }
+        </li>
+      ))
+    }
+  </ul>
+</OkvirPostavki>

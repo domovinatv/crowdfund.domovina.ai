@@ -1,0 +1,136 @@
+---
+// Podaci za verifikaciju osobe (ekran 02 korak 3): obrazac bez Onfida, iste grupe polja (identitet, dokument,
+// adresa prebivališta u EGP-u, PEP s tri podvrste i izjavom). OIB umjesto PESEL-a. Radi bez JS-a.
+import Info from "@lucide/astro/icons/info";
+import PhaseBadge from "../../components/PhaseBadge.astro";
+import KoraciVerifikacije from "../../components/postavke/KoraciVerifikacije.astro";
+import OkvirPostavki from "../../components/postavke/OkvirPostavki.astro";
+import Polje from "../../components/postavke/Polje.astro";
+import { LOCALE } from "../../i18n";
+import { DOKUMENTI, DRZAVE, EGP, PEP_VRSTE } from "../../lib/db/postavke";
+import { url } from "../../lib/rute";
+import { POSTAVKE } from "../sadrzaj/postavke";
+import type { PropsStranice } from "../tipovi";
+import { zakljucanKyc, type PodaciObrascaKyc } from "./settings.verification.details.ucitaj";
+
+type Props = PropsStranice<PodaciObrascaKyc>;
+const { lang, podaci } = Astro.props;
+const { stanje, vrijednosti: v, greske } = podaci;
+const T = POSTAVKE[lang];
+const P = T.verifikacija;
+const F = P.polja;
+const g = (k: string) => (greske[k] ? T.greske[greske[k] as keyof typeof T.greske] ?? T.greske.neispravno : null);
+const imeDrzave = new Intl.DisplayNames([LOCALE[lang]], { type: "region" });
+const poImenu = (l: readonly string[]) => [...l].sort((a, b) => (imeDrzave.of(a) ?? a).localeCompare(imeDrzave.of(b) ?? b, LOCALE[lang]));
+const izbori = [
+  { ime: "citizenship", oznaka: F.citizenship, opcije: poImenu(DRZAVE).map((d) => [d, imeDrzave.of(d) ?? d]) },
+  { ime: "birth_country", oznaka: F.birth_country, opcije: poImenu(DRZAVE).map((d) => [d, imeDrzave.of(d) ?? d]) },
+] as const;
+const zakljucano = zakljucanKyc(stanje);
+const select = (ime: string) => [
+  "mt-1.5 block w-full rounded-sm border bg-paper px-3 py-2.5 text-base text-ink",
+  greske[ime] ? "border-danger ring-1 ring-danger" : "border-ink-muted/60",
+];
+const kvacica = "mt-0.5 size-5 shrink-0 accent-action";
+---
+<OkvirPostavki lang={lang} aktivna="settings.verification" naslov={P.podaciNaslov} uvod={P.osobaOpis}
+  greska={Object.keys(greske).length ? T.greskaObrasca : null}>
+  <KoraciVerifikacije lang={lang} trenutni="podaci" />
+  <details class="mt-4 max-w-xl rounded-md bg-mist p-4 text-sm">
+    <summary class="flex cursor-pointer items-center gap-2 font-medium text-ink"><Info size={16} aria-hidden="true" />{P.zastoNaslov}</summary>
+    <p class="mt-2 text-ink-soft">{P.zastoTekst}</p>
+  </details>
+  {
+    zakljucano ? (
+      <p role="status" class="mt-6 rounded-md bg-mist p-4">
+        {stanje === "approved" ? P.vecVerificiran : P.vecPoslano}{" "}
+        <a href={url(lang, "settings.verification.review")} class="font-medium text-action underline underline-offset-2">{P.pregled}</a>
+      </p>
+    ) : (
+      <form method="post" action={url(lang, "settings.verification.details")} class="mt-6 max-w-xl space-y-8" novalidate>
+        <p class="flex items-center gap-2 text-sm text-ink-muted"><PhaseBadge lang={lang} />{P.sljedece.approved}</p>
+        <fieldset class="space-y-5">
+          <legend class="text-lg font-semibold text-ink">{P.grupe.identitet}</legend>
+          <Polje ime="first_name" oznaka={F.first_name} vrijednost={v.first_name} greska={g("first_name")} max={100} obavezno autocomplete="given-name" />
+          <Polje ime="last_name" oznaka={F.last_name} vrijednost={v.last_name} greska={g("last_name")} max={100} obavezno autocomplete="family-name" />
+          {
+            izbori.map((s) => (
+              <div>
+                <label for={s.ime} class="font-semibold text-ink">{s.oznaka}</label>
+                <select id={s.ime} name={s.ime} required aria-invalid={greske[s.ime] ? "true" : undefined}
+                  aria-describedby={greske[s.ime] ? `${s.ime}-greska` : undefined} class:list={select(s.ime)}>
+                  <option value="">{P.odaberi}</option>
+                  {s.opcije.map(([k, n]) => <option value={k} selected={v[s.ime] === k}>{n}</option>)}
+                </select>
+                {greske[s.ime] && <p id={`${s.ime}-greska`} class="mt-1 text-sm font-medium text-danger">{g(s.ime)}</p>}
+              </div>
+            ))
+          }
+          <Polje ime="birth_date" oznaka={F.birth_date} tip="date" vrijednost={v.birth_date} greska={g("birth_date")} obavezno autocomplete="bday" />
+          <Polje ime="oib" oznaka={F.oib} vrijednost={v.oib} greska={g("oib")} max={11} />
+        </fieldset>
+
+        <fieldset class="space-y-5">
+          <legend class="text-lg font-semibold text-ink">{P.grupe.dokument}</legend>
+          <div>
+            <label for="document_type" class="font-semibold text-ink">{F.document_type}</label>
+            <select id="document_type" name="document_type" required class:list={select("document_type")}
+              aria-invalid={greske.document_type ? "true" : undefined} aria-describedby={greske.document_type ? "document_type-greska" : undefined}>
+              {DOKUMENTI.map((d) => <option value={d} selected={v.document_type === d}>{P.dokumenti[d]}</option>)}
+            </select>
+            {greske.document_type && <p id="document_type-greska" class="mt-1 text-sm font-medium text-danger">{g("document_type")}</p>}
+          </div>
+          <Polje ime="document_number" oznaka={F.document_number} vrijednost={v.document_number} greska={g("document_number")} max={30} obavezno />
+          <Polje ime="document_expiry" oznaka={F.document_expiry} tip="date" vrijednost={v.document_expiry} greska={g("document_expiry")} />
+          <label class="flex items-start gap-3">
+            <input type="checkbox" name="no_expiry" value="1" checked={v.no_expiry === "1"} class={kvacica} />
+            <span>{F.no_expiry}</span>
+          </label>
+        </fieldset>
+
+        <fieldset class="space-y-5">
+          <legend class="text-lg font-semibold text-ink">{P.grupe.adresa}</legend>
+          <div>
+            <label for="residence_country" class="font-semibold text-ink">{F.residence_country}</label>
+            <select id="residence_country" name="residence_country" required class:list={select("residence_country")}
+              aria-invalid={greske.residence_country ? "true" : undefined} aria-describedby={greske.residence_country ? "residence_country-greska" : undefined}>
+              <option value="">{P.odaberi}</option>
+              {poImenu(EGP).map((d) => <option value={d} selected={v.residence_country === d}>{imeDrzave.of(d) ?? d}</option>)}
+            </select>
+            {greske.residence_country && <p id="residence_country-greska" class="mt-1 text-sm font-medium text-danger">{g("residence_country")}</p>}
+          </div>
+          <Polje ime="street" oznaka={F.street} vrijednost={v.street} greska={g("street")} max={100} obavezno autocomplete="address-line1" />
+          <div class="grid gap-5 sm:grid-cols-2">
+            <Polje ime="house_number" oznaka={F.house_number} vrijednost={v.house_number} greska={g("house_number")} max={10} obavezno />
+            <Polje ime="apartment" oznaka={F.apartment} vrijednost={v.apartment} greska={g("apartment")} max={10} />
+          </div>
+          <div class="grid gap-5 sm:grid-cols-2">
+            <Polje ime="postal_code" oznaka={F.postal_code} vrijednost={v.postal_code} greska={g("postal_code")} max={20} obavezno autocomplete="postal-code" />
+            <Polje ime="city" oznaka={F.city} vrijednost={v.city} greska={g("city")} max={100} obavezno autocomplete="address-level2" />
+          </div>
+        </fieldset>
+
+        <fieldset class="space-y-4">
+          <legend class="text-lg font-semibold text-ink">{P.grupe.izjava}</legend>
+          <p class="font-semibold text-ink">{P.pep}</p>
+          <p class="text-sm text-ink-soft">{P.pepObjasnjenje}</p>
+          <div role="radiogroup" aria-describedby={greske.pep ? "pep-greska" : undefined} class="space-y-2">
+            <label class="flex items-start gap-3"><input type="radio" name="pep" value="no" checked={v.pep === "no"} class={kvacica} />{P.pepNe}</label>
+            <label class="flex items-start gap-3"><input type="radio" name="pep" value="yes" checked={v.pep === "yes"} class={kvacica} />{P.pepDa}</label>
+          </div>
+          {greske.pep && <p id="pep-greska" class="text-sm font-medium text-danger">{g("pep")}</p>}
+          <fieldset class="ml-8 space-y-2">
+            <legend class="text-sm font-semibold text-ink">{P.pepVrsta}</legend>
+            {PEP_VRSTE.map((k) => <label class="flex items-start gap-3 text-sm"><input type="radio" name="pep_kind" value={k} checked={v.pep_kind === k} class={kvacica} />{P.pepVrste[k]}</label>)}
+            {greske.pep_kind && <p class="text-sm font-medium text-danger">{g("pep_kind")}</p>}
+            <label class="flex items-start gap-3 text-sm"><input type="checkbox" name="pep_statement" value="1" checked={v.pep_statement === "1"} class={kvacica} />{P.pepIzjava}</label>
+            {greske.pep_statement && <p class="text-sm font-medium text-danger">{g("pep_statement")}</p>}
+          </fieldset>
+          <label class="flex items-start gap-3"><input type="checkbox" name="accuracy" value="1" checked={v.accuracy === "1"} required class={kvacica} />{P.tocnost}</label>
+          {greske.accuracy && <p class="text-sm font-medium text-danger">{g("accuracy")}</p>}
+        </fieldset>
+        <button type="submit" class="inline-flex min-h-11 items-center gap-2 rounded-md bg-action px-5 font-semibold text-paper hover:bg-action-strong">{P.posalji}</button>
+      </form>
+    )
+  }
+</OkvirPostavki>

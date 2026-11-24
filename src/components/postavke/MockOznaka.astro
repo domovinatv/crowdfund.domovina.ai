@@ -1,0 +1,19 @@
+---
+// Okvir jasno označenog mocka (simulacija vanjskog sustava, npr. odluke EMI-ja do S7).
+import FlaskConical from "@lucide/astro/icons/flask-conical";
+
+interface Props {
+  naslov: string;
+  tekst: string;
+  oznaka: string;
+}
+const { naslov, tekst, oznaka } = Astro.props;
+---
+<section aria-labelledby="mock-naslov" class="mt-8 rounded-md border-2 border-dashed border-ink-muted/50 p-5">
+  <h2 id="mock-naslov" class="flex items-center gap-2 font-semibold text-ink">
+    <FlaskConical size={18} aria-hidden="true" />{naslov}
+    <span class="rounded-full bg-mist px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-ink-muted">{oznaka}</span>
+  </h2>
+  <p class="mt-2 text-sm text-ink-soft">{tekst}</p>
+  <slot />
+</section>

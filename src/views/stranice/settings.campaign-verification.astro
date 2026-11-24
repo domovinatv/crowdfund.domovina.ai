@@ -1,0 +1,69 @@
+---
+// Verifikacija kampanja (ekran 15, odluka 18): kampanje s pragom i stanjem dokaza namjene; dokazi se šalju
+// na upravljanju kampanjom. Zastava za ručni pregled, ne blokada.
+import FileCheck from "@lucide/astro/icons/file-check";
+import { datum, iznos } from "../../components/katalog/oblik";
+import OkvirPostavki from "../../components/postavke/OkvirPostavki.astro";
+import { url } from "../../lib/rute";
+import { POSTAVKE } from "../sadrzaj/postavke";
+import type { PropsStranice } from "../tipovi";
+import type { PodaciVerifikacijeKampanja } from "./settings.campaign-verification.ucitaj";
+
+type Props = PropsStranice<PodaciVerifikacijeKampanja>;
+const { lang, podaci } = Astro.props;
+const T = POSTAVKE[lang];
+const P = T.verifikacijaKampanja;
+---
+<OkvirPostavki lang={lang} aktivna="settings.campaign-verification" naslov={P.naslov} uvod={P.uvod}>
+  {
+    podaci.kampanje.length === 0 ? (
+      <p class="mt-6 text-ink-muted">
+        {P.prazno} <a href={url(lang, "new-campaign")} class="font-medium text-action underline underline-offset-2">{P.nova}</a>
+      </p>
+    ) : (
+      <div class="mt-6 overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead class="border-b border-line text-ink-muted">
+            <tr>
+              <th scope="col" class="py-2 pr-4 font-semibold">{P.kampanja}</th>
+              <th scope="col" class="py-2 pr-4 font-semibold">{P.cilj}</th>
+              <th scope="col" class="py-2 pr-4 font-semibold">{P.prag}</th>
+              <th scope="col" class="py-2 pr-4 font-semibold">{P.dokazi}</th>
+              <th scope="col" class="py-2 font-semibold"><span class="sr-only">{P.posalji}</span></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-line">
+            {
+              podaci.kampanje.map((k) => (
+                <tr>
+                  <td class="py-3 pr-4">
+                    <a href={url(lang, "campaign", { id: k.publicId })} class="font-medium text-action underline underline-offset-2">{k.naslov}</a>
+                    {k.organizacija && <span class="block text-ink-muted">{k.organizacija}</span>}
+                  </td>
+                  <td class="py-3 pr-4 whitespace-nowrap">{k.goalCents ? iznos(lang, k.goalCents) : "—"}</td>
+                  <td class="py-3 pr-4">{P.pragovi[k.prag.prag ?? "nema"]}</td>
+                  <td class="py-3 pr-4">
+                    <span class:list={[k.prag.stanje === "approved" ? "text-success" : k.prag.stanje === "rejected" || k.prag.kasni ? "text-danger" : "text-ink"]}>
+                      {P.stanja[k.prag.stanje]}
+                    </span>
+                    {k.prag.dueAt && k.prag.stanje === "requested" && (
+                      <span class="block text-ink-muted">{k.prag.kasni ? P.kasni : P.rok.replace("{datum}", datum(lang, k.prag.dueAt))}</span>
+                    )}
+                  </td>
+                  <td class="py-3">
+                    {k.prag.stanje !== "nije_potrebno" && (
+                      <a href={url(lang, "campaign.manage.verification", { id: k.publicId })}
+                        class="inline-flex min-h-11 items-center gap-2 rounded-md border border-ink-muted/60 px-3 font-medium text-ink hover:bg-mist">
+                        <FileCheck size={16} aria-hidden="true" />{P.posalji}
+                      </a>
+                    )}
+                  </td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+    )
+  }
+</OkvirPostavki>

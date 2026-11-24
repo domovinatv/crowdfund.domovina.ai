@@ -1,0 +1,46 @@
+---
+// Povijest prijava (ekran 18): zadnjih 50, IP skraćen na /24 ili /48.
+import OkvirPostavki from "../../components/postavke/OkvirPostavki.astro";
+import { LOCALE } from "../../i18n";
+import { POSTAVKE } from "../sadrzaj/postavke";
+import type { PropsStranice } from "../tipovi";
+import type { PodaciPovijesti } from "./settings.sign-in-history.ucitaj";
+
+type Props = PropsStranice<PodaciPovijesti>;
+const { lang, podaci } = Astro.props;
+const T = POSTAVKE[lang];
+const P = T.povijest;
+const vrijeme = (ms: number) => new Intl.DateTimeFormat(LOCALE[lang], { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/Zagreb" }).format(ms);
+---
+<OkvirPostavki lang={lang} aktivna="settings.sign-in-history" naslov={P.naslov} uvod={P.uvod}>
+  {
+    podaci.prijave.length === 0 ? (
+      <p class="mt-6 text-ink-muted">{P.prazno}</p>
+    ) : (
+      <div class="mt-6 overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead class="border-b border-line text-ink-muted">
+            <tr>
+              <th scope="col" class="py-2 pr-4 font-semibold">{P.stupci.prijava}</th>
+              <th scope="col" class="py-2 pr-4 font-semibold">{P.stupci.aktivnost}</th>
+              <th scope="col" class="py-2 pr-4 font-semibold">{P.stupci.ip}</th>
+              <th scope="col" class="py-2 font-semibold">{P.stupci.uredaj}</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-line">
+            {
+              podaci.prijave.map((p) => (
+                <tr>
+                  <td class="py-2 pr-4">{vrijeme(p.loggedInAt)}</td>
+                  <td class="py-2 pr-4">{p.lastActivityAt ? vrijeme(p.lastActivityAt) : "—"}</td>
+                  <td class="py-2 pr-4 font-mono">{p.ipPrefix ?? "—"}</td>
+                  <td class="py-2">{p.device ?? "—"}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+    )
+  }
+</OkvirPostavki>

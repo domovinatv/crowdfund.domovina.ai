@@ -1,0 +1,49 @@
+---
+// Dijeljenja (ekran 16, automatski linkovi): osobni linkovi dijeljenja i njihov učinak.
+import { broj, iznos } from "../../components/katalog/oblik";
+import OkvirPostavki from "../../components/postavke/OkvirPostavki.astro";
+import { url } from "../../lib/rute";
+import { POSTAVKE } from "../sadrzaj/postavke";
+import type { PropsStranice } from "../tipovi";
+import type { PodaciDijeljenja } from "./settings.links.sharing.ucitaj";
+
+type Props = PropsStranice<PodaciDijeljenja>;
+const { lang, podaci } = Astro.props;
+const T = POSTAVKE[lang];
+const P = T.dijeljenja;
+const S = P.stupci;
+---
+<OkvirPostavki lang={lang} aktivna="settings.links.sharing" naslov={P.naslov} uvod={P.uvod}>
+  {
+    podaci.dijeljenja.length === 0 ? (
+      <p class="mt-6 text-ink-muted">{P.prazno}</p>
+    ) : (
+      <div class="mt-6 overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead class="border-b border-line text-ink-muted">
+            <tr>
+              <th scope="col" class="py-2 pr-4 font-semibold">{S.kod}</th>
+              <th scope="col" class="py-2 pr-4 font-semibold">{S.kampanja}</th>
+              <th scope="col" class="py-2 pr-4 text-right font-semibold">{S.posjeti}</th>
+              <th scope="col" class="py-2 pr-4 text-right font-semibold">{S.doprinosa}</th>
+              <th scope="col" class="py-2 text-right font-semibold">{S.iznos}</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-line">
+            {
+              podaci.dijeljenja.map((d) => (
+                <tr>
+                  <td class="py-3 pr-4 font-mono">{d.code}</td>
+                  <td class="py-3 pr-4"><a href={url(lang, "campaign", { id: d.publicId })} class="text-action underline underline-offset-2">{d.naslov}</a></td>
+                  <td class="py-3 pr-4 text-right">{broj(lang, d.posjeti)}</td>
+                  <td class="py-3 pr-4 text-right">{broj(lang, d.doprinosa)}</td>
+                  <td class="py-3 text-right whitespace-nowrap">{iznos(lang, d.iznosCenti)}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+    )
+  }
+</OkvirPostavki>

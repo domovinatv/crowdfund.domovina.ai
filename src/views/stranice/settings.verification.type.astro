@@ -1,0 +1,36 @@
+---
+// Vrsta računa (ekran 02 korak 2): fizička osoba → podaci; organizacija → zahtjev organizacije (KYB).
+import Building from "@lucide/astro/icons/building";
+import UserRound from "@lucide/astro/icons/user-round";
+import PhaseBadge from "../../components/PhaseBadge.astro";
+import KoraciVerifikacije from "../../components/postavke/KoraciVerifikacije.astro";
+import OkvirPostavki from "../../components/postavke/OkvirPostavki.astro";
+import { url } from "../../lib/rute";
+import { POSTAVKE } from "../sadrzaj/postavke";
+import type { PropsStranice } from "../tipovi";
+import type { PodaciVrsteVerifikacije } from "./settings.verification.type.ucitaj";
+
+type Props = PropsStranice<PodaciVrsteVerifikacije>;
+const { lang, podaci } = Astro.props;
+const T = POSTAVKE[lang];
+const P = T.verifikacija;
+const s = podaci.stanje;
+const zakljucano = s === "submitted" || s === "in_review" || s === "approved";
+---
+<OkvirPostavki lang={lang} aktivna="settings.verification" naslov={P.vrstaNaslov} uvod={P.vrstaUvod}>
+  <KoraciVerifikacije lang={lang} trenutni="vrsta" />
+  {zakljucano && <p role="status" class="mt-4 rounded-md bg-mist p-4 text-sm">{s === "approved" ? P.vecVerificiran : P.vecPoslano}</p>}
+  <ul class="mt-6 grid gap-4 sm:grid-cols-2">
+    <li class="rounded-md border border-line p-5">
+      <h2 class="flex flex-wrap items-center gap-2 font-semibold text-ink"><UserRound size={20} aria-hidden="true" />{P.osoba}<PhaseBadge lang={lang} /></h2>
+      <p class="mt-2 text-sm text-ink-soft">{P.osobaOpis}</p>
+      <a href={url(lang, zakljucano ? "settings.verification.review" : "settings.verification.details")}
+        class="mt-4 inline-flex min-h-11 items-center rounded-md bg-action px-5 font-semibold text-paper hover:bg-action-strong">{zakljucano ? P.pregled : P.nastavi}</a>
+    </li>
+    <li class="rounded-md border border-line p-5">
+      <h2 class="flex items-center gap-2 font-semibold text-ink"><Building size={20} aria-hidden="true" />{P.organizacija}</h2>
+      <p class="mt-2 text-sm text-ink-soft">{P.organizacijaOpis}</p>
+      <a href={url(lang, "organisation.new")} class="mt-4 inline-flex min-h-11 items-center rounded-md border border-ink-muted/60 px-4 font-medium text-ink hover:bg-mist">{P.prijaviOrganizaciju}</a>
+    </li>
+  </ul>
+</OkvirPostavki>

@@ -1,0 +1,48 @@
+---
+// Okvir postavki (ekran 10 `SettingsNav`): bočni izbornik s 11 stavki, jedan h1, noindex, poruka o spremanju
+// (`?spremljeno=1`) i sažetak greške obrasca.
+import Base from "../../layouts/Base.astro";
+import type { Lang } from "../../i18n";
+import { url } from "../../lib/rute";
+import { POSTAVKE } from "../../views/sadrzaj/postavke";
+import Greska from "../prijava/Greska.astro";
+import { STAVKE_POSTAVKI, type StavkaPostavki } from "./ucitavanje";
+
+interface Props {
+  lang: Lang;
+  aktivna: StavkaPostavki;
+  naslov: string;
+  uvod?: string | undefined;
+  /** Poruka o uspjehu (role=status). */
+  uspjeh?: string | null | undefined;
+  greska?: string | null | undefined;
+}
+const { lang, aktivna, naslov, uvod, uspjeh, greska } = Astro.props;
+const T = POSTAVKE[lang];
+---
+<Base lang={lang} title={`${naslov} · ${T.naslov}`} noindex>
+  <div class="grid gap-8 md:grid-cols-[14rem_minmax(0,1fr)]">
+    <nav aria-label={T.naslov} class="md:order-none">
+      <p class="text-sm font-semibold text-ink-muted">{T.naslov}</p>
+      <ul class="mt-2 flex flex-wrap gap-1 md:flex-col">
+        {
+          STAVKE_POSTAVKI.map((k) => (
+            <li>
+              <a href={url(lang, k)} aria-current={k === aktivna ? "page" : undefined}
+                class:list={["inline-flex min-h-11 items-center rounded-md px-3 text-sm", k === aktivna ? "bg-mist font-semibold text-ink" : "text-ink-soft hover:bg-mist hover:text-ink"]}>
+                {T.nav[k]}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+    <div class="min-w-0">
+      <h1 class="page-title text-ink">{naslov}</h1>
+      {uvod && <p class="mt-2 max-w-prose text-ink-soft">{uvod}</p>}
+      {uspjeh && <p role="status" class="mt-4 rounded-md bg-success/10 p-4 text-sm font-medium text-success">{uspjeh}</p>}
+      {greska && <Greska poruka={greska} />}
+      <slot />
+    </div>
+  </div>
+</Base>

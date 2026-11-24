@@ -1,0 +1,76 @@
+---
+// Mjesečne donacije (ekran 17, odluka 215): pauza, nastavak, otkaz i dan u mjesecu. Bez novca (S7–S8).
+import Ban from "@lucide/astro/icons/ban";
+import Pause from "@lucide/astro/icons/pause";
+import Play from "@lucide/astro/icons/play";
+import { iznos } from "../../components/katalog/oblik";
+import OkvirPostavki from "../../components/postavke/OkvirPostavki.astro";
+import { url } from "../../lib/rute";
+import { POSTAVKE } from "../sadrzaj/postavke";
+import type { PropsStranice } from "../tipovi";
+import type { PodaciPonavljanja } from "./settings.recurring.ucitaj";
+
+type Props = PropsStranice<PodaciPonavljanja>;
+const { lang, podaci } = Astro.props;
+const T = POSTAVKE[lang];
+const P = T.ponavljajuce;
+const S = P.stupci;
+const gumb = "inline-flex min-h-11 items-center gap-1.5 rounded-md border border-ink-muted/60 px-3 font-medium text-ink hover:bg-mist";
+const akcija = url(lang, "settings.recurring");
+---
+<OkvirPostavki lang={lang} aktivna="settings.recurring" naslov={P.naslov} uvod={P.uvod}
+  uspjeh={podaci.ok ? T.spremljeno : null} greska={podaci.greska ? P.greska : null}>
+  {
+    podaci.ponavljanja.length === 0 ? (
+      <p class="mt-6 text-ink-muted">{P.prazno}</p>
+    ) : (
+      <ul class="mt-6 space-y-4">
+        {
+          podaci.ponavljanja.map((r) => (
+            <li class="rounded-md border border-line p-4">
+              <p class="font-semibold text-ink">
+                <a href={url(lang, "campaign", { id: r.publicId })} class="text-action underline underline-offset-2">{r.naslov}</a>
+              </p>
+              <dl class="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-sm sm:grid-cols-4">
+                <div><dt class="text-ink-muted">{S.iznos}</dt><dd>{iznos(lang, r.amountCents)}</dd></div>
+                <div><dt class="text-ink-muted">{S.dan}</dt><dd>{r.dayOfMonth}.</dd></div>
+                <div><dt class="text-ink-muted">{S.nacin}</dt><dd>{P.nacini[r.mode]}</dd></div>
+                <div><dt class="text-ink-muted">{S.stanje}</dt><dd>{P.stanja[r.status]}</dd></div>
+              </dl>
+              {
+                r.status !== "cancelled" && (
+                  <div class="mt-3 flex flex-wrap items-end gap-2">
+                    <form method="post" action={akcija}>
+                      <input type="hidden" name="id" value={r.id} />
+                      <input type="hidden" name="radnja" value={r.status === "active" ? "pause" : "resume"} />
+                      <button type="submit" class={gumb}>
+                        {r.status === "active" ? <Pause size={16} aria-hidden="true" /> : <Play size={16} aria-hidden="true" />}
+                        {r.status === "active" ? P.pauziraj : P.nastavi}
+                      </button>
+                    </form>
+                    <form method="post" action={akcija}>
+                      <input type="hidden" name="id" value={r.id} />
+                      <input type="hidden" name="radnja" value="cancel" />
+                      <button type="submit" class={gumb}><Ban size={16} aria-hidden="true" />{P.otkazi}</button>
+                    </form>
+                    <form method="post" action={akcija} class="flex items-end gap-2">
+                      <input type="hidden" name="id" value={r.id} />
+                      <input type="hidden" name="radnja" value="day" />
+                      <label class="text-sm">
+                        <span class="block text-ink-muted">{S.dan}</span>
+                        <input type="number" name="dan" min="1" max="28" value={r.dayOfMonth} required
+                          class="mt-1 block w-20 rounded-sm border border-ink-muted/60 bg-paper px-3 py-2.5 text-base text-ink" />
+                      </label>
+                      <button type="submit" class={gumb}>{P.promijeniDan}</button>
+                    </form>
+                  </div>
+                )
+              }
+            </li>
+          ))
+        }
+      </ul>
+    )
+  }
+  <p class="mt-6 text-sm text-ink-muted">{P.detaljiS8}</p>
+</OkvirPostavki>

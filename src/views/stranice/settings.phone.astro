@@ -1,0 +1,44 @@
+---
+// Telefon (ekran 11): samo uz verificiran račun; uklanjanje uvijek. Kodovi za prijavu idu samo e-poštom.
+import BadgeCheck from "@lucide/astro/icons/badge-check";
+import OkvirPostavki from "../../components/postavke/OkvirPostavki.astro";
+import Polje from "../../components/postavke/Polje.astro";
+import { url } from "../../lib/rute";
+import { POSTAVKE } from "../sadrzaj/postavke";
+import type { PropsStranice } from "../tipovi";
+import type { PodaciTelefona } from "./settings.phone.ucitaj";
+
+type Props = PropsStranice<PodaciTelefona>;
+const { lang, podaci } = Astro.props;
+const { verificiran, telefon, unos, greska, ok } = podaci;
+const T = POSTAVKE[lang];
+const P = T.telefon;
+---
+<OkvirPostavki lang={lang} aktivna="settings.phone" naslov={P.naslov} uspjeh={ok ? T.spremljeno : null}
+  greska={greska === "verifikacija" ? P.trebaVerifikacija : greska ? T.greskaObrasca : null}>
+  {
+    telefon && (
+      <form method="post" action={url(lang, "settings.phone")} class="mt-6 flex flex-wrap items-center gap-3">
+        <p><span class="text-ink-muted">{P.trenutni}:</span> <span class="font-semibold text-ink">{telefon}</span></p>
+        <input type="hidden" name="akcija" value="ukloni" />
+        <button type="submit" class="inline-flex min-h-11 items-center rounded-md border border-ink-muted/60 px-4 font-medium text-ink hover:bg-mist">{P.ukloni}</button>
+      </form>
+    )
+  }
+  {
+    verificiran ? (
+      <form method="post" action={url(lang, "settings.phone")} class="mt-6 max-w-md space-y-5" novalidate>
+        <Polje ime="phone" oznaka={P.polje} tip="tel" vrijednost={unos} greska={greska === "neispravno" ? T.greske.neispravno : null}
+          pomoc={P.pomoc} max={30} autocomplete="tel" />
+        <button type="submit" class="inline-flex min-h-11 items-center gap-2 rounded-md bg-action px-5 font-semibold text-paper hover:bg-action-strong">{T.spremi}</button>
+      </form>
+    ) : (
+      <div class="mt-6 rounded-md bg-mist p-4">
+        <p class="text-ink">{P.trebaVerifikacija}</p>
+        <a href={url(lang, "settings.verification")} class="mt-3 inline-flex min-h-11 items-center gap-2 rounded-md bg-action px-5 font-semibold text-paper hover:bg-action-strong">
+          <BadgeCheck size={18} aria-hidden="true" />{P.verificiraj}
+        </a>
+      </div>
+    )
+  }
+</OkvirPostavki>

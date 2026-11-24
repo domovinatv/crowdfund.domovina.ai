@@ -1,0 +1,30 @@
+---
+// Koraci verifikacije osobe (ekran 02 stepper): vrsta → podaci → pregled; trenutni nosi aria-current="step".
+import type { Lang } from "../../i18n";
+import { url } from "../../lib/rute";
+import { POSTAVKE } from "../../views/sadrzaj/postavke";
+
+interface Props {
+  lang: Lang;
+  trenutni: "vrsta" | "podaci" | "pregled";
+}
+const { lang, trenutni } = Astro.props;
+const K = POSTAVKE[lang].verifikacija.koraci;
+const koraci = [
+  ["vrsta", "settings.verification.type"],
+  ["podaci", "settings.verification.details"],
+  ["pregled", "settings.verification.review"],
+] as const;
+---
+<ol class="mt-4 flex flex-wrap gap-2 text-sm">
+  {
+    koraci.map(([k, ruta], i) => (
+      <li>
+        <a href={url(lang, ruta)} aria-current={k === trenutni ? "step" : undefined}
+          class:list={["inline-flex min-h-11 items-center gap-2 rounded-full px-3", k === trenutni ? "bg-action text-paper font-semibold" : "bg-mist text-ink-soft hover:text-ink"]}>
+          <span aria-hidden="true">{i + 1}.</span>{K[k]}
+        </a>
+      </li>
+    ))
+  }
+</ol>

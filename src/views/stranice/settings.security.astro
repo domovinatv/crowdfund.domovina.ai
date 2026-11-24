@@ -1,0 +1,44 @@
+---
+// Sigurnost (ekran 14): dodatna potvrda e-poštom za osjetljive radnje; bez limita isplate (odluka 6);
+// aktivne prijave i odjava ostalih uređaja.
+import LogOut from "@lucide/astro/icons/log-out";
+import ShieldCheck from "@lucide/astro/icons/shield-check";
+import OkvirPostavki from "../../components/postavke/OkvirPostavki.astro";
+import { RADNJE_POTVRDE } from "../../lib/pristup";
+import { url } from "../../lib/rute";
+import { POSTAVKE } from "../sadrzaj/postavke";
+import type { PropsStranice } from "../tipovi";
+import type { PodaciSigurnosti } from "./settings.security.ucitaj";
+
+type Props = PropsStranice<PodaciSigurnosti>;
+const { lang, podaci } = Astro.props;
+const { sesija, odjavljeno } = podaci;
+const T = POSTAVKE[lang];
+const P = T.sigurnost;
+---
+<OkvirPostavki lang={lang} aktivna="settings.security" naslov={P.naslov}
+  uspjeh={odjavljeno !== null ? P.odjavljeno.replace("{n}", String(odjavljeno)) : null}>
+  <section aria-labelledby="dodatna" class="mt-6 max-w-xl">
+    <h2 id="dodatna" class="flex items-center gap-2 text-lg font-semibold text-ink"><ShieldCheck size={20} aria-hidden="true" />{P.dodatnaNaslov}</h2>
+    <p class="mt-2 text-ink-soft">{P.dodatnaTekst}</p>
+    <fieldset class="mt-4">
+      <legend class="font-semibold text-ink">{P.kanal}</legend>
+      <label class="mt-2 flex items-center gap-3"><input type="radio" name="kanal" checked disabled class="size-5 accent-action" />{P.kanalEposta}</label>
+      <label class="mt-2 flex items-center gap-3 text-ink-muted"><input type="radio" name="kanal" disabled class="size-5" />{P.kanalSms}</label>
+    </fieldset>
+    <h3 class="mt-5 font-semibold text-ink">{P.radnjeNaslov}</h3>
+    <ul class="mt-2 list-disc space-y-1 pl-5 text-ink-soft">{RADNJE_POTVRDE.map((r) => <li>{P.radnje[r]}</li>)}</ul>
+    <p class="mt-4 rounded-md bg-mist p-4 text-sm text-ink-soft">{P.limiti}</p>
+  </section>
+  <section aria-labelledby="uredaji" class="mt-10 max-w-xl">
+    <h2 id="uredaji" class="text-lg font-semibold text-ink">{P.sesijeNaslov}</h2>
+    <p class="mt-2 text-ink-soft">{P.sesije.replace("{n}", String(sesija))}</p>
+    <form method="post" action={url(lang, "settings.security")} class="mt-4">
+      <input type="hidden" name="akcija" value="odjavi_ostale" />
+      <button type="submit" class="inline-flex min-h-11 items-center gap-2 rounded-md border border-ink-muted/60 px-4 font-medium text-ink hover:bg-mist">
+        <LogOut size={18} aria-hidden="true" />{P.odjaviOstale}
+      </button>
+    </form>
+    <p class="mt-3 text-sm"><a href={url(lang, "settings.sign-in-history")} class="text-action underline underline-offset-2">{T.nav["settings.sign-in-history"]}</a></p>
+  </section>
+</OkvirPostavki>

@@ -1,0 +1,36 @@
+---
+// Tekstualno polje obrasca postavki: oznaka, pomoć i greška povezani preko aria-describedby (radi bez JS-a).
+interface Props {
+  ime: string;
+  oznaka: string;
+  vrijednost?: string | null | undefined;
+  greska?: string | null | undefined;
+  pomoc?: string | null | undefined;
+  tip?: "text" | "url" | "tel" | "date" | "email";
+  max?: number;
+  obavezno?: boolean;
+  zakljucano?: boolean;
+  visered?: boolean;
+  autocomplete?: string;
+}
+const { ime, oznaka, vrijednost, greska, pomoc, tip = "text", max, obavezno = false, zakljucano = false, visered = false, autocomplete } = Astro.props;
+const opis = [pomoc ? `${ime}-pomoc` : null, greska ? `${ime}-greska` : null].filter(Boolean).join(" ") || undefined;
+const klasa = [
+  "mt-1.5 block w-full rounded-sm border bg-paper px-3 py-2.5 text-base text-ink placeholder:text-ink-muted disabled:bg-mist disabled:text-ink-muted",
+  greska ? "border-danger ring-1 ring-danger" : "border-ink-muted/60",
+];
+---
+<div>
+  <label for={ime} class="font-semibold text-ink">{oznaka}</label>
+  {
+    visered ? (
+      <textarea id={ime} name={ime} rows="5" maxlength={max} required={obavezno} disabled={zakljucano}
+        aria-invalid={greska ? "true" : undefined} aria-describedby={opis} class:list={klasa}>{vrijednost ?? ""}</textarea>
+    ) : (
+      <input id={ime} name={ime} type={tip} value={vrijednost ?? ""} maxlength={max} required={obavezno} disabled={zakljucano}
+        autocomplete={autocomplete} aria-invalid={greska ? "true" : undefined} aria-describedby={opis} class:list={klasa} />
+    )
+  }
+  {pomoc && <p id={`${ime}-pomoc`} class="mt-1.5 text-sm text-ink-muted">{pomoc}</p>}
+  {greska && <p id={`${ime}-greska`} class="mt-1 text-sm font-medium text-danger">{greska}</p>}
+</div>

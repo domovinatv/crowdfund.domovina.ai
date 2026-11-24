@@ -1,0 +1,74 @@
+---
+// Profil i privatnost (ekran 12): 9 prekidača vidljivosti, indeksiranje, slug profila, newsletter; brisanje
+// računa (P+e). Prekidači su obični checkboxovi (bez JS-a).
+import ExternalLink from "@lucide/astro/icons/external-link";
+import Trash from "@lucide/astro/icons/trash";
+import OkvirPostavki from "../../components/postavke/OkvirPostavki.astro";
+import Polje from "../../components/postavke/Polje.astro";
+import Greska from "../../components/prijava/Greska.astro";
+import { PREKIDACI } from "../../lib/db/postavke";
+import { url } from "../../lib/rute";
+import { POSTAVKE } from "../sadrzaj/postavke";
+import type { PropsStranice } from "../tipovi";
+import type { PodaciProfila } from "./settings.profile.ucitaj";
+
+type Props = PropsStranice<PodaciProfila>;
+const { lang, podaci } = Astro.props;
+const { userId, postavke, greske, greskaBrisanja, ok } = podaci;
+const T = POSTAVKE[lang];
+const P = T.profil;
+const slugGreska = greske.slug ? T.greske[greske.slug as keyof typeof T.greske] ?? T.greske.neispravno : null;
+const kvacica = "mt-0.5 size-5 shrink-0 accent-action";
+---
+<OkvirPostavki lang={lang} aktivna="settings.profile" naslov={P.naslov} uvod={P.uvod} uspjeh={ok ? T.spremljeno : null}
+  greska={Object.keys(greske).length ? T.greskaObrasca : null}>
+  <p class="mt-3 text-sm">
+    <a href={url(lang, "user", { slug: postavke.slug ?? userId })} class="inline-flex items-center gap-1 font-medium text-action underline underline-offset-2">
+      {P.javniProfil}<ExternalLink size={14} aria-hidden="true" />
+    </a>
+  </p>
+  <form method="post" action={url(lang, "settings.profile")} class="mt-6 max-w-xl space-y-6" novalidate>
+    <fieldset>
+      <legend class="font-semibold text-ink">{P.vidljivo}</legend>
+      <ul class="mt-3 space-y-3">
+        {
+          PREKIDACI.map((k) => (
+            <li>
+              <label class="flex items-start gap-3">
+                <input type="checkbox" name={k} value="1" checked={postavke.prekidaci[k]} class={kvacica} />
+                <span>{P.prekidaci[k]}</span>
+              </label>
+            </li>
+          ))
+        }
+      </ul>
+    </fieldset>
+    <div>
+      <label class="flex items-start gap-3">
+        <input type="checkbox" name="indexable" value="1" checked={postavke.prekidaci.indexable} aria-describedby="indeks-pomoc" class={kvacica} />
+        <span class="font-semibold text-ink">{P.indeksiranje}</span>
+      </label>
+      <p id="indeks-pomoc" class="mt-1 ml-8 text-sm text-ink-muted">{P.indeksiranjePomoc}</p>
+    </div>
+    <Polje ime="slug" oznaka={P.slug} vrijednost={postavke.slug} greska={slugGreska} pomoc={P.slugPomoc} max={40} />
+    <label class="flex items-start gap-3">
+      <input type="checkbox" name="newsletter" value="1" checked={postavke.newsletter} class={kvacica} />
+      <span>{P.newsletter}</span>
+    </label>
+    <p class="text-sm text-ink-muted">{P.obavijesti}</p>
+    <button type="submit" class="inline-flex min-h-11 items-center gap-2 rounded-md bg-action px-5 font-semibold text-paper hover:bg-action-strong">{T.spremi}</button>
+  </form>
+
+  <section aria-labelledby="brisanje" class="mt-12 max-w-xl rounded-md border border-danger/30 p-5">
+    <h2 id="brisanje" class="text-lg font-semibold text-ink">{P.brisanjeNaslov}</h2>
+    <p class="mt-2 text-ink-soft">{P.brisanjeTekst}</p>
+    <p class="mt-2 text-sm text-ink-muted">{P.brisanjePotvrda}</p>
+    {greskaBrisanja && <Greska poruka={P.jedini_vlasnik} />}
+    <form method="post" action={url(lang, "settings.profile")} class="mt-4">
+      <input type="hidden" name="akcija" value="obrisi" />
+      <button type="submit" class="inline-flex min-h-11 items-center gap-2 rounded-md bg-danger px-5 font-semibold text-paper hover:opacity-90">
+        <Trash size={18} aria-hidden="true" />{P.obrisi}
+      </button>
+    </form>
+  </section>
+</OkvirPostavki>

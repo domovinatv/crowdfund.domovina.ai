@@ -1,0 +1,54 @@
+---
+// Podaci (ekran 10): ime, prezime, ime za prikaz; „o meni” i web zaključani do verifikacije; e-pošta samo čitanje;
+// fotografija je mock. Radi bez JS-a (POST na istu rutu).
+import Lock from "@lucide/astro/icons/lock";
+import UserRound from "@lucide/astro/icons/user-round";
+import OkvirPostavki from "../../components/postavke/OkvirPostavki.astro";
+import Polje from "../../components/postavke/Polje.astro";
+import { url } from "../../lib/rute";
+import { POSTAVKE } from "../sadrzaj/postavke";
+import type { PropsStranice } from "../tipovi";
+import type { PodaciPodataka } from "./settings.details.ucitaj";
+
+type Props = PropsStranice<PodaciPodataka>;
+const { lang, podaci } = Astro.props;
+const { racun, vrijednosti: v, greske, ok } = podaci;
+const T = POSTAVKE[lang];
+const P = T.podaci;
+const g = (k: string) => (greske[k] ? T.greske[greske[k] as keyof typeof T.greske] ?? T.greske.neispravno : null);
+const zakljucano = !racun.verificiran;
+---
+<OkvirPostavki lang={lang} aktivna="settings.details" naslov={P.naslov} uspjeh={ok ? T.spremljeno : null}
+  greska={Object.keys(greske).length ? T.greskaObrasca : null}>
+  <section class="mt-6 flex items-center gap-4" aria-labelledby="slika">
+    <span class="grid size-16 place-items-center rounded-full bg-mist text-ink-muted"><UserRound size={28} aria-hidden="true" /></span>
+    <div>
+      <h2 id="slika" class="font-semibold text-ink">{P.slika}</h2>
+      <p class="text-sm text-ink-muted">{P.slikaMock}</p>
+    </div>
+  </section>
+
+  <form method="post" action={url(lang, "settings.details")} class="mt-8 max-w-xl space-y-5" novalidate>
+    <Polje ime="first_name" oznaka={P.ime} vrijednost={v.first_name} greska={g("first_name")} max={255} autocomplete="given-name" />
+    <Polje ime="last_name" oznaka={P.prezime} vrijednost={v.last_name} greska={g("last_name")} max={255} autocomplete="family-name" />
+    <Polje ime="display_name" oznaka={P.prikaz} vrijednost={v.display_name} greska={g("display_name")} pomoc={P.prikazPomoc} max={255} />
+    <Polje ime="about" oznaka={P.oMeni} vrijednost={v.about} greska={g("about")} max={3500} visered zakljucano={zakljucano}
+      pomoc={zakljucano ? P.zakljucano : null} />
+    <Polje ime="website" oznaka={P.web} tip="url" vrijednost={v.website} greska={g("website")} max={255} zakljucano={zakljucano}
+      pomoc={zakljucano ? P.zakljucano : null} />
+    {
+      zakljucano && (
+        <p class="flex items-center gap-2 text-sm">
+          <Lock size={16} aria-hidden="true" class="text-ink-muted" />
+          <a href={url(lang, "settings.verification")} class="font-medium text-action underline underline-offset-2">{T.telefon.verificiraj}</a>
+        </p>
+      )
+    }
+    <div>
+      <p class="font-semibold text-ink">{P.eposta}</p>
+      <p class="mt-1.5 text-ink">{racun.email}</p>
+      <p class="mt-1 text-sm"><a href={url(lang, "contact")} class="text-action underline underline-offset-2">{P.epostaPomoc}</a></p>
+    </div>
+    <button type="submit" class="inline-flex min-h-11 items-center gap-2 rounded-md bg-action px-5 font-semibold text-paper hover:bg-action-strong">{T.spremi}</button>
+  </form>
+</OkvirPostavki>
