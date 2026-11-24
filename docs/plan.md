@@ -43,4 +43,4 @@ tunel ili ručni `simulate` + pull statusa).
 
 ## Gdje smo
 
-S0, S1 i S1b gotovi (24. 11. 2026.): istraživanje, plan, obilazak 4funda (27 ekrana, prijavljeno i anonimno). ITalk d.o.o. čeka odobrenje računa tvrtke na 4fundu (nije vrata). Koda nema. Sljedeće: S2, specifikacija.
+S0, S1, S1b i S2 gotovi (24. 11. 2026.): istraživanje, plan, obilazak 4funda (27 ekrana), specifikacija (03 domenski model, 04 tokovi, 05 stanja, 09 nacrt D1 sheme, odluke 200–216). ITalk d.o.o. čeka odobrenje računa tvrtke na 4fundu (nije vrata). Koda nema. Sljedeće: S3, rute i dizajn sustav.
