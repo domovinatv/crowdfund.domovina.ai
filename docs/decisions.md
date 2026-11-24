@@ -156,3 +156,33 @@ koja se na nju poziva. Blokovi brojeva po sesiji: S1 od 100, S1b od 150, S2 od 2
 312. **✗ u fazi 1:** premium alias (`/{alias}`), why-us, EK brošura, press, blog, katalog kreatora, fakture,
      Facebook prijava, javni API, promocija i delegirane zahvale. Razlog po retku u [07](07-rute.md).
 313. **Moderacija platforme je `/admin/*`, samo hrvatski**, uloga `moderator` je mock u prototipu.
+
+## S4 — 24. 11. 2026.
+
+400. **Kostur:** Astro 7.4 `output: "server"`, `@astrojs/cloudflare` 14.4 sa `session: false` i
+     `imageService: "passthrough"` (bez SESSION KV i IMAGES vezova, uzor listici), wrangler 4.168, Tailwind 4.3
+     kroz `@tailwindcss/vite`, vitest 5.1, TypeScript strict. D1 kroz `import { env } from "cloudflare:workers"`,
+     `remoteBindings: false`, `database_id` lokalni placeholder (nikad remote do S9 vrata).
+401. **Odluka 302 sužena na mjesto ID-a:** pravilo vrijedi za prvi segment iza `/{lang}/` i prvi segment rute
+     bez jezika; dublji segmenti (`manage`, `stream`, `drafts`, `events`) se ne mogu sudariti. Jedini stvarni
+     sudar `/en/safety` je preimenovan u `/en/security`. Test hvata i negativni slučaj. (potvrditi)
+402. **`0001_core.sql` se generira** (`npm run db:gen-core`, `scripts/generiraj-core-sql.mjs`) iz `contract` paketa
+     `@domovina/campaign-core` v0.2.0: stupci redom contracta, tablični `PRIMARY KEY`/`UNIQUE`, filtrirani unique
+     kao `CREATE UNIQUE INDEX … WHERE`. Test drži datoteku jednakom generatoru. 52 tablice (15 jezgre + 37).
+403. **`users.platform_role`** `TEXT NOT NULL DEFAULT 'user' CHECK (platform_role IN ('user','moderator'))`, odmah
+     iza `locale` (odluka 313).
+404. **Brend tokeni:** navy, navy-deep, red, red-text, paper, mist (08 §2.1 nije imenovao svih šest; paper i mist
+     su izbor S4). Zamjena brenda = ovih 6 + i18n. (potvrditi)
+405. **Seed je deterministički i resetira:** `scripts/seed.mjs` → `seed/demo.sql` (mulberry32, „sad” 2026-11-20,
+     UUIDv7 s vremenom zapisa), počinje s `DELETE FROM` svih tablica osim `categories` obrnutim redom ovisnosti, pa
+     briše i ručno unesene lokalne podatke. Demo oznaka: `campaigns.demo = 1`, `metadata {"demo":true}`, e-pošta
+     `@demo.invalid`, slugovi `demo-`, reference `DEMO-`; Safe adrese izmišljene (`0xde5afe…`), `mode=byo`.
+406. **Skriveni iznos i broj podržavatelja ne izlaze iz upita:** `aktivneKampanje()` vraća `null` kad je
+     `hide_raised`/`hide_contributor_count`, ne samo da ih komponenta ne crta (sigurno i za budući JSON API).
+407. **Testovi nad SQLiteom kroz `node:sqlite`** (Node 24) s malim D1 shimom, bez nove ovisnosti i bez mreže.
+408. **Kolačić `lang`** (1 godina) postavlja middleware pri svakom posjetu `/hr/…` ili `/en/…`.
+409. **Tablica ruta** (`src/lib/rute.ts`) ima 85 jezičnih ruta i 21 bez jezika; izostavljene su rute kojima 07 ne
+     daje engleski oblik (`…/odjava`, koraci `organizacija/nova/…` i `postavke/verifikacija/…`,
+     `cesta-pitanja/{kategorija}`). S5/S6 ih dodaju s en oblikom u 07.
+410. **Lockfile vuče campaign-core kao `git+ssh`** (commit 0bc0069 = tag v0.2.0); stroj bez SSH ključa za GitHub
+     može pasti na `npm ci`. Popravak (https URL u lockfileu) kad repo dobije remote/CI. (potvrditi)

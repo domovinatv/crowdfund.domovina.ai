@@ -34,10 +34,12 @@ Legenda: `[x]` gotovo · `[ ]` otvoreno · `[~]` u radu · `(!)` traži korisnik
 
 ## F2 — Prototip
 
-- [ ] Astro + Cloudflare + D1 kostur, `npm run check` → S4
-- [ ] Migracije + seed (≥ 20 kampanja) → S4
+- [x] Astro + Cloudflare + D1 kostur, `npm run check` → S4
+- [x] Migracije + seed (24 kampanje, 4 tipa, 8 kategorija) → S4
 - [ ] Javne rute + Playwright smoke → S5
 - [ ] Organizatorski tokovi + e2e „nova kampanja” → S6
+
+- [ ] Rute bez en oblika u 07 (odluka 409) → S5/S6
 
 ## F3 — Plaćanje i hibrid
 

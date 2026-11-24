@@ -43,4 +43,4 @@ tunel ili ručni `simulate` + pull statusa).
 
 ## Gdje smo
 
-S0–S3 gotovi (24. 11. 2026.): istraživanje, plan, obilazak 4funda (27 ekrana), specifikacija (03, 04, 05, 09, odluke 200–216), rute (07) i dizajn sustav (08, odluke 300–313). Ime i brend čekaju korisnika; do tada radno ime i DOMOVINA paleta (odluka 305). ITalk d.o.o. čeka odobrenje računa tvrtke na 4fundu (nije vrata). Koda nema. Sljedeće: S4, kostur Astro + D1.
+S0–S4 gotovi (24. 11. 2026.): istraživanje, obilazak 4funda (27 ekrana), specifikacija (03, 04, 05, 09), rute (07), dizajn sustav (08), kostur Astro 7 + Cloudflare + D1 s migracijama (52 tablice), seedom (24 kampanje) i i18n hr/en; `npm run check` zelen (odluke 400–410). Ime i brend i dalje čekaju korisnika (radno ime, odluka 305). Sljedeće: S5, javni dio.
