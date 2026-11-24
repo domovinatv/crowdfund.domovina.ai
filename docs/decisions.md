@@ -356,3 +356,14 @@ koja se na nju poziva. Blokovi brojeva po sesiji: S1 od 100, S1b od 150, S2 od 2
      (smije se isključiti).
 651. **Popis kampanja organizacije:** „Javna stranica” samo za vidljive (active/funded/closed, ne blokirane);
      „Nova kampanja” vidi editor i viši, samo za `active` organizaciju. Uklonjene vanjske kampanje se ne prikazuju.
+652. **Brisanje računa** (P+e): POST → potvrda radnje → povratak i ponovni klik; uspjeh briše sesiju, 303 na
+     `/{lang}?obrisan=1`; jedini vlasnik pravne organizacije ne može obrisati račun (200 s greškom).
+653. **`settings.verification` je pregled stanja** s gumbom za sljedeći korak (ne preusmjerenje kao 4fund). KYC obrazac
+     zaključan dok je zadnja verifikacija `submitted`/`in_review`/`approved`; nakon `rejected`/`expired` novi red.
+654. **Simulacija odluke EMI-ja** samo dok verifikacija čeka; odluka konačna; odbijanje upisuje razlog s oznakom
+     „mock”; gumbi u isprekidanom okviru „mock”. Odabir „fizička osoba” nosi `PhaseBadge`, „organizacija” vodi na zahtjev.
+655. **Države u KYC-u:** državljanstvo i rođenje = EGP + 9 susjednih i čestih, nazivi iz `Intl.DisplayNames`;
+     prebivalište samo EGP. (potvrditi)
+656. **Telefon:** uklanjanje uvijek, dodavanje i promjena samo verificiranom.
+657. **Statistika linkova i dijeljenja** iz `contribution_attributions` + plaćenih doprinosa (isto kao upravljanje kampanjom).
+658. **Odjava ostalih uređaja** opoziva njihove sesije i javlja broj.
