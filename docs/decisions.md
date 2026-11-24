@@ -199,3 +199,40 @@ koja se na nju poziva. Blokovi brojeva po sesiji: S1 od 100, S1b od 150, S2 od 2
      `created_at`, pa `id`. Isti tekst opisuje ih u katalogu i na `/hr/pravila-prikaza`.
 502. **En oblici koji su nedostajali u 07:** `/en/follow/{token}/unsubscribe` (hr `pracenje/{token}/odjava`) i
      `/en/faq/{category}` (hr `cesta-pitanja/{category}`, ključ kategorije engleski u oba jezika, kao odluka 303).
+503. **Provjera javnih ruta je podatak:** `e2e/javne-rute.ts` gradi popis iz `rute.ts` (`faza: "S5"`) i
+     `seed/primjeri.json` (seed ga generira) s očekivanim statusom (J/J*/T → 200, P → 302 na prijavu, kratki
+     linkovi → 302, rubni slučajevi vidljivosti → 404). Koriste ga `npm run routes` (`scripts/provjera-ruta.ts`
+     nad pokrenutim serverom) i `npm run e2e` (Playwright, 375 px i 1280 px). Checkout koraci 2–3 su izostavljeni
+     s razlogom (S7). Playwright nije u `npm run check` jer treba server.
+504. **Isključena kampanja** (`paused_at`) otvara se poveznicom, ali nije u katalogu ni na naslovnici; ne prima uplate.
+505. **Skriveni iznos ne curi ni kroz poredak:** kampanje s `hide_raised` idu na kraj u `most`, `least`, `popular`
+     i u uredničkom izboru; filtar `successful` ih isključuje; uz `hide_raised` popis uplata vraća sve iznose kao
+     `null` i slaže se samo po vremenu (iz iznosa bi se zbrojio ukupni). Uz skriveni broj podržavatelja `ukupno`
+     popisa je `null`.
+506. **`ending`:** prošli rok i bez roka idu na kraj. **`near`:** tekstualno po `location_name` kampanje i gradu
+     organizatora (seed nema `lat`/`lng`). (potvrditi)
+507. **Profil osobe nema `users.slug` u shemi:** slug je zasad `users.id` (UUIDv7); profil je privatan (404) kad je
+     svih 9 prekidača vidljivosti isključeno, `indexable = 0` → `noindex`. Prijedlog migracije `users.slug` za S6. (potvrditi)
+508. **Token praćenja je potpisan, ne spremljen:** `campaign_follows` nema stupac tokena ni e-poštu neprijavljenog,
+     pa je token `{user_id}.{campaign_id}.{HMAC-SHA256}`; lokalno demo tajna, Worker tajnu iz okoline. Odjava
+     isključuje sve tri obavijesti i ostavlja red (idempotentno). Prijedlog migracije (`token_hash`, `email`) za S6. (potvrditi)
+509. **Popis uplata skriven** zasad u `campaigns.metadata.contributions_list = "hidden"` (stupca nema). (potvrditi)
+510. **Brojači naslovnice:** „prikupljeno” zbraja samo kampanje bez skrivenog iznosa; broj doprinosa uključuje
+     sve javno vidljive (active i closed, public i unlisted). Mjesečni iznos na kartici = plaćeno u zadnjih 30 dana.
+511. **Urednički izbor bez stupca za istaknuto:** u katalogu, verificiran organizator, opis nije prazan, redom po
+     prikupljenom; isti kriterij je opisan na `/hr/pravila-prikaza`. Izbor se ne prodaje.
+512. **D1 nema ICU:** `q` ne razlikuje veličinu slova samo za ASCII, abecedni red organizacija je ASCII. Prihvaćeno
+     za prototip.
+513. **Seed S5:** nove kampanje i retci dodani na kraj (prijašnji retci bajt-jednaki); kasice, linkovi i posjeti,
+     vanjske kampanje (`https://4fund.invalid/demo-…`), ponude, rubni slučajevi vidljivosti; galerija se ne seeda
+     (slika traži R2), kartice koriste temu naslovnice. Prijava upisuje privolu `report_gdpr` verzije `report-2026-11`.
+514. **Statični tekstovi** su u `src/views/sadrzaj/*.ts` kao `{ hr, en }` istog oblika; test drži iste id-eve i broj
+     stavki na oba jezika i pada na „ulag/ulož/invest” (copy pravilo). FAQ kategorije: `donating`, `organising`,
+     `organisations`, `money`, `sharing`, `safety`, `account`; nepoznat ključ → 404.
+515. **Kontakt:** čita `?topic=` (odluka 303) i `?tema=` (07) kao isto; validacija samo na poslužitelju s granicama
+     CHECK-a; neuspio POST vraća 200 s greškama uz polje (pogled ne postavlja 422, odluka 500); Turnstile je mock;
+     uspjeh 303 `?poslano=1`. (potvrditi jedan oblik parametra)
+516. **Rute s pristupom P** (`offers.new`, `campaign.moneybox.new`) do S6 vraćaju 302 na `/{lang}/prijava?next=…`.
+517. **Impresum i pravni tekstovi:** neprovjereni podaci ITalka (OIB, sjedište, registar, odgovorna osoba) stoje
+     kao „[upisuje se prije objave]”; uvjeti i privatnost nose oznaku „Nacrt prototipa”. Tvrdnje koje dokumenti ne
+     pokrivaju doslovno (instant SEPA ne skuplja od obične, AZOP, Safe „npr. 2 od 3”) provjeriti prije objave. (potvrditi)
