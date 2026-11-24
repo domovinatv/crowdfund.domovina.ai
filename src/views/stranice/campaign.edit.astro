@@ -1,0 +1,152 @@
+---
+// Uredi kampanju (javni pregled §4.2, docs/08 ToggleRow, Field): obrazac radi bez JS-a, greške uz polje.
+// Zaključana polja su read-only s objašnjenjem; poslužitelj ih svejedno odbija (docs/05).
+import Lock from "@lucide/astro/icons/lock";
+import OkvirUpravljanja from "../../components/upravljanje/OkvirUpravljanja.astro";
+import Poruka from "../../components/upravljanje/Poruka.astro";
+import PhaseBadge from "../../components/PhaseBadge.astro";
+import { GRESKA, GUMB, H2, OZNAKA, POLJE, POMOC, rub } from "../../components/upravljanje/stil";
+import { NAJVISE, type PoljePostavki } from "../../lib/db/upravljanje";
+import { UPRAVLJANJE } from "../sadrzaj/upravljanje";
+import type { PodaciUredi } from "./campaign.edit.ucitaj";
+import type { PropsStranice } from "../tipovi";
+
+type Props = PropsStranice<PodaciUredi>;
+const { lang, podaci } = Astro.props;
+const { u, vrijednosti: v, greske, spremljeno } = podaci;
+const { k } = u;
+const T = UPRAVLJANJE[lang].uredi;
+const O = UPRAVLJANJE[lang].opce;
+const g = (p: PoljePostavki) => (greske[p] ? O.greske[greske[p]!] : undefined);
+const opis = (p: PoljePostavki, pomoc = true) => [pomoc ? `${p}-pomoc` : "", greske[p] ? `${p}-greska` : ""].filter(Boolean).join(" ") || undefined;
+const imaGresaka = Object.keys(greske).length > 0;
+const fieldset = "mt-8 space-y-5 rounded-md border border-line p-4";
+const radio = "flex min-h-11 items-start gap-3 py-1";
+---
+<OkvirUpravljanja lang={lang} u={u} aktivna="campaign.edit">
+  <h2 class={H2}>{T.naslov}</h2>
+  <Poruka vrsta="ok" tekst={spremljeno ? O.spremljeno : null} />
+  <Poruka vrsta="greska" tekst={imaGresaka ? O.greskeNaslov : null} />
+  {k.zakljucano && (
+    <div class="mt-4 flex gap-2 rounded-md bg-mist p-3 text-sm text-ink-soft" id="zakljucano">
+      <Lock size={18} aria-hidden="true" class="mt-0.5 shrink-0 text-action" />
+      <p><strong class="text-ink">{T.zakljucanoNaslov}.</strong> {T.zakljucanoTekst}</p>
+    </div>
+  )}
+
+  <form method="post" action={u.put} novalidate class="max-w-[70ch]">
+    <fieldset class={fieldset}>
+      <legend class="px-1 font-semibold text-ink">{T.osnovno}</legend>
+      <div>
+        <label for="title" class={OZNAKA}>{T.title} <span class="text-sm font-normal text-ink-muted">({O.obavezno}, {NAJVISE.title} {O.znakova})</span></label>
+        <input id="title" name="title" type="text" required maxlength={NAJVISE.title} value={v.title} readonly={k.zakljucano}
+          aria-invalid={greske.title ? "true" : undefined} aria-describedby={k.zakljucano ? "zakljucano" : opis("title", false)} class:list={[POLJE, rub(greske.title)]} />
+        {g("title") && <p id="title-greska" class={GRESKA}>{g("title")}</p>}
+      </div>
+      <div>
+        <label for="description" class={OZNAKA}>{T.description}</label>
+        <textarea id="description" name="description" rows="10" maxlength={NAJVISE.description} readonly={k.zakljucano}
+          aria-invalid={greske.description ? "true" : undefined} aria-describedby={opis("description")} class:list={[POLJE, rub(greske.description)]}>{v.description}</textarea>
+        <p id="description-pomoc" class={POMOC}>{T.descriptionPomoc}</p>
+        {g("description") && <p id="description-greska" class={GRESKA}>{g("description")}</p>}
+      </div>
+      <div class="grid gap-5 sm:grid-cols-2">
+        <div>
+          <label for="goal" class={OZNAKA}>{T.goal}</label>
+          <input id="goal" name="goal" type="text" inputmode="decimal" value={v.goal} readonly={k.zakljucano}
+            aria-invalid={greske.goal ? "true" : undefined} aria-describedby={opis("goal")} class:list={[POLJE, rub(greske.goal)]} />
+          <p id="goal-pomoc" class={POMOC}>{T.goalPomoc}</p>
+          {g("goal") && <p id="goal-greska" class={GRESKA}>{g("goal")}</p>}
+        </div>
+        <div>
+          <label for="endsAt" class={OZNAKA}>{T.endsAt}</label>
+          <input id="endsAt" name="endsAt" type="date" value={v.endsAt}
+            aria-invalid={greske.endsAt ? "true" : undefined} aria-describedby={opis("endsAt")} class:list={[POLJE, rub(greske.endsAt)]} />
+          <p id="endsAt-pomoc" class={POMOC}>{T.endsAtPomoc}</p>
+          {g("endsAt") && <p id="endsAt-greska" class={GRESKA}>{g("endsAt")}</p>}
+        </div>
+        <div>
+          <label for="minAmount" class={OZNAKA}>{T.minAmount}</label>
+          <input id="minAmount" name="minAmount" type="text" inputmode="decimal" value={v.minAmount}
+            aria-invalid={greske.minAmount ? "true" : undefined} aria-describedby={opis("minAmount")} class:list={[POLJE, rub(greske.minAmount)]} />
+          <p id="minAmount-pomoc" class={POMOC}>{T.minAmountPomoc}</p>
+          {g("minAmount") && <p id="minAmount-greska" class={GRESKA}>{g("minAmount")}</p>}
+        </div>
+        <div>
+          <label for="locationName" class={OZNAKA}>{T.locationName}</label>
+          <input id="locationName" name="locationName" type="text" maxlength={NAJVISE.locationName} value={v.locationName}
+            aria-invalid={greske.locationName ? "true" : undefined} aria-describedby={opis("locationName")} class:list={[POLJE, rub(greske.locationName)]} />
+          <p id="locationName-pomoc" class={POMOC}>{T.locationPomoc}</p>
+          {g("locationName") && <p id="locationName-greska" class={GRESKA}>{g("locationName")}</p>}
+        </div>
+      </div>
+      <div>
+        <label for="slug" class={OZNAKA}>{T.slug}</label>
+        <input id="slug" name="slug" type="text" maxlength="60" value={v.slug} readonly={k.slugZakljucan}
+          aria-invalid={greske.slug ? "true" : undefined} aria-describedby={opis("slug")} class:list={[POLJE, rub(greske.slug), "font-mono"]} />
+        <p id="slug-pomoc" class={POMOC}>{k.slugZakljucan ? T.slugZakljucan : T.slugPomoc}</p>
+        {g("slug") && <p id="slug-greska" class={GRESKA}>{g("slug")}</p>}
+      </div>
+    </fieldset>
+
+    <fieldset class={fieldset}>
+      <legend class="px-1 font-semibold text-ink">{T.vidljivostNaslov}</legend>
+      <div role="radiogroup" aria-labelledby="visibility-oznaka">
+        <p id="visibility-oznaka" class={OZNAKA}>{T.visibility}</p>
+        {(["public", "unlisted"] as const).map((x) => (
+          <label class={radio}><input type="radio" name="visibility" value={x} checked={v.visibility === x} class="mt-1 size-5" /><span>{T.vidljivost[x]}</span></label>
+        ))}
+        {g("visibility") && <p class={GRESKA}>{g("visibility")}</p>}
+      </div>
+    </fieldset>
+
+    <fieldset class={fieldset}>
+      <legend class="px-1 font-semibold text-ink">{T.uplateNaslov}</legend>
+      <div role="radiogroup" aria-labelledby="popis-oznaka">
+        <p id="popis-oznaka" class={OZNAKA}>{T.contributionsList}</p>
+        {(["visible", "hidden"] as const).map((x) => (
+          <label class={radio}><input type="radio" name="contributionsList" value={x} checked={v.contributionsList === x} class="mt-1 size-5" /><span>{T.popis[x]}</span></label>
+        ))}
+      </div>
+      <div role="radiogroup" aria-labelledby="redoslijed-oznaka">
+        <p id="redoslijed-oznaka" class={OZNAKA}>{T.contributionsSort}</p>
+        {(["latest", "highest"] as const).map((x) => (
+          <label class={radio}><input type="radio" name="contributionsSort" value={x} checked={v.contributionsSort === x} class="mt-1 size-5" /><span>{T.redoslijed[x]}</span></label>
+        ))}
+      </div>
+      <label class={radio}><input type="checkbox" name="hideRaised" value="1" checked={v.hideRaised} class="mt-1 size-5" /><span>{T.hideRaised}</span></label>
+      <label class={radio}><input type="checkbox" name="hideContributorCount" value="1" checked={v.hideContributorCount} class="mt-1 size-5" /><span>{T.hideContributorCount}</span></label>
+    </fieldset>
+
+    <fieldset class={fieldset}>
+      <legend class="px-1 font-semibold text-ink">{T.komentariNaslov}</legend>
+      <div role="radiogroup" aria-labelledby="komentari-oznaka">
+        <p id="komentari-oznaka" class={OZNAKA}>{T.commentsMode}</p>
+        {(["everyone", "contributors", "off"] as const).map((x) => (
+          <label class={radio}><input type="radio" name="commentsMode" value={x} checked={v.commentsMode === x} class="mt-1 size-5" /><span>{T.komentari[x]}</span></label>
+        ))}
+      </div>
+    </fieldset>
+
+    <fieldset class={fieldset}>
+      <legend class="px-1 font-semibold text-ink">{T.dodatnoNaslov}</legend>
+      <label class={radio}>
+        <input type="checkbox" name="allowMoneyboxes" value="1" checked={v.allowMoneyboxes} class="mt-1 size-5" />
+        <span>{T.allowMoneyboxes}<span class="block text-sm text-ink-muted">{T.allowMoneyboxesPomoc}</span></span>
+      </label>
+      <label class={radio}>
+        <input type="checkbox" name="allowOffers" value="1" checked={v.allowOffers} class="mt-1 size-5" />
+        <span class="flex flex-wrap items-center gap-2">{T.allowOffers} <PhaseBadge lang={lang} /></span>
+      </label>
+      <div>
+        <label for="thankYou" class={OZNAKA}>{T.thankYou} <span class="text-sm font-normal text-ink-muted">({O.neobavezno}, {NAJVISE.thankYou} {O.znakova})</span></label>
+        <textarea id="thankYou" name="thankYou" rows="3" maxlength={NAJVISE.thankYou}
+          aria-invalid={greske.thankYou ? "true" : undefined} aria-describedby={opis("thankYou")} class:list={[POLJE, rub(greske.thankYou)]}>{v.thankYou}</textarea>
+        <p id="thankYou-pomoc" class={POMOC}>{T.thankYouPomoc}</p>
+        {g("thankYou") && <p id="thankYou-greska" class={GRESKA}>{g("thankYou")}</p>}
+      </div>
+    </fieldset>
+
+    <button type="submit" class={`mt-6 ${GUMB}`}>{O.spremi}</button>
+  </form>
+</OkvirUpravljanja>

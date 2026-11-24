@@ -1,0 +1,99 @@
+---
+// Financije (docs/08 §3.4 ContributionsTable): filtar stanja (GET obrazac), zbroj, tablica s e-poštom
+// (samo U:viewer+), stanje intenta, izvor, poveznica na zapis povrata (U:admin), CSV.
+import Download from "@lucide/astro/icons/download";
+import OkvirUpravljanja from "../../components/upravljanje/OkvirUpravljanja.astro";
+import { GUMB_DRUGI, GUMB_MALI, H2, KARTICA, OZNAKA, POLJE, TABLICA, TD, TH } from "../../components/upravljanje/stil";
+import { formatNovca } from "../../components/kampanja/format";
+import { FILTRI_STANJA } from "../../lib/db/financije";
+import { url } from "../../lib/rute";
+import { UPRAVLJANJE } from "../sadrzaj/upravljanje";
+import type { PodaciFinancija } from "./campaign.manage.finances.ucitaj";
+import type { PropsStranice } from "../tipovi";
+
+type Props = PropsStranice<PodaciFinancija>;
+const { lang, podaci } = Astro.props;
+const { u, redovi, zbroj, filtar } = podaci;
+const { k } = u;
+const T = UPRAVLJANJE[lang].financije;
+const novac = formatNovca(lang, k.currency);
+const vrijeme = (ms: number) => new Intl.DateTimeFormat(lang === "hr" ? "hr-HR" : "en-GB", { dateStyle: "short", timeStyle: "short", timeZone: "Europe/Zagreb" }).format(ms);
+const csv = url(lang, "campaign.manage.finances.csv", { id: k.publicId }) + (filtar !== "all" ? `?state=${filtar}` : "");
+const povrati = u.dopustene.includes("campaign.manage.refunds") ? url(lang, "campaign.manage.refunds", { id: k.publicId }) : null;
+const boja: Record<string, string> = { paid: "text-success", pending: "text-warning", refunded: "text-ink-muted", failed: "text-danger", expired: "text-ink-muted" };
+---
+<OkvirUpravljanja lang={lang} u={u} aktivna="campaign.manage.finances">
+  <h2 class={H2}>{T.naslov}</h2>
+  <p class="mt-1 max-w-[70ch] text-sm text-ink-muted">{T.opis}</p>
+
+  <ul class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+    <li class={KARTICA}><p class="text-sm text-ink-muted">{T.placeno}</p><p class="mt-1 text-xl font-semibold tabular-nums">{novac(zbroj.placeno)} · {zbroj.brojPlacenih}</p></li>
+    <li class={KARTICA}><p class="text-sm text-ink-muted">{T.vraceno}</p><p class="mt-1 text-xl font-semibold tabular-nums">{novac(zbroj.vraceno)}</p></li>
+    <li class={KARTICA}><p class="text-sm text-ink-muted">{T.naCekanju}</p><p class="mt-1 text-xl font-semibold tabular-nums">{zbroj.naCekanju}</p></li>
+  </ul>
+
+  <div class="mt-5 flex flex-wrap items-end gap-3">
+    <form method="get" action={u.put} class="flex flex-wrap items-end gap-2">
+      <div>
+        <label for="state" class={OZNAKA}>{T.filtar}</label>
+        <select id="state" name="state" class={`${POLJE} min-h-11 border-ink-muted/60`}>
+          {FILTRI_STANJA.map((f) => <option value={f} selected={f === filtar}>{T.filtri[f]}</option>)}
+        </select>
+      </div>
+      <button type="submit" class={GUMB_DRUGI}>{T.primijeni}</button>
+    </form>
+    <a href={csv} download class={GUMB_DRUGI}><Download size={18} aria-hidden="true" />{T.preuzmi}</a>
+  </div>
+
+  {redovi.length === 0 ? (
+    <p class="mt-6 text-ink-muted">{T.prazno}</p>
+  ) : (
+    <div class="mt-5 overflow-x-auto">
+      <table class={TABLICA}>
+        <thead>
+          <tr>
+            <th class={TH} scope="col">{T.stupci.vrijeme}</th>
+            <th class={TH} scope="col">{T.stupci.podrzavatelj}</th>
+            <th class={`${TH} text-right`} scope="col">{T.stupci.iznos}</th>
+            <th class={TH} scope="col">{T.stupci.stanje}</th>
+            <th class={TH} scope="col">{T.stupci.izvor}</th>
+            {povrati && <th class={TH} scope="col">{T.stupci.radnja}</th>}
+          </tr>
+        </thead>
+        <tbody>
+          {redovi.map((r) => (
+            <tr>
+              <td class={`${TD} whitespace-nowrap tabular-nums`}>{vrijeme(r.paidAt ?? r.createdAt)}</td>
+              <td class={TD}>
+                <span class="block text-ink">{r.tvrtka ?? r.ime ?? "—"}</span>
+                {r.email && <span class="block break-all text-xs">{r.email}</span>}
+                {r.anonimno && <span class="block text-xs italic">{T.anonimno}</span>}
+                {r.poruka && <span class="mt-1 block text-xs">„{r.poruka}”</span>}
+              </td>
+              <td class={`${TD} text-right tabular-nums text-ink`}>
+                {novac(r.receivedCents ?? r.amountCents)}
+                {r.receivedCents !== null && r.receivedCents !== r.amountCents && <span class="block text-xs text-ink-muted">/ {novac(r.amountCents)}</span>}
+              </td>
+              <td class={TD}>
+                <span class:list={["font-semibold", boja[r.stanje]]}>{T.stanja[r.stanje]}</span>
+                {r.stanjeIntenta && <span class="block text-xs">{T.intenti[r.stanjeIntenta]}</span>}
+                {r.povrat && <span class="block text-xs">{T.povratStanja[r.povrat.status]}</span>}
+              </td>
+              <td class={TD}>
+                {r.izvor ? T.izvori[r.izvor] : "—"}
+                {r.kasica && <span class="block text-xs">{T.izvori.kasica}: {r.kasica}</span>}
+                {r.link && <span class="block text-xs">{T.izvori.link}: /z/{r.link}</span>}
+                {r.dijeljenje && <span class="block text-xs">{T.izvori.dijeljenje}</span>}
+              </td>
+              {povrati && (
+                <td class={TD}>
+                  {r.stanje === "paid" && !r.povrat && <a href={`${povrati}?contribution=${encodeURIComponent(r.id)}#novi`} class={GUMB_MALI}>{T.povrat}</a>}
+                </td>
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )}
+</OkvirUpravljanja>

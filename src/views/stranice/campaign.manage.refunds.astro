@@ -1,0 +1,94 @@
+---
+// Povrati (docs/08 §3.4 RefundForm, tok 11): obrazac zapisa i popis s potvrdom. Svaki POST traži dodatnu potvrdu.
+import ShieldAlert from "@lucide/astro/icons/shield-check";
+import OkvirUpravljanja from "../../components/upravljanje/OkvirUpravljanja.astro";
+import Poruka from "../../components/upravljanje/Poruka.astro";
+import { GRESKA, GUMB, GUMB_MALI, H2, KARTICA, OZNAKA, POLJE, POMOC, TABLICA, TD, rub } from "../../components/upravljanje/stil";
+import { formatNovca } from "../../components/kampanja/format";
+import { UPRAVLJANJE } from "../sadrzaj/upravljanje";
+import type { PodaciPovrata } from "./campaign.manage.refunds.ucitaj";
+import type { PropsStranice } from "../tipovi";
+
+type Props = PropsStranice<PodaciPovrata>;
+const { lang, podaci } = Astro.props;
+const { u, povrati, placeni, vrijednosti: v, greske, poruka, greskaPotvrde } = podaci;
+const T = UPRAVLJANJE[lang].povrati;
+const O = UPRAVLJANJE[lang].opce;
+const novac = formatNovca(lang, u.k.currency);
+const datum = (ms: number) => new Intl.DateTimeFormat(lang === "hr" ? "hr-HR" : "en-GB", { dateStyle: "short", timeZone: "Europe/Zagreb" }).format(ms);
+const g = (p: keyof typeof greske) => (greske[p] ? O.greske[greske[p]!] : undefined);
+---
+<OkvirUpravljanja lang={lang} u={u} aktivna="campaign.manage.refunds">
+  <h2 class={H2}>{T.naslov}</h2>
+  <p class="mt-1 max-w-[70ch] text-sm text-ink-muted">{T.opis}</p>
+  <p class="mt-2 flex gap-2 text-sm text-ink-soft"><ShieldAlert size={18} aria-hidden="true" class="mt-0.5 shrink-0 text-warning" />{T.potvrdaKodom}</p>
+  <Poruka vrsta="ok" tekst={poruka ? T.poruke[poruka] : null} />
+  <Poruka vrsta="greska" tekst={greskaPotvrde ? T.greskaPotvrde : Object.keys(greske).length > 0 ? O.greskeNaslov : null} />
+
+  <section id="novi" aria-labelledby="novi-naslov" class={`mt-6 max-w-[70ch] ${KARTICA}`}>
+    <h3 id="novi-naslov" class="text-lg font-semibold text-ink">{T.novi}</h3>
+    {placeni.length === 0 ? (
+      <p class="mt-2 text-ink-muted">{T.nemaPlacenih}</p>
+    ) : (
+      <form method="post" action={u.put} novalidate class="mt-3 space-y-4">
+        <input type="hidden" name="akcija" value="zapisi" />
+        <div>
+          <label for="contribution" class={OZNAKA}>{T.contribution}</label>
+          <select id="contribution" name="contribution" aria-invalid={greske.contribution ? "true" : undefined}
+            aria-describedby={greske.contribution ? "contribution-greska" : undefined} class:list={[POLJE, rub(greske.contribution), "min-h-11"]}>
+            <option value="">{T.odaberi}</option>
+            {placeni.map((r) => <option value={r.id} selected={r.id === v.contribution}>{datum(r.paidAt ?? r.createdAt)} · {r.ime ?? r.email ?? "—"} · {novac(r.receivedCents ?? r.amountCents)}</option>)}
+          </select>
+          {g("contribution") && <p id="contribution-greska" class={GRESKA}>{g("contribution")}</p>}
+        </div>
+        <fieldset>
+          <legend class={OZNAKA}>{T.method}</legend>
+          {(["safe_tx", "bank_transfer"] as const).map((m) => (
+            <label class="flex min-h-11 items-center gap-3"><input type="radio" name="method" value={m} checked={v.method === m} class="size-5" />{T.metode[m]}</label>
+          ))}
+          {g("method") && <p class={GRESKA}>{g("method")}</p>}
+        </fieldset>
+        <div>
+          <label for="reference" class={OZNAKA}>{T.reference}</label>
+          <input id="reference" name="reference" type="text" value={v.reference} maxlength="80" autocomplete="off" spellcheck="false"
+            aria-invalid={greske.reference ? "true" : undefined} aria-describedby={["reference-pomoc", greske.reference ? "reference-greska" : ""].join(" ").trim()}
+            class:list={[POLJE, rub(greske.reference), "font-mono"]} />
+          <p id="reference-pomoc" class={POMOC}>{T.referencePomoc}</p>
+          {g("reference") && <p id="reference-greska" class={GRESKA}>{g("reference")}</p>}
+        </div>
+        <button type="submit" class={GUMB}>{T.zapisi}</button>
+      </form>
+    )}
+  </section>
+
+  <section aria-labelledby="popis" class="mt-8">
+    <h3 id="popis" class="text-lg font-semibold text-ink">{T.popis}</h3>
+    {povrati.length === 0 ? <p class="mt-2 text-ink-muted">{T.prazno}</p> : (
+      <div class="mt-3 overflow-x-auto">
+        <table class={TABLICA}>
+          <tbody>
+            {povrati.map((p) => (
+              <tr>
+                <td class={`${TD} whitespace-nowrap tabular-nums`}>{datum(p.createdAt)}</td>
+                <td class={TD}>{p.ime ?? "—"}<span class="block text-xs">{p.recordedBy}</span></td>
+                <td class={`${TD} tabular-nums text-ink`}>{novac(p.amountCents)}</td>
+                <td class={TD}>{T.metode[p.method]}<span class="block break-all font-mono text-xs">{p.safeTxHash ?? p.bankReference}</span></td>
+                <td class={TD}>
+                  <span class:list={["font-semibold", p.status === "confirmed" ? "text-success" : "text-warning"]}>{T.stanja[p.status]}</span>
+                  {p.status === "recorded" && (
+                    <form method="post" action={u.put} class="mt-2">
+                      <input type="hidden" name="akcija" value="potvrdi" />
+                      <input type="hidden" name="refund" value={p.id} />
+                      <button type="submit" class={GUMB_MALI} title={T.potvrdiPomoc}>{T.potvrdi}</button>
+                    </form>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )}
+    <p class="mt-2 text-xs text-ink-muted">{T.potvrdiPomoc}</p>
+  </section>
+</OkvirUpravljanja>

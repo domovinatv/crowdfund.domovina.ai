@@ -1,0 +1,63 @@
+---
+// Okvir stranica upravljanja kampanjom (docs/08 §3.1 ManageNav, Breadcrumbs): naslov kampanje, stanje, uloga,
+// poveznica na javnu stranicu i izbornik podstranica koje korisnik smije otvoriti. `noindex` uvijek.
+import ExternalLink from "@lucide/astro/icons/external-link";
+import Base from "../../layouts/Base.astro";
+import type { Lang } from "../../i18n";
+import { url } from "../../lib/rute";
+import { UPRAVLJANJE } from "../../views/sadrzaj/upravljanje";
+import type { StranicaUpravljanja, Upravljanje } from "./ucitavanje";
+
+interface Props {
+  lang: Lang;
+  u: Upravljanje;
+  aktivna: StranicaUpravljanja;
+}
+const { lang, u, aktivna } = Astro.props;
+const T = UPRAVLJANJE[lang].nav;
+const { k, pristup } = u;
+const naslovStranice = T.stranice[aktivna] ?? T.naslov;
+const stanje = k.blockedAt !== null ? "blocked" : k.state === "active" && k.pausedAt !== null ? "paused" : k.state;
+const uloga = pristup.uloga ?? (pristup.autorCeka ? "autor" : "moderator");
+const javna = url(lang, "campaign", { id: k.publicId });
+---
+<Base lang={lang} title={`${naslovStranice} · ${k.title}`} noindex>
+  <nav aria-label="breadcrumb" class="text-sm text-ink-muted">
+    <ol class="flex flex-wrap items-center gap-1">
+      <li><a href={url(lang, "campaign.manage", { id: k.publicId })} class="underline-offset-2 hover:underline">{T.naslov}</a></li>
+      {aktivna !== "campaign.manage" && <li aria-hidden="true">/</li>}
+      {aktivna !== "campaign.manage" && <li aria-current="page" class="text-ink-soft">{naslovStranice}</li>}
+    </ol>
+  </nav>
+  <header class="mt-2">
+    <h1 class="page-title break-words text-ink">{k.title}</h1>
+    <p class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-soft">
+      <span class="rounded-sm bg-mist px-2 py-0.5 font-semibold text-ink" data-stanje={stanje}>{T.stanja[stanje] ?? stanje}</span>
+      <span>ID <span class="font-mono">{k.publicId}</span></span>
+      <span>{T.uloga}: {T.uloge[uloga] ?? uloga}</span>
+      {k.javna && (
+        <a href={javna} class="inline-flex min-h-9 items-center gap-1 font-semibold text-action underline-offset-2 hover:underline">
+          {T.javna}<ExternalLink size={14} aria-hidden="true" />
+        </a>
+      )}
+    </p>
+    {!k.javna && k.blockedAt === null && <p class="mt-2 text-sm text-ink-muted">{T.nejavna}</p>}
+    {k.blockedAt !== null && <p class="mt-2 rounded-md bg-danger-bg p-3 text-sm text-danger">{T.blokirana} {k.blockedReason}</p>}
+  </header>
+  <nav aria-label={T.izbornik} class="mt-5 -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+    <ul class="flex min-w-max gap-1 border-b border-line">
+      {u.dopustene.map((s) => (
+        <li>
+          <a href={url(lang, s, { id: k.publicId })} aria-current={s === aktivna ? "page" : undefined}
+            class:list={["inline-flex min-h-11 items-center border-b-2 px-3 text-sm font-semibold",
+              s === aktivna ? "border-action text-action" : "border-transparent text-ink-soft hover:text-ink"]}>
+            {T.stranice[s]}
+          </a>
+        </li>
+      ))}
+    </ul>
+  </nav>
+  <div class="mt-6">
+    <slot />
+  </div>
+</Base>

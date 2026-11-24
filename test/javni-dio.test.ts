@@ -133,7 +133,7 @@ describe("organizacije i vanjske kampanje", () => {
     expect(sve.ukupnoStranica).toBe(1);
     const imena = sve.organizacije.map((o) => o.displayName);
     // NOCASE je ASCII: „Š” ide iza „Z” (D1 nema ICU kolaciju za hrvatski).
-    expect(imena).toEqual(redovi<{ n: string }>(sqlite, "SELECT display_name AS n FROM organizations ORDER BY n COLLATE NOCASE").map((r) => r.n));
+    expect(imena).toEqual(redovi<{ n: string }>(sqlite, "SELECT display_name AS n FROM organizations WHERE status = 'active' ORDER BY n COLLATE NOCASE").map((r) => r.n));
     expect(sve.organizacije.reduce((a, o) => a + o.brojAktivnihKampanja, 0)).toBeGreaterThan(10);
     const ziv = await katalogOrganizacija(db, { category: "animals" });
     expect(ziv.organizacije.map((o) => o.slug)).toEqual(["demo-sapica"]);
@@ -159,7 +159,7 @@ describe("praćenje po tokenu", () => {
   it("pracenjePoTokenu: obavijesti, bez osobnih podataka; krivotvoren token → null", async () => {
     const p = (await pracenjePoTokenu(db, primjeri.pracenjeToken))!;
     expect(p).toMatchObject({ publicId: K.aktivna, aktivno: true, kampanjaVidljiva: true, obavijesti: { komentari: true, novosti: true, kraj: true } });
-    expect(Object.keys(p).sort()).toEqual(["aktivno", "campaignId", "kampanjaVidljiva", "obavijesti", "publicId", "title"]);
+    expect(Object.keys(p).sort()).toEqual(["aktivno", "campaignId", "kampanjaVidljiva", "obavijesti", "potvrdeno", "publicId", "title"]);
     const [u, c, sig] = primjeri.pracenjeToken.split(".");
     expect(await pracenjePoTokenu(db, `${u}.${c}.${sig!.slice(0, -1)}A`)).toBeNull();
     expect(await pracenjePoTokenu(db, `${u}.${c}.x`)).toBeNull();

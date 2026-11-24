@@ -1,0 +1,72 @@
+---
+// Novosti organizatora (docs/08 UpdateList): obrazac nove ili uređivane novosti, popis s Uredi/Obriši.
+import OkvirUpravljanja from "../../components/upravljanje/OkvirUpravljanja.astro";
+import Poruka from "../../components/upravljanje/Poruka.astro";
+import { GRESKA, GUMB, GUMB_DRUGI, GUMB_MALI, H2, KARTICA, OZNAKA, POLJE, rub } from "../../components/upravljanje/stil";
+import { formatDatuma } from "../../components/kampanja/format";
+import { NAJVISE_NOVOSTI } from "../../lib/db/novosti";
+import { UPRAVLJANJE } from "../sadrzaj/upravljanje";
+import type { PodaciNovosti } from "./campaign.manage.updates.ucitaj";
+import type { PropsStranice } from "../tipovi";
+
+type Props = PropsStranice<PodaciNovosti>;
+const { lang, podaci } = Astro.props;
+const { u, novosti, uredi, vrijednosti: v, greske, poruka } = podaci;
+const T = UPRAVLJANJE[lang].novosti;
+const O = UPRAVLJANJE[lang].opce;
+const g = (p: "title" | "body") => (greske[p] ? O.greske[greske[p]!] : undefined);
+---
+<OkvirUpravljanja lang={lang} u={u} aktivna="campaign.manage.updates">
+  <h2 class={H2}>{T.naslov}</h2>
+  <p class="mt-1 max-w-[70ch] text-sm text-ink-muted">{T.opis}</p>
+  <Poruka vrsta="ok" tekst={poruka ? T.poruke[poruka] : null} />
+
+  <section id="obrazac" aria-labelledby="obrazac-naslov" class={`mt-6 max-w-[70ch] ${KARTICA}`}>
+    <h3 id="obrazac-naslov" class="text-lg font-semibold text-ink">{uredi ? T.uredi : T.nova}</h3>
+    <form method="post" action={u.put} novalidate class="mt-3 space-y-4">
+      {uredi && <input type="hidden" name="id" value={uredi.id} />}
+      <div>
+        <label for="title" class={OZNAKA}>{T.title} <span class="text-sm font-normal text-ink-muted">({O.neobavezno})</span></label>
+        <input id="title" name="title" type="text" maxlength={NAJVISE_NOVOSTI.title} value={v.title}
+          aria-invalid={greske.title ? "true" : undefined} aria-describedby={greske.title ? "title-greska" : undefined} class:list={[POLJE, rub(greske.title)]} />
+        {g("title") && <p id="title-greska" class={GRESKA}>{g("title")}</p>}
+      </div>
+      <div>
+        <label for="body" class={OZNAKA}>{T.body} <span class="text-sm font-normal text-ink-muted">({O.obavezno})</span></label>
+        <textarea id="body" name="body" rows="8" required maxlength={NAJVISE_NOVOSTI.body}
+          aria-invalid={greske.body ? "true" : undefined} aria-describedby={greske.body ? "body-greska" : undefined} class:list={[POLJE, rub(greske.body)]}>{v.body}</textarea>
+        {g("body") && <p id="body-greska" class={GRESKA}>{g("body")}</p>}
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <button type="submit" class={GUMB}>{uredi ? T.spremi : T.objavi}</button>
+        {uredi && <a href={u.put} class={GUMB_DRUGI}>{T.odustani}</a>}
+      </div>
+    </form>
+  </section>
+
+  {novosti.length === 0 ? (
+    <p class="mt-8 text-ink-muted">{T.prazno}</p>
+  ) : (
+    <ol class="mt-8 space-y-4">
+      {novosti.map((n) => (
+        <li class={KARTICA} id={`n-${n.id}`}>
+          <p class="text-sm text-ink-muted">
+            <time datetime={new Date(n.publishedAt).toISOString()}>{formatDatuma(lang, n.publishedAt)}</time>
+            {n.authorName && <span> · {n.authorName}</span>}
+            <span> · {n.brojKomentara} {T.komentara}</span>
+          </p>
+          {n.title && <h3 class="mt-1 font-semibold text-ink break-words">{n.title}</h3>}
+          <p class="mt-1 line-clamp-4 whitespace-pre-line break-words text-ink-soft">{n.body}</p>
+          <div class="mt-3 flex flex-wrap gap-2">
+            <a href={`${u.put}?edit=${encodeURIComponent(n.id)}#obrazac`} class={GUMB_MALI}>{T.urediGumb}</a>
+            <form method="post" action={u.put}>
+              <input type="hidden" name="akcija" value="obrisi" />
+              <input type="hidden" name="id" value={n.id} />
+              <button type="submit" class={`${GUMB_MALI} text-danger ring-danger/30`}>{T.obrisi}</button>
+            </form>
+          </div>
+        </li>
+      ))}
+    </ol>
+  )}
+</OkvirUpravljanja>

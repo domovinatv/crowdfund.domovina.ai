@@ -78,7 +78,7 @@ describe("P: zahtijevajPrijavu", () => {
   it("P stranice S5 (odluka 516): 302 bez sesije, 200 sa sesijom", async () => {
     const put = `/hr/${primjeri.kampanja.aktivna}/kasica/nova`;
     expect(lokacija(await ucitajKasicu(kontekst(db, put)))).toBe(`/hr/prijava?next=${encodeURIComponent(put)}`);
-    expect(await ucitajKasicu(kontekst(db, put, { korisnik: novi }))).toEqual({ podaci: null });
+    expect(await ucitajKasicu(kontekst(db, put, { korisnik: novi, params: { id: primjeri.kampanja.aktivna } }))).toHaveProperty("podaci.zatvoreno", null);
     expect(await ucitajPonudu(kontekst(db, "/en/offers/new", { korisnik: novi }))).toEqual({ podaci: null });
   });
 });

@@ -1,0 +1,22 @@
+---
+// Obavijest na vrhu stranice upravljanja: uspjeh (`role="status"`) ili greška (`role="alert"`).
+import CircleCheck from "@lucide/astro/icons/circle-check";
+import CircleExclamationPoint from "@lucide/astro/icons/circle-exclamation-point";
+
+interface Props {
+  vrsta: "ok" | "greska";
+  tekst: string | null | undefined;
+}
+const { vrsta, tekst } = Astro.props;
+---
+{
+  tekst && (
+    <p role={vrsta === "ok" ? "status" : "alert"} class:list={[
+      "mt-4 flex gap-2 rounded-md p-3 text-sm ring-1 ring-inset",
+      vrsta === "ok" ? "bg-success-bg text-success ring-success/20" : "bg-danger-bg text-danger ring-danger/20",
+    ]}>
+      {vrsta === "ok" ? <CircleCheck size={18} aria-hidden="true" class="mt-0.5 shrink-0" /> : <CircleExclamationPoint size={18} aria-hidden="true" class="mt-0.5 shrink-0" />}
+      <span>{tekst}</span>
+    </p>
+  )
+}

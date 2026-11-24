@@ -161,12 +161,13 @@ describe("učitavači nad seedom", () => {
     }
   });
 
-  it("campaign: POST „Prati” ne zapisuje ništa i vraća 303 s porukom S6", async () => {
+  it("campaign: POST „Prati” neprijavljenog sprema nepotvrđeno praćenje i vraća 303 na potvrdu (S6)", async () => {
     const prije = broj(sqlite, "SELECT count(*) FROM campaign_follows");
-    const r = (await ucitajKampanju(ctx(`/hr/${K.aktivna}`, { id: K.aktivna }, { method: "POST", body: new URLSearchParams({ akcija: "prati", email: "a@b.hr" }) }))) as Response;
+    const r = (await ucitajKampanju(ctx(`/hr/${K.aktivna}`, { id: K.aktivna }, { method: "POST", body: new URLSearchParams({ akcija: "prati", email: "a@b.hr", novosti: "1" }) }))) as Response;
     expect(r.status).toBe(303);
-    expect(r.headers.get("Location")).toBe(`/hr/${K.aktivna}?prati=s6#prati`);
-    expect(broj(sqlite, "SELECT count(*) FROM campaign_follows")).toBe(prije);
+    expect(r.headers.get("Location")).toBe(`/hr/${K.aktivna}?prati=potvrda#prati`);
+    expect(broj(sqlite, "SELECT count(*) FROM campaign_follows")).toBe(prije + 1);
+    expect(broj(sqlite, "SELECT count(*) FROM campaign_follows WHERE email = 'a@b.hr' AND confirmed_at IS NULL AND token_hash IS NOT NULL")).toBe(1);
   });
 
   it("campaign.qr: ?format=svg je preuzimanje SVG-a kratkog linka", async () => {

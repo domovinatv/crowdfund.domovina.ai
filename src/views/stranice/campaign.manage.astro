@@ -1,0 +1,119 @@
+---
+// Nadzorna ploča (docs/08 §3.4 DashboardStats): brojke, SVG stupci po danu bez knjižnice (+ tablica za čitače
+// zaslona), izvori doprinosa, Isključi/Uključi kao POST obrazac.
+import OkvirUpravljanja from "../../components/upravljanje/OkvirUpravljanja.astro";
+import Poruka from "../../components/upravljanje/Poruka.astro";
+import { GUMB, GUMB_DRUGI, H2, KARTICA, TABLICA, TD, TH } from "../../components/upravljanje/stil";
+import { formatNovca } from "../../components/kampanja/format";
+import { url } from "../../lib/rute";
+import { UPRAVLJANJE } from "../sadrzaj/upravljanje";
+import type { PodaciPloce } from "./campaign.manage.ucitaj";
+import type { PropsStranice } from "../tipovi";
+
+type Props = PropsStranice<PodaciPloce>;
+const { lang, podaci } = Astro.props;
+const { u, ploca, smijeStanje, poruka, greska } = podaci;
+const { k } = u;
+const T = UPRAVLJANJE[lang].ploca;
+const novac = formatNovca(lang, k.currency);
+const posto = k.goalCents ? Math.floor((ploca.prikupljenoCents * 100) / k.goalCents) : null;
+const brojke = [
+  { naziv: T.prikupljeno, vrijednost: novac(ploca.prikupljenoCents), pod: posto !== null && k.goalCents ? `${posto} % ${T.cilj} ${novac(k.goalCents)}` : null },
+  { naziv: T.doprinosa, vrijednost: String(ploca.brojDoprinosa), pod: null },
+  { naziv: T.prosjek, vrijednost: ploca.prosjekCents === null ? "—" : novac(ploca.prosjekCents), pod: null },
+  { naziv: T.naCekanju, vrijednost: String(ploca.naCekanju), pod: null },
+];
+// SVG: 30 stupaca u viewBoxu 300 × 100; visina razmjerna najvećem danu.
+const najvise = Math.max(1, ...ploca.poDanu.map((d) => d.cents));
+const sirina = 300 / ploca.poDanu.length;
+const datum = (d: string) => new Intl.DateTimeFormat(lang === "hr" ? "hr-HR" : "en-GB", { day: "numeric", month: "short", timeZone: "UTC" }).format(new Date(`${d}T00:00:00Z`));
+const aktivna = k.state === "active";
+const iskljucena = aktivna && k.pausedAt !== null;
+---
+<OkvirUpravljanja lang={lang} u={u} aktivna="campaign.manage">
+  <Poruka vrsta="ok" tekst={poruka ? T.poruke[poruka] : null} />
+  <Poruka vrsta="greska" tekst={greska ? T.greska : null} />
+
+  <ul class="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+    {brojke.map((b) => (
+      <li class={KARTICA}>
+        <p class="text-sm text-ink-muted">{b.naziv}</p>
+        <p class="mt-1 text-2xl font-semibold tabular-nums text-ink">{b.vrijednost}</p>
+        {b.pod && <p class="mt-1 text-xs text-ink-muted tabular-nums">{b.pod}</p>}
+      </li>
+    ))}
+  </ul>
+
+  <section aria-labelledby="po-danu" class="mt-8">
+    <h2 id="po-danu" class={H2}>{T.poDanu}</h2>
+    <p class="mt-1 text-sm text-ink-muted">{T.poDanuOpis}</p>
+    <figure class={`mt-3 ${KARTICA}`}>
+      <svg viewBox="0 0 300 110" class="h-40 w-full" role="img" aria-labelledby="po-danu" preserveAspectRatio="none">
+        <line x1="0" y1="100" x2="300" y2="100" stroke="currentColor" class="text-line" stroke-width="0.5" />
+        {ploca.poDanu.map((d, i) => {
+          const h = (d.cents / najvise) * 95;
+          return (
+            <rect x={i * sirina + 1} y={100 - h} width={sirina - 2} height={h} class="fill-action" rx="1">
+              <title>{`${datum(d.dan)}: ${novac(d.cents)} (${d.n})`}</title>
+            </rect>
+          );
+        })}
+      </svg>
+      <figcaption class="mt-1 flex justify-between text-xs text-ink-muted tabular-nums">
+        <span>{datum(ploca.poDanu[0]!.dan)}</span><span>{datum(ploca.poDanu.at(-1)!.dan)}</span>
+      </figcaption>
+    </figure>
+    <details class="mt-2">
+      <summary class="min-h-11 cursor-pointer py-2 text-sm font-semibold text-action">{T.tablica}</summary>
+      <div class="overflow-x-auto">
+        <table class={TABLICA}>
+          <thead><tr><th class={TH}>{T.dan}</th><th class={TH}>{T.iznos}</th><th class={TH}>{T.broj}</th></tr></thead>
+          <tbody>
+            {ploca.poDanu.filter((d) => d.n > 0).map((d) => (
+              <tr><td class={TD}>{datum(d.dan)}</td><td class={`${TD} tabular-nums`}>{novac(d.cents)}</td><td class={`${TD} tabular-nums`}>{d.n}</td></tr>
+            ))}
+          </tbody>
+        </table>
+        {ploca.poDanu.every((d) => d.n === 0) && <p class="mt-2 text-sm text-ink-muted">{T.prazno}</p>}
+      </div>
+    </details>
+  </section>
+
+  <section aria-labelledby="izvori" class="mt-8">
+    <h2 id="izvori" class={H2}>{T.izvori}</h2>
+    <ul class="mt-3 divide-y divide-line rounded-md bg-paper shadow-card">
+      <li class="flex flex-wrap justify-between gap-2 p-3"><span>{T.izravno}</span><span class="tabular-nums text-ink">{novac(ploca.izvori.izravno.cents)} · {ploca.izvori.izravno.n}</span></li>
+      <li class="flex flex-wrap justify-between gap-2 p-3"><span>{T.dijeljenje}</span><span class="tabular-nums text-ink">{novac(ploca.izvori.dijeljenje.cents)} · {ploca.izvori.dijeljenje.n}</span></li>
+      {ploca.izvori.kasice.map((m) => (
+        <li class="flex flex-wrap justify-between gap-2 p-3">
+          <span>{T.kasice}: <a href={url(lang, "moneybox", { alias: m.alias })} class="font-semibold text-ink underline-offset-2 hover:underline">{m.title}</a></span>
+          <span class="tabular-nums text-ink">{novac(m.cents)} · {m.n}</span>
+        </li>
+      ))}
+      {ploca.izvori.linkovi.map((l) => (
+        <li class="flex flex-wrap justify-between gap-2 p-3">
+          <span>{T.linkovi}: <span class="font-mono text-ink">/z/{l.slug}</span>{l.label && <span class="text-ink-muted"> ({l.label})</span>}</span>
+          <span class="tabular-nums text-ink">{l.posjeti} {T.posjeti} · {novac(l.cents)} · {l.n}</span>
+        </li>
+      ))}
+    </ul>
+    {ploca.izvori.kasice.length + ploca.izvori.linkovi.length === 0 && <p class="mt-2 text-sm text-ink-muted">{T.nemaIzvora}</p>}
+  </section>
+
+  <section aria-labelledby="stanje" class="mt-8">
+    <h2 id="stanje" class={H2}>{T.stanjeNaslov}</h2>
+    {!aktivna ? (
+      <p class="mt-2 text-ink-muted">{T.nijeAktivna}</p>
+    ) : (
+      <div class="mt-2">
+        <p class="text-ink-soft">{iskljucena ? T.iskljucenaTekst : T.aktivnaTekst}</p>
+        {smijeStanje && (
+          <form method="post" action={u.put} class="mt-3">
+            <input type="hidden" name="akcija" value={iskljucena ? "ukljuci" : "iskljuci"} />
+            <button type="submit" class={iskljucena ? GUMB : GUMB_DRUGI}>{iskljucena ? T.ukljuci : T.iskljuci}</button>
+          </form>
+        )}
+      </div>
+    )}
+  </section>
+</OkvirUpravljanja>
