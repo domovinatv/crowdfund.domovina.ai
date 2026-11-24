@@ -23,7 +23,7 @@ Plan je u [`docs/plan.md`](../plan.md). Svaka sesija ima svoj handoff `SN.md`. K
 | --- | --- | --- | --- | --- | --- |
 | S0 | Istraživanje, baza znanja, plan | gotovo | 7cd97c3 | – | odluke 1–19 |
 | S1 | Prijavljeni obilazak A | gotovo | 2312e75 | – | 18 ekrana (`ls docs/research/obilazak/*.md \| wc -l` = 19 s README); Edit/More/Statistics čekaju vrata u S1b; odluke 100–105 |
-| S1b | Prijavljeni obilazak B (+ C anonimni) | gotovo | COMMIT | – | 27 ekrana (`ls docs/research/obilazak/[0-9]*.md \| wc -l`); odluke 150–154; ITalk company application čeka 4fund (vrh S2) |
+| S1b | Prijavljeni obilazak B (+ C anonimni) | gotovo | b3076d5 | – | 27 ekrana (`ls docs/research/obilazak/[0-9]*.md \| wc -l`); odluke 150–154; ITalk company application čeka 4fund (vrh S2) |
 | S2 | Specifikacija | | | | |
 | S3 | Rute i dizajn sustav | vrata: ime/brend | | | |
 | S4 | Kostur Astro + D1 | | | | |
