@@ -371,3 +371,11 @@ koja se na nju poziva. Blokovi brojeva po sesiji: S1 od 100, S1b od 150, S2 od 2
 660. **Upravljanje, sitno:** prekidač novih uplata promatraču (viewer) je onemogućen s objašnjenjem; „Pošalji na
      pregled” uvijek aktivan, grešku „nema dokumenata” daje poslužitelj; zahvala nove kasice sprema se samo uz
      kućicu; „Pravila kasica” vode na uvjete (zasebne rute nema). (potvrditi)
+661. **Logika `/admin` stranica** je u `src/components/moderacija/ucitaj.ts` (vraća `Response` ili `{ podaci }`,
+     testabilno); stranice samo crtaju. `noindex`, `Cache-Control: private, no-store`.
+662. **Obrazloženje (DSA čl. 17)** iz polja radnja, činjenice (20–1500), osnova (uvjeti ili propis), odredba
+     (3–200), plus „automatizirana sredstva: nisu korištena” i pravna sredstva; sprema se u `statement`, bez migracije.
+663. **Žalba:** rok 14 dana od zadnje odluke (`ROK_ZALBE`), `decided` → `appealed`; prijava se zatvara tek nakon
+     roka. Organizatorov obrazac žalbe nema rutu, pa je u prototipu bilježi moderator (označeno). (potvrditi; S8/S9)
+664. **Razlozi:** odbijanje KYB-a 1–500 znakova; odbijena namjena i blokada/deblokada ≥ 20 znakova.
+665. **`/admin` tekstovi samo hr** (07); obavijesti prijavitelju i organizatoru o odluci se ne šalju (prototip, označeno).
