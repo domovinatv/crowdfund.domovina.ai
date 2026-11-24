@@ -328,3 +328,23 @@ koja se na nju poziva. Blokovi brojeva po sesiji: S1 od 100, S1b od 150, S2 od 2
 635. **Prag namjene:** `campaign_purpose` s `provider = 'platform'`; zbroj organizatora = aktivne kampanje + nova.
 636. **Osobna organizacija** (kampanja fizičke osobe, „nije u fazi 1”): slug `osoba-<ime>-<6 znakova>`, `active`,
      `owner` članstvo; objava traži `person_kyc approved`.
+637. **Zahtjev organizacije je u bazi od koraka 1:** `organizers`, `organizations(pending)`, `memberships(owner)`,
+     `organization_applications(draft)`. „N / 5”: nacrt 2, poslano ili odbijeno 3, `active` 4, prima tuđe kampanje 5.
+638. **Pravni oblik → `holder_type` jezgre:** udruga, zaklada, vjerska zajednica → association; ustanova → community;
+     zadruga → cooperative; jls → municipality; doo, obrt → company. `osoba` „nije u fazi 1” i poslužitelj je odbija
+     u zahtjevu organizacije (osobna organizacija nastaje samo iz čarobnjaka, odluka 636). (potvrditi)
+639. **KYB:** korak bilježi `verifications(org_kyb, requested, mock)`, slanje zahtjeva → `submitted`; nakon odbijanja
+     vlasnik ponovno šalje novom verifikacijom. Odluku simulira moderator na `/admin/organizacije`.
+640. **Safe adresa organizacije** sprema se tek kad je organizacija `active`, malim slovima.
+641. **„Prima kampanje drugih”** uključuje samo `active` organizacija; prekidač pomiče zahtjev između koraka 4 i 5.
+642. **Odbijanje tuđe kampanje:** razlog 10–500 znakova u novim stupcima `campaign_settings.beneficiary_rejected_*`
+     (0007). Odobrenje traži `active` organizaciju sa Safeom; bez reda `campaign_safes` mock MPT registracija ga
+     stvara iz Safea organizacije.
+643. **Pozivnice:** nova pozivnica iste e-pošte opoziva prethodnu; prihvat traži istu e-poštu; odbijanje = `revoked`;
+     istek se računa pri čitanju; poveznica se prikazuje kroz kratki HttpOnly kolačić (10 min). Token se sprema kao SHA-256.
+644. **Promjena uloge i uklanjanje člana** koriste P+e akciju `member_role`; barem jedan `owner` uvijek ostaje.
+645. **Moderacija:** `block_campaign` blokira i otvara verifikaciju namjene (14 dana); `hide_content` skriva
+     komentar; `no_action` na žalbu deblokira; svaka blokada/deblokada piše `moderation_decisions`; odbijena
+     verifikacija namjene blokira kampanju i bilježi odluku (docs/05).
+646. **Seed ne izmišlja OIB** (izmišljeni OIB s valjanom kontrolnom znamenkom mogao bi pripadati stvarnoj osobi).
+647. **Vanjska kampanja:** URL `https://(www.)4fund.com/{6 znakova}`, kod vlasništva `DOMOVINA-XXXXXXXX`; provjera je mock.
