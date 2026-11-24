@@ -263,3 +263,29 @@ koja se na nju poziva. Blokovi brojeva po sesiji: S1 od 100, S1b od 150, S2 od 2
      katalog organizacija filtrira kategoriju linkovima, abecedno. Profili osobe i organizacije imaju link „Prijavi”.
 532. **Seed „sad” (2026-11-20) i stvarni sat se razilaze:** stranice računaju rok od stvarnog datuma, pa dio demo
      kampanja pokazuje „rok je prošao”. Popravak u S6: seed relativno na datum seedanja ili `DEMO_SAD` u okolini.
+
+## S6 — 24.–25. 11. 2026.
+
+600. **K za autora kampanje za organizaciju** vrijedi samo dok čeka odobrenje (`draft`/`review`, bez
+     `beneficiary_approved_at`), kako piše u 07; nakon odobrenja upravlja organizacija.
+601. **Moderator prolazi K, ne prolazi U:uloga;** prijavljen bez prava dobiva 404 (ne 403), da se ne otkriva postojanje.
+602. **A rute (`/admin/*`):** bez sesije 302 na prijavu, prijavljen ne-moderator 404.
+603. **P+e se provjerava u POST grani radnje;** kod vrijedi 10 min i ponovno se koristi za istu `action`; token
+     rute `potvrda-radnje` je id retka `one_time_codes`.
+604. **Magic link** je zaseban red `one_time_codes` iste svrhe s `action = 'link'`; GET poveznice je ne troši
+     (skeneri pošte), troši je POST.
+605. **Hash:** kod `SHA-256("{id}:{kod}")`, sesija `SHA-256(token)` u `sessions.id`; novi kod poništava stari,
+     iskorišten kod gasi i poveznicu.
+606. **„Demo pošta”** (mock slanja) je HttpOnly kolačić `demo_posta` (10 min) prikazan u označenom okviru; kolačić
+     `prijava` pamti id koda. (potvrditi)
+607. **Nepoznata e-pošta na prijavi:** uz prihvat uvjeta račun nastaje tiho (04 §1), bez njega stranica nudi otvaranje računa.
+608. **`campaign_follows` izgrađena iznova (0004):** `user_id` nullable, `email`, `token_hash`, `confirmed_at`,
+     djelomični UNIQUE indeksi umjesto PK. Zamjenjuje prijedlog 508.
+609. **`users.slug` (0004)** ne smije izgledati kao UUID; profil traži slug ili id, linkovi `COALESCE(slug, id)`. Zamjenjuje 507.
+610. **`campaign_settings.contributions_list`** (`visible|hidden`, 0004) zamjenjuje `metadata.contributions_list` (509).
+611. **Seed „sad” = početak tekućeg UTC dana** ili `DEMO_SAD=YYYY-MM-DD`; datum u prvom retku `demo.sql` i u
+     `primjeri.json`; testovi čitaju `SAD_SEEDA`. Zatvara 532. Posljedica: svaki `db:gen-seed` mijenja `demo.sql`.
+612. **Dispečer zove učitavač i kad ruta nema pogled** (CSV, rute samo za POST).
+613. **En oblici podkoraka** (zatvara 409): `organisation/new/details|representative|project|kyb|review`,
+     `settings/verification/type|details|review`, `settings/links/sharing`, `{id}/manage/finances.csv`.
+     Provjera ruta: `new-campaign` i `settings` su 302 iznimke, `reminder` izostavljen (S7).
