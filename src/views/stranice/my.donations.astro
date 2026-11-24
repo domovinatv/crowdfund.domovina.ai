@@ -1,0 +1,76 @@
+---
+// Moje donacije /hr/moje/donacije (P, obilazak 08 „Donated by me”): kartica po doprinosu s kampanjom,
+// organizatorom, iznosom, stanjem intenta i referencom. Potvrda o uplati dolazi s MPT-om (S7).
+import Heart from "@lucide/astro/icons/heart";
+import OkvirMoje from "../../components/moje/OkvirMoje.astro";
+import { formatDatuma, formatNovca } from "../../components/kampanja/format";
+import { GUMB_DRUGI } from "../../components/upravljanje/stil";
+import { url } from "../../lib/rute";
+import { MOJE } from "../sadrzaj/moje";
+import type { PropsStranice } from "../tipovi";
+import type { PodaciMojihDonacija } from "./my.donations.ucitaj";
+
+type Props = PropsStranice<PodaciMojihDonacija>;
+const { lang, podaci } = Astro.props;
+const M = MOJE[lang];
+const T = M.donacije;
+const novac = formatNovca(lang);
+const boja = (s: string) => (s === "paid" ? "bg-success-bg text-success" : s === "open" || s === "underpaid" || s === "late" ? "bg-warning-bg text-warning" : "bg-mist text-ink-soft");
+---
+<OkvirMoje lang={lang} aktivna="my.donations" naslov={T.naslov} uvod={T.uvod}>
+  {
+    podaci.donacije.length === 0 ? (
+      <div class="mt-6 rounded-md bg-mist px-4 py-6 text-sm text-ink-muted">
+        <p>{T.nema}</p>
+        <a href={url(lang, "campaigns")} class={`mt-3 ${GUMB_DRUGI}`}>{T.pregledaj}</a>
+      </div>
+    ) : (
+      <>
+        <p class="mt-6 flex items-center gap-2 text-ink">
+          <Heart size={18} aria-hidden="true" class="text-action" />
+          {T.ukupno}: <span class="font-semibold tabular-nums">{novac(podaci.ukupnoCenti)}</span>
+        </p>
+        <ul class="mt-4 grid gap-4">
+          {podaci.donacije.map((d) => (
+            <li class="rounded-md bg-paper p-4 shadow-card ring-1 ring-line">
+              <p class="text-sm">
+                <span class:list={["rounded-sm px-1.5 py-0.5 font-semibold", boja(d.stanje)]}>{T.stanje[d.stanje]}</span>
+              </p>
+              <h2 class="mt-1 text-lg font-semibold break-words text-ink">
+                {d.kampanja.vidljiva ? <a href={url(lang, "campaign", { id: d.kampanja.publicId })} class="hover:underline">{d.kampanja.naslov}</a> : d.kampanja.naslov}
+              </h2>
+              <dl class="mt-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1 text-sm">
+                <dt class="text-ink-muted">{T.organizator}</dt>
+                <dd class="text-ink">
+                  {d.kampanja.organizacijaSlug ? <a href={url(lang, "org", { slug: d.kampanja.organizacijaSlug })} class="underline underline-offset-2">{d.kampanja.organizator}</a> : d.kampanja.organizator}
+                </dd>
+                <dt class="text-ink-muted">{T.iznos}</dt>
+                <dd class="text-ink">
+                  <span class="font-semibold tabular-nums">{novac(d.iznosCenti)}</span>
+                  {d.napojnicaCenti > 0 && <span class="text-ink-muted"> + {novac(d.napojnicaCenti)} {T.napojnica}</span>}
+                </dd>
+                <dt class="text-ink-muted">{T.datum}</dt>
+                <dd class="text-ink">{formatDatuma(lang, d.placena ?? d.stvorena)}</dd>
+                {d.kasica && (<><dt class="text-ink-muted">{T.kasica}</dt><dd class="font-mono text-ink">{d.kasica}</dd></>)}
+                {d.kampanja.cilj !== null && (<><dt class="text-ink-muted">{T.cilj}</dt><dd class="text-ink tabular-nums">{novac(d.kampanja.cilj)}</dd></>)}
+                {d.kampanja.rok !== null && (<><dt class="text-ink-muted">{T.rok}</dt><dd class="text-ink">{formatDatuma(lang, d.kampanja.rok)}</dd></>)}
+                <dt class="text-ink-muted">{T.referenca}</dt>
+                <dd class="font-mono break-all text-ink">{d.referenca}</dd>
+              </dl>
+              {d.kampanja.vidljiva ? (
+                <p class="mt-3 flex flex-wrap gap-x-4">
+                  <a href={url(lang, "campaign", { id: d.kampanja.publicId })} class="inline-flex min-h-11 items-center font-medium text-action underline underline-offset-2">{T.radnje.otvori}</a>
+                  <a href={url(lang, "campaign.widget", { id: d.kampanja.publicId })} class="inline-flex min-h-11 items-center font-medium text-action underline underline-offset-2">{T.radnje.widget}</a>
+                  <a href={url(lang, "campaign.support", { id: d.kampanja.publicId })} class="inline-flex min-h-11 items-center font-medium text-action underline underline-offset-2">{T.radnje.podrzi}</a>
+                </p>
+              ) : (
+                <p class="mt-3 text-sm text-ink-muted">{T.nijeVidljiva}</p>
+              )}
+            </li>
+          ))}
+        </ul>
+        <p class="mt-6 text-sm text-ink-muted">{T.potvrda}</p>
+      </>
+    )
+  }
+</OkvirMoje>

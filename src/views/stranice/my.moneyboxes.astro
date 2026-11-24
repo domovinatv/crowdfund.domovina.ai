@@ -1,0 +1,82 @@
+---
+// Moje kasice /hr/moje/kasice (P, V; obilazak 08 „Donation boxes” i 24): skupine Aktivne · Isključene · Obrisane,
+// prikupljeno kroz kasicu (skriveno kad kampanja skriva iznos), isključi/uključi (POST, radi bez JS-a).
+import PiggyBank from "@lucide/astro/icons/piggy-bank";
+import OkvirMoje from "../../components/moje/OkvirMoje.astro";
+import ProgressBar from "../../components/ProgressBar.astro";
+import { formatDatuma, formatNovca } from "../../components/kampanja/format";
+import { GUMB_MALI } from "../../components/upravljanje/stil";
+import { STATUSI_KASICE } from "../../lib/db/moje";
+import { url } from "../../lib/rute";
+import { MOJE } from "../sadrzaj/moje";
+import type { PropsStranice } from "../tipovi";
+import type { PodaciMojihKasica } from "./my.moneyboxes.ucitaj";
+
+type Props = PropsStranice<PodaciMojihKasica>;
+const { lang, podaci } = Astro.props;
+const M = MOJE[lang];
+const T = M.kasice;
+const novac = formatNovca(lang);
+const put = url(lang, "my.moneyboxes");
+---
+<OkvirMoje lang={lang} aktivna="my.moneyboxes" naslov={T.naslov} uvod={T.uvod} uspjeh={podaci.poruka ? T[podaci.poruka] : null} greska={podaci.greska ? T.greska : null}>
+  <nav aria-label={T.naslov} class="mt-6">
+    <ul class="flex flex-wrap gap-2">
+      {
+        STATUSI_KASICE.map((s) => (
+          <li>
+            <a href={s === "active" ? put : `${put}?status=${s}`} aria-current={podaci.status === s ? "true" : undefined}
+              class:list={["inline-flex min-h-11 items-center gap-1.5 rounded-full px-4 text-sm ring-1 ring-line", podaci.status === s ? "bg-ink font-semibold text-paper" : "text-ink-soft hover:bg-mist"]}>
+              {T.filtri[s]} <span class="tabular-nums">{podaci.brojevi[s]}</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </nav>
+  {
+    podaci.kasice.length === 0 ? (
+      <div class="mt-6 rounded-md bg-mist px-4 py-6 text-sm text-ink-muted">
+        <p>{T.nema}</p>
+        <a href={url(lang, "how-it-works.moneyboxes")} class="mt-2 inline-flex min-h-11 items-center font-medium text-action underline underline-offset-2">{T.kakoRadi}</a>
+      </div>
+    ) : (
+      <ul class="mt-6 grid gap-4">
+        {podaci.kasice.map((m) => (
+          <li class="rounded-md bg-paper p-4 shadow-card ring-1 ring-line">
+            <h2 class="flex items-center gap-2 text-lg font-semibold break-words text-ink">
+              <PiggyBank size={20} aria-hidden="true" class="shrink-0 text-action" />
+              {m.naslov}
+            </h2>
+            <p class="mt-1 text-sm text-ink-muted">
+              {T.kampanja}:{" "}
+              {m.kampanja.vidljiva ? <a href={url(lang, "campaign", { id: m.kampanja.publicId })} class="underline underline-offset-2">{m.kampanja.naslov}</a> : m.kampanja.naslov}
+              {" "}· {formatDatuma(lang, m.stvorena)}
+            </p>
+            {m.prikupljenoCenti !== null && <ProgressBar lang={lang} raisedCents={m.prikupljenoCenti} goalCents={m.ciljCenti} class="mt-3" />}
+            <p class="mt-2 text-sm text-ink-soft">
+              {T.prikupljeno}:{" "}
+              <span class="font-semibold text-ink tabular-nums">{m.prikupljenoCenti === null ? T.skriveno : novac(m.prikupljenoCenti)}</span>
+              {m.ciljCenti !== null && m.prikupljenoCenti !== null && <span> {M.iznosOd} {novac(m.ciljCenti)}</span>}
+              {m.brojDoprinosa !== null && <span> · <span class="tabular-nums">{m.brojDoprinosa}</span> {T.doprinosa}</span>}
+            </p>
+            {!m.kampanja.dopustaKasice && m.status !== "deleted" && <p class="mt-2 text-sm text-warning">{T.kampanjaNeDopusta}</p>}
+            {m.status !== "deleted" && (
+              <div class="mt-3 flex flex-wrap items-center gap-3">
+                {m.status === "active" && m.kampanja.vidljiva && m.kampanja.dopustaKasice && (
+                  <a href={url(lang, "moneybox", { alias: m.alias })} class="inline-flex min-h-11 items-center font-medium text-action underline underline-offset-2">{T.otvori}</a>
+                )}
+                <form method="post" action={put}>
+                  <input type="hidden" name="alias" value={m.alias} />
+                  <button type="submit" name="akcija" value={m.status === "active" ? "iskljuci" : "ukljuci"} class={GUMB_MALI}>
+                    {m.status === "active" ? T.iskljuci : T.ukljuci}
+                  </button>
+                </form>
+              </div>
+            )}
+          </li>
+        ))}
+      </ul>
+    )
+  }
+</OkvirMoje>

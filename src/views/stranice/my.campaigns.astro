@@ -1,0 +1,186 @@
+---
+// Moje kampanje /hr/moje/kampanje (P, obilazak 08): filtri stanja i organizacije, redoslijed, nacrti s „Nastavi”,
+// kartica po kampanji s izbornikom (<details>, radi bez JS-a) i obavijesti nakon objave ili brisanja.
+import Ellipsis from "@lucide/astro/icons/ellipsis";
+import FilePen from "@lucide/astro/icons/file-pen";
+import Plus from "@lucide/astro/icons/plus";
+import OkvirMoje from "../../components/moje/OkvirMoje.astro";
+import PhaseBadge from "../../components/PhaseBadge.astro";
+import ProgressBar from "../../components/ProgressBar.astro";
+import { formatDatuma, formatNovca } from "../../components/kampanja/format";
+import { GUMB, GUMB_DRUGI, GUMB_MALI } from "../../components/upravljanje/stil";
+import { url } from "../../lib/rute";
+import { MOJE, umetni } from "../sadrzaj/moje";
+import { REDOSLIJEDI_MOJE, STANJA_MOJE } from "../../lib/db/moje";
+import type { PropsStranice } from "../tipovi";
+import type { PodaciMojihKampanja } from "./my.campaigns.ucitaj";
+
+type Props = PropsStranice<PodaciMojihKampanja>;
+const { lang, podaci } = Astro.props;
+const M = MOJE[lang];
+const T = M.kampanje;
+const novac = formatNovca(lang);
+const put = url(lang, "my.campaigns");
+const f = podaci.filtar;
+const boja = (s: string) =>
+  s === "active" ? "bg-success-bg text-success" : s === "blocked" || s === "cancelled" ? "bg-danger-bg text-danger" : s === "review" || s === "paused" ? "bg-warning-bg text-warning" : "bg-mist text-ink-soft";
+const upit = (stanje: string | null) => {
+  const p = new URLSearchParams();
+  if (stanje) p.set("state", stanje);
+  if (f.organizacija) p.set("org", f.organizacija);
+  if (f.redoslijed !== "newest") p.set("sort", f.redoslijed);
+  const s = p.toString();
+  return s ? `${put}?${s}` : put;
+};
+const o = podaci.obavijest;
+const uspjeh = o ? ("naslov" in o ? umetni(T.obavijest[o.vrsta], { naslov: o.naslov, org: o.org }) : T.obavijest[o.vrsta]) : null;
+const filtriran = !!(f.stanje || f.organizacija);
+const prikaziKampanje = !(f.stanje === "draft" && podaci.nacrti.length > 0 && podaci.kampanje.length === 0);
+---
+<OkvirMoje lang={lang} aktivna="my.campaigns" naslov={T.naslov} uvod={T.uvod} uspjeh={uspjeh} greska={podaci.greska ? T.obavijest.nacrtNema : null}>
+  <a slot="radnja" href={url(lang, "new-campaign")} class={GUMB}><Plus size={18} aria-hidden="true" />{T.nova}</a>
+
+  <nav aria-label={T.stanjeOznaka} class="mt-6">
+    <ul class="flex flex-wrap gap-2">
+      <li>
+        <a href={upit(null)} aria-current={!f.stanje ? "true" : undefined}
+          class:list={["inline-flex min-h-11 items-center gap-1.5 rounded-full px-4 text-sm ring-1 ring-line", !f.stanje ? "bg-ink font-semibold text-paper" : "text-ink-soft hover:bg-mist"]}>
+          {T.sve} <span class="tabular-nums">{podaci.ukupno}</span>
+        </a>
+      </li>
+      {
+        STANJA_MOJE.filter((s) => podaci.brojevi[s] > 0 || s === f.stanje || s === "active").map((s) => (
+          <li>
+            <a href={upit(s)} aria-current={f.stanje === s ? "true" : undefined}
+              class:list={["inline-flex min-h-11 items-center gap-1.5 rounded-full px-4 text-sm ring-1 ring-line", f.stanje === s ? "bg-ink font-semibold text-paper" : "text-ink-soft hover:bg-mist"]}>
+              {M.stanje[s]} <span class="tabular-nums">{podaci.brojevi[s]}</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </nav>
+
+  <form method="get" action={put} class="mt-4 flex flex-wrap items-end gap-3">
+    {f.stanje && <input type="hidden" name="state" value={f.stanje} />}
+    {
+      podaci.organizacije.length > 1 && (
+        <label class="text-sm">
+          <span class="block font-semibold text-ink">{T.organizacijaOznaka}</span>
+          <select name="org" class="mt-1 min-h-11 rounded-sm border border-ink-muted/60 bg-paper px-3 text-base text-ink">
+            <option value="">{T.sveOrganizacije}</option>
+            {podaci.organizacije.map((x) => <option value={x.slug} selected={x.slug === f.organizacija}>{x.naziv}</option>)}
+          </select>
+        </label>
+      )
+    }
+    <label class="text-sm">
+      <span class="block font-semibold text-ink">{T.redoslijedOznaka}</span>
+      <select name="sort" class="mt-1 min-h-11 rounded-sm border border-ink-muted/60 bg-paper px-3 text-base text-ink">
+        {REDOSLIJEDI_MOJE.map((r) => <option value={r} selected={r === f.redoslijed}>{T.redoslijedi[r]}</option>)}
+      </select>
+    </label>
+    <button type="submit" class={GUMB_DRUGI}>{T.primijeni}</button>
+    {filtriran && <a href={put} class="inline-flex min-h-11 items-center text-sm font-medium text-action underline underline-offset-2">{T.ocisti}</a>}
+  </form>
+
+  {
+    podaci.nacrti.length > 0 && (
+      <section aria-labelledby="nacrti" class="mt-8">
+        <h2 id="nacrti" class="text-xl font-semibold text-ink">{T.nacrti}</h2>
+        <p class="mt-1 text-sm text-ink-muted">{T.nacrtiUvod}</p>
+        <ul class="mt-3 divide-y divide-line rounded-md border border-line">
+          {podaci.nacrti.map((n) => (
+            <li class="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div class="min-w-0">
+                <p class="flex items-center gap-2 font-semibold break-words text-ink">
+                  <FilePen size={18} aria-hidden="true" class="shrink-0 text-ink-muted" />
+                  {n.nacrt.naslov?.trim() || T.bezNaslova}
+                </p>
+                <p class="mt-1 text-sm text-ink-muted">
+                  {umetni(T.korak, { korak: n.step })} · {T.promijenjen} {formatDatuma(lang, n.updatedAt)}
+                </p>
+              </div>
+              <form method="post" action={put} class="flex shrink-0 flex-wrap gap-2">
+                <input type="hidden" name="nacrt" value={n.id} />
+                <button type="submit" name="akcija" value="nastavi" class={GUMB_MALI}>{T.nastavi}</button>
+                <button type="submit" name="akcija" value="obrisi-nacrt" class="inline-flex min-h-9 items-center rounded-md px-3 text-sm font-medium text-danger hover:bg-danger-bg">
+                  {T.obrisiNacrt}
+                </button>
+              </form>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )
+  }
+
+  {
+    prikaziKampanje && (
+      podaci.kampanje.length === 0 ? (
+        <div class="mt-8 rounded-md bg-mist px-4 py-6 text-sm text-ink-muted">
+          <p>{filtriran ? T.nemaFiltra : T.nema}</p>
+          {filtriran && <a href={put} class="mt-2 inline-flex min-h-11 items-center font-medium text-action underline underline-offset-2">{T.ocisti}</a>}
+        </div>
+      ) : (
+        <ul class="mt-8 grid gap-4" data-testid="moje-kampanje">
+          {podaci.kampanje.map((k) => (
+            <li class="rounded-md bg-paper p-4 shadow-card ring-1 ring-line" data-public-id={k.publicId}>
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <p class="flex flex-wrap items-center gap-2 text-sm">
+                    <span class:list={["rounded-sm px-1.5 py-0.5 font-semibold", boja(k.stanje)]}>{M.stanje[k.stanje]}</span>
+                    {k.organizacija?.osobna ? (
+                      <span class="inline-flex items-center gap-2 text-ink-muted">{T.osobna}<PhaseBadge lang={lang} /></span>
+                    ) : k.organizacija ? (
+                      <a href={url(lang, "org", { slug: k.organizacija.slug })} class="text-ink-muted underline underline-offset-2">
+                        {k.vrsta === "for_organization" ? umetni(T.zaOrganizaciju, { org: k.organizacija.naziv }) : k.organizacija.naziv}
+                      </a>
+                    ) : null}
+                    {k.uloga && <span class="text-ink-muted">· {T.uloga[k.uloga]}</span>}
+                    {!k.uloga && k.autor && <span class="text-ink-muted">· {T.autor}</span>}
+                  </p>
+                  <h2 class="mt-1 text-lg font-semibold break-words text-ink">
+                    {k.izbornik.some((x) => x.radnja === "otvori") ? (
+                      <a href={url(lang, "campaign", { id: k.publicId })} class="hover:underline">{k.naslov}</a>
+                    ) : (
+                      k.naslov
+                    )}
+                  </h2>
+                </div>
+                {k.izbornik.length > 0 && (
+                  <details class="relative shrink-0">
+                    <summary class="inline-flex min-h-11 min-w-11 cursor-pointer list-none items-center justify-center rounded-md ring-1 ring-line hover:bg-mist" aria-label={`${T.izbornik}: ${k.naslov}`}>
+                      <Ellipsis size={20} aria-hidden="true" />
+                    </summary>
+                    <ul class="absolute right-0 z-10 mt-1 w-56 rounded-md bg-paper py-1 shadow-card ring-1 ring-line">
+                      {k.izbornik.map((x) => (
+                        <li>
+                          <a href={x.href} class="flex min-h-11 items-center px-4 text-sm text-ink hover:bg-mist">{T.radnje[x.radnja]}</a>
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                )}
+              </div>
+              {k.stanje === "review" && k.autorCeka && k.organizacija && <p class="mt-2 text-sm text-warning">{umetni(T.ceka, { org: k.organizacija.naziv })}</p>}
+              {k.stanje === "cancelled" && k.razlogOdbijanja && (
+                <p class="mt-2 text-sm text-danger"><span class="font-semibold">{T.razlog}:</span> {k.razlogOdbijanja}</p>
+              )}
+              <ProgressBar lang={lang} raisedCents={k.prikupljenoCenti} goalCents={k.ciljCenti} class="mt-3" />
+              <p class="mt-2 text-sm text-ink-soft">
+                <span class="font-semibold text-ink tabular-nums">{novac(k.prikupljenoCenti)}</span>
+                {k.ciljCenti !== null ? <span> {M.iznosOd} {novac(k.ciljCenti)}</span> : <span> · {M.bezCilja}</span>}
+                <span> · <span class="tabular-nums">{k.brojDoprinosa}</span> {T.doprinosa}</span>
+              </p>
+              <p class="mt-1 text-xs text-ink-muted">
+                {T.stvorena} {formatDatuma(lang, k.stvorena)}
+                {k.rok !== null && <span> · {T.rok} {formatDatuma(lang, k.rok)}</span>}
+              </p>
+            </li>
+          ))}
+        </ul>
+      )
+    )
+  }
+</OkvirMoje>

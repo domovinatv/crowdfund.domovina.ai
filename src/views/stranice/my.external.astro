@@ -1,0 +1,42 @@
+---
+// Vanjske kampanje mojih organizacija /hr/moje/vanjske (P, tok 9): status povezivanja, izvorna poveznica,
+// javna stranica (kad je povezana) i upravljanje u organizaciji (U:editor).
+import ExternalLink from "@lucide/astro/icons/external-link";
+import OkvirMoje from "../../components/moje/OkvirMoje.astro";
+import { formatDatuma } from "../../components/kampanja/format";
+import { imaUlogu } from "../../lib/pristup";
+import { url } from "../../lib/rute";
+import { MOJE } from "../sadrzaj/moje";
+import type { PropsStranice } from "../tipovi";
+import type { PodaciMojihVanjskih } from "./my.external.ucitaj";
+
+type Props = PropsStranice<PodaciMojihVanjskih>;
+const { lang, podaci } = Astro.props;
+const T = MOJE[lang].vanjske;
+const VEZA = "inline-flex min-h-11 items-center gap-1 text-sm font-medium text-action underline underline-offset-2";
+---
+<OkvirMoje lang={lang} aktivna="my.external" naslov={T.naslov} uvod={T.uvod}>
+  {
+    podaci.vanjske.length === 0 ? (
+      <p class="mt-6 rounded-md bg-mist px-4 py-6 text-sm text-ink-muted">{T.nema}</p>
+    ) : (
+      <ul class="mt-6 divide-y divide-line rounded-md border border-line">
+        {podaci.vanjske.map((v) => (
+          <li class="p-4">
+            <p class="text-sm">
+              <span class:list={["rounded-sm px-1.5 py-0.5 font-semibold", v.status === "active" ? "bg-success-bg text-success" : "bg-warning-bg text-warning"]}>{T.status[v.status]}</span>
+              <span class="text-ink-muted"> · {v.organizacija.naziv}</span>
+            </p>
+            <h2 class="mt-1 font-semibold break-words text-ink">{v.naslov}</h2>
+            {v.provjerena !== null && <p class="mt-1 text-xs text-ink-muted">{T.provjerena} {formatDatuma(lang, v.provjerena)}</p>}
+            <p class="mt-1 flex flex-wrap gap-x-4">
+              <a href={v.url} rel="noopener noreferrer" target="_blank" class={VEZA}>{T.izvor}<ExternalLink size={14} aria-hidden="true" /></a>
+              {v.status === "active" && <a href={url(lang, "external.campaign", { id: v.id })} class={VEZA}>{T.javno}</a>}
+              {imaUlogu(v.uloga, "editor") && <a href={url(lang, "org.external", { slug: v.organizacija.slug })} class={VEZA}>{T.upravljaj}</a>}
+            </p>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+</OkvirMoje>

@@ -1,0 +1,48 @@
+---
+// Okvir „Moje” (docs/07 „Moje i postavke”, obilazak 08): kartice Kampanje · Donacije · Kasice · Kamo ide novac ·
+// Vanjske, jedan h1, noindex, poruka o uspjehu (role=status) i greška.
+import Base from "../../layouts/Base.astro";
+import type { Lang } from "../../i18n";
+import { url } from "../../lib/rute";
+import { MOJE } from "../../views/sadrzaj/moje";
+import Greska from "../prijava/Greska.astro";
+import Poruka from "../organizacija/Poruka.astro";
+import { STAVKE_MOJE, type StavkaMoje } from "./ucitavanje";
+
+interface Props {
+  lang: Lang;
+  aktivna: StavkaMoje;
+  naslov: string;
+  uvod?: string | undefined;
+  uspjeh?: string | null | undefined;
+  greska?: string | null | undefined;
+}
+const { lang, aktivna, naslov, uvod, uspjeh, greska } = Astro.props;
+const T = MOJE[lang];
+---
+<Base lang={lang} title={naslov} noindex>
+  <nav aria-label={T.naslov} class="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+    <ul class="flex gap-1 border-b border-line">
+      {
+        STAVKE_MOJE.map((k) => (
+          <li class="shrink-0">
+            <a href={url(lang, k)} aria-current={k === aktivna ? "page" : undefined}
+              class:list={["inline-flex min-h-11 items-center border-b-2 px-3 text-sm", k === aktivna ? "border-action font-semibold text-ink" : "border-transparent text-ink-soft hover:text-ink"]}>
+              {T.nav[k]}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </nav>
+  <div class="mt-6 min-w-0">
+    <div class="flex flex-wrap items-start justify-between gap-3">
+      <h1 class="page-title text-ink">{naslov}</h1>
+      <slot name="radnja" />
+    </div>
+    {uvod && <p class="mt-2 max-w-prose text-ink-soft">{uvod}</p>}
+    {uspjeh && <Poruka poruka={uspjeh} />}
+    {greska && <Greska poruka={greska} />}
+    <slot />
+  </div>
+</Base>
