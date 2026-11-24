@@ -1,0 +1,71 @@
+---
+// „Kamo ide novac” (ekrani 09 i 27, docs/08 §5.8): Safe kampanje, potpisnici, 0 platformskih potpisnika,
+// explorer po mreži. Isplate nema (odluka 6).
+import ExternalLink from "@lucide/astro/icons/external-link";
+import ShieldCheck from "@lucide/astro/icons/shield-check";
+import OkvirUpravljanja from "../../components/upravljanje/OkvirUpravljanja.astro";
+import { H2, KARTICA } from "../../components/upravljanje/stil";
+import { formatNovca, skratiAdresu } from "../../components/kampanja/format";
+import { EXPLORER } from "../../lib/db/upravljanje";
+import { UPRAVLJANJE } from "../sadrzaj/upravljanje";
+import type { PodaciNovca } from "./campaign.manage.money.ucitaj";
+import type { PropsStranice } from "../tipovi";
+
+type Props = PropsStranice<PodaciNovca>;
+const { lang, podaci } = Astro.props;
+const { u, novac: n } = podaci;
+const T = UPRAVLJANJE[lang].novac;
+const novac = formatNovca(lang, u.k.currency);
+const adresa = n.safe?.address ?? n.safeOrganizacije?.address ?? null;
+const lanac = n.safe?.chainId ?? n.safeOrganizacije?.chainId ?? null;
+const explorer = lanac !== null ? EXPLORER[lanac] : undefined;
+const DT = "text-sm text-ink-muted";
+const DD = "mt-0.5 text-ink";
+---
+<OkvirUpravljanja lang={lang} u={u} aktivna="campaign.manage.money">
+  <h2 class={H2}>{T.naslov}</h2>
+  <p class="mt-1 max-w-[70ch] text-sm text-ink-muted">{T.opis}</p>
+
+  <section aria-labelledby="safe-naslov" class={`mt-6 max-w-[70ch] ${KARTICA}`}>
+    <h3 id="safe-naslov" class="flex items-center gap-2 text-lg font-semibold text-ink">
+      <ShieldCheck size={20} aria-hidden="true" class="text-action" />{n.safe ? T.safe : T.safeOrganizacije}
+    </h3>
+    {!n.safe && <p class="mt-2 text-sm text-ink-soft">{T.nemaSafea}</p>}
+    {adresa ? (
+      <dl class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div class="sm:col-span-2">
+          <dt class={DT}>{T.safe}</dt>
+          <dd class={`${DD} break-all font-mono text-sm`} title={adresa}>{adresa}</dd>
+          {explorer && (
+            <a href={`${explorer.adresa}${adresa}`} rel="noopener noreferrer" target="_blank"
+              class="mt-1 inline-flex min-h-9 items-center gap-1 text-sm font-semibold text-action underline-offset-2 hover:underline">
+              {T.explorer}<ExternalLink size={14} aria-hidden="true" />
+            </a>
+          )}
+        </div>
+        <div><dt class={DT}>{T.mreza}</dt><dd class={DD}>{explorer?.ime ?? lanac}</dd></div>
+        <div><dt class={DT}>{T.nacin}</dt><dd class={DD}>{T.nacini[n.mode] ?? n.mode}</dd></div>
+        {n.safe && (
+          <>
+            <div class="sm:col-span-2">
+              <dt class={DT}>{T.potpisnici}</dt>
+              <dd class={DD}>
+                <p class="font-semibold">{T.prag.replace("{n}", String(n.safe.threshold)).replace("{m}", String(n.safe.owners.length))}</p>
+                <ul class="mt-1 space-y-0.5">
+                  {n.safe.owners.map((o) => <li class="font-mono text-sm text-ink-soft" title={o}>{skratiAdresu(o)}</li>)}
+                </ul>
+              </dd>
+            </div>
+            <div><dt class={DT}>{T.platforma}</dt><dd class={`${DD} font-semibold`} data-platformski={n.safe.platformSignerCount}>{n.safe.platformSignerCount}</dd></div>
+            <div><dt class={DT}>{T.provjeren}</dt><dd class={DD}>{n.safe.verifiedAt !== null ? UPRAVLJANJE[lang].opce.da : UPRAVLJANJE[lang].opce.ne}</dd></div>
+          </>
+        )}
+        <div><dt class={DT}>{T.kyb}</dt><dd class={DD}>{n.kybOdobren ? T.kybDa : T.kybNe}</dd></div>
+        <div><dt class={DT}>{T.prikupljeno}</dt><dd class={`${DD} font-semibold tabular-nums`}>{novac(n.prikupljenoCents)}</dd></div>
+      </dl>
+    ) : null}
+    {n.safe && n.safe.verifiedAt === null && <p class="mt-3 rounded-md bg-warning-bg p-3 text-sm text-warning">{T.nijeProvjeren}</p>}
+  </section>
+
+  <p class="mt-6 max-w-[70ch] rounded-md bg-mist p-3 text-sm text-ink-soft">{T.bezIsplate}</p>
+</OkvirUpravljanja>

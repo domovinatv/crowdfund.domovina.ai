@@ -1,0 +1,74 @@
+---
+// Kasice kampanje (ekran 24): tablica sa stvarnim zbrojem i brojem doprinosa, isključi/uključi (uloga ≥ editor).
+import OkvirUpravljanja from "../../components/upravljanje/OkvirUpravljanja.astro";
+import Poruka from "../../components/upravljanje/Poruka.astro";
+import { GUMB_DRUGI, GUMB_MALI, H2, TABLICA, TD, TH } from "../../components/upravljanje/stil";
+import { formatNovca } from "../../components/kampanja/format";
+import { url } from "../../lib/rute";
+import { UPRAVLJANJE } from "../sadrzaj/upravljanje";
+import type { PodaciKasica } from "./campaign.manage.moneyboxes.ucitaj";
+import type { PropsStranice } from "../tipovi";
+
+type Props = PropsStranice<PodaciKasica>;
+const { lang, podaci } = Astro.props;
+const { u, kasice, smijeMijenjati, poruka } = podaci;
+const { k } = u;
+const T = UPRAVLJANJE[lang].kasice;
+const novac = formatNovca(lang, k.currency);
+const nova = k.javna && k.postavke.kasiceDopustene ? url(lang, "campaign.moneybox.new", { id: k.publicId }) : null;
+---
+<OkvirUpravljanja lang={lang} u={u} aktivna="campaign.manage.moneyboxes">
+  <div class="flex flex-wrap items-start justify-between gap-3">
+    <div>
+      <h2 class={H2}>{T.naslov}</h2>
+      <p class="mt-1 max-w-[70ch] text-sm text-ink-muted">{T.opis}</p>
+    </div>
+    {nova && <a href={nova} class={GUMB_DRUGI}>{T.nova}</a>}
+  </div>
+  {!k.postavke.kasiceDopustene && <p class="mt-3 rounded-md bg-warning-bg p-3 text-sm text-warning">{T.nedopustene}</p>}
+  <Poruka vrsta="ok" tekst={poruka ? T.poruke[poruka] : null} />
+
+  {kasice.length === 0 ? (
+    <p class="mt-6 text-ink-muted">{T.prazno}</p>
+  ) : (
+    <div class="mt-6 overflow-x-auto">
+      <table class={TABLICA}>
+        <thead>
+          <tr>
+            <th scope="col" class={TH}>{T.stupci.kasica}</th>
+            <th scope="col" class={TH}>{T.stupci.vlasnik}</th>
+            <th scope="col" class={`${TH} text-right`}>{T.stupci.prikupljeno}</th>
+            <th scope="col" class={`${TH} text-right`}>{T.stupci.broj}</th>
+            <th scope="col" class={TH}>{T.stupci.stanje}</th>
+            {smijeMijenjati && <th scope="col" class={TH}><span class="sr-only">{T.iskljuci}</span></th>}
+          </tr>
+        </thead>
+        <tbody>
+          {kasice.map((m) => (
+            <tr id={`m-${m.id}`}>
+              <td class={TD}>
+                {m.status === "active" && k.javna
+                  ? <a href={url(lang, "moneybox", { alias: m.alias })} class="font-semibold text-action underline-offset-2 hover:underline break-words">{m.title}</a>
+                  : <span class="font-semibold text-ink break-words">{m.title}</span>}
+                <span class="block font-mono text-xs text-ink-muted">/s/{m.alias}</span>
+              </td>
+              <td class={TD}>{m.ownerName ?? "—"}</td>
+              <td class={`${TD} text-right tabular-nums`}>{novac(m.cents)}{m.goalCents !== null && <span class="text-ink-muted"> / {novac(m.goalCents)}</span>}</td>
+              <td class={`${TD} text-right tabular-nums`}>{m.n}</td>
+              <td class={TD}><span class:list={[m.status === "active" ? "text-success" : "text-ink-muted"]}>{T.stanja[m.status]}</span></td>
+              {smijeMijenjati && (
+                <td class={TD}>
+                  <form method="post" action={u.put}>
+                    <input type="hidden" name="akcija" value={m.status === "active" ? "iskljuci" : "ukljuci"} />
+                    <input type="hidden" name="id" value={m.id} />
+                    <button type="submit" class={GUMB_MALI}>{m.status === "active" ? T.iskljuci : T.ukljuci}</button>
+                  </form>
+                </td>
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )}
+</OkvirUpravljanja>

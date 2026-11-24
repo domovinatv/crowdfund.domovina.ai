@@ -1,0 +1,42 @@
+---
+// Obavijesti (javni pregled §4.2): nove uplate (postavka kampanje, uloga ≥ editor), komentari i kraj (osobno).
+import OkvirUpravljanja from "../../components/upravljanje/OkvirUpravljanja.astro";
+import Poruka from "../../components/upravljanje/Poruka.astro";
+import { GUMB, H2, KARTICA, POMOC } from "../../components/upravljanje/stil";
+import { UPRAVLJANJE } from "../sadrzaj/upravljanje";
+import type { PodaciObavijesti } from "./campaign.manage.notifications.ucitaj";
+import type { PropsStranice } from "../tipovi";
+
+type Props = PropsStranice<PodaciObavijesti>;
+const { lang, podaci } = Astro.props;
+const { u, obavijesti: o, smijeKampanju, spremljeno } = podaci;
+const T = UPRAVLJANJE[lang].obavijesti;
+const O = UPRAVLJANJE[lang].opce;
+const stavke = [
+  { ime: "uplate", oznaka: T.uplate, pomoc: smijeKampanju ? T.uplatePomoc : `${T.uplatePomoc} ${T.uplateSamoUrednik}`, ukljuceno: o.uplate, iskljuceno: !smijeKampanju },
+  { ime: "komentari", oznaka: T.komentari, pomoc: T.komentariPomoc, ukljuceno: o.komentari, iskljuceno: false },
+  { ime: "kraj", oznaka: T.kraj, pomoc: T.krajPomoc, ukljuceno: o.kraj, iskljuceno: false },
+] as const;
+---
+<OkvirUpravljanja lang={lang} u={u} aktivna="campaign.manage.notifications">
+  <h2 class={H2}>{T.naslov}</h2>
+  <p class="mt-1 max-w-[70ch] text-sm text-ink-muted">{T.opis}</p>
+  <Poruka vrsta="ok" tekst={spremljeno ? O.spremljeno : null} />
+
+  <form method="post" action={u.put} class={`mt-6 max-w-[70ch] space-y-4 ${KARTICA}`}>
+    <fieldset class="space-y-4">
+      <legend class="sr-only">{T.naslov}</legend>
+      {stavke.map((s) => (
+        <div class="flex gap-3">
+          <input id={`n-${s.ime}`} name={s.ime} type="checkbox" value="1" checked={s.ukljuceno} disabled={s.iskljuceno}
+            aria-describedby={`n-${s.ime}-pomoc`} class="mt-1 size-5 shrink-0 accent-action" />
+          <div>
+            <label for={`n-${s.ime}`} class="font-semibold text-ink">{s.oznaka}</label>
+            <p id={`n-${s.ime}-pomoc`} class={`${POMOC} mt-0.5`}>{s.pomoc}</p>
+          </div>
+        </div>
+      ))}
+    </fieldset>
+    <button type="submit" class={GUMB}>{T.spremi}</button>
+  </form>
+</OkvirUpravljanja>

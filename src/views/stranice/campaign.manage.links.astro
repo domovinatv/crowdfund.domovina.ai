@@ -1,0 +1,93 @@
+---
+// Linkovi za praćenje (ekran 16, tok 7): obrazac novog linka, tablica posjeta i doprinosa po linku,
+// isključi/uključi (vlasnik linka ili uloga ≥ editor).
+import OkvirUpravljanja from "../../components/upravljanje/OkvirUpravljanja.astro";
+import Poruka from "../../components/upravljanje/Poruka.astro";
+import { GRESKA, GUMB, GUMB_MALI, H2, KARTICA, OZNAKA, POLJE, POMOC, TABLICA, TD, TH, rub } from "../../components/upravljanje/stil";
+import { formatNovca } from "../../components/kampanja/format";
+import { UPRAVLJANJE } from "../sadrzaj/upravljanje";
+import type { PodaciLinkova } from "./campaign.manage.links.ucitaj";
+import type { PropsStranice } from "../tipovi";
+
+type Props = PropsStranice<PodaciLinkova>;
+const { lang, podaci } = Astro.props;
+const { u, linkovi, prefiks, vrijednosti: v, greske, smijeSve, korisnikId, poruka } = podaci;
+const T = UPRAVLJANJE[lang].linkovi;
+const O = UPRAVLJANJE[lang].opce;
+const novac = formatNovca(lang, u.k.currency);
+const g = (p: "slug" | "label") => (greske[p] ? O.greske[greske[p]!] : undefined);
+---
+<OkvirUpravljanja lang={lang} u={u} aktivna="campaign.manage.links">
+  <h2 class={H2}>{T.naslov}</h2>
+  <p class="mt-1 max-w-[70ch] text-sm text-ink-muted">{T.opis}</p>
+  <Poruka vrsta="ok" tekst={poruka ? T.poruke[poruka] : null} />
+
+  <section aria-labelledby="novi-naslov" class={`mt-6 max-w-[70ch] ${KARTICA}`}>
+    <h3 id="novi-naslov" class="text-lg font-semibold text-ink">{T.novi}</h3>
+    <form method="post" action={u.put} novalidate class="mt-3 space-y-4">
+      <div>
+        <label for="slug" class={OZNAKA}>{T.slug} <span class="text-sm font-normal text-ink-muted">({O.neobavezno})</span></label>
+        <div class="mt-1.5 flex items-stretch">
+          <span class="inline-flex items-center rounded-l-sm border border-r-0 border-ink-muted/60 bg-mist px-2 font-mono text-sm text-ink-soft">{prefiks}</span>
+          <input id="slug" name="slug" type="text" maxlength="60" pattern="[a-z0-9-]{3,60}" autocomplete="off" value={v.slug}
+            aria-invalid={greske.slug ? "true" : undefined} aria-describedby={`slug-pomoc${greske.slug ? " slug-greska" : ""}`}
+            class:list={[POLJE, "mt-0 rounded-l-none font-mono", rub(greske.slug)]} />
+        </div>
+        <p id="slug-pomoc" class={POMOC}>{T.slugPomoc}</p>
+        {g("slug") && <p id="slug-greska" class={GRESKA}>{g("slug")}</p>}
+      </div>
+      <div>
+        <label for="label" class={OZNAKA}>{T.label} <span class="text-sm font-normal text-ink-muted">({O.neobavezno})</span></label>
+        <input id="label" name="label" type="text" maxlength="80" value={v.label}
+          aria-invalid={greske.label ? "true" : undefined} aria-describedby={greske.label ? "label-greska" : undefined} class:list={[POLJE, rub(greske.label)]} />
+        {g("label") && <p id="label-greska" class={GRESKA}>{g("label")}</p>}
+      </div>
+      <button type="submit" class={GUMB}>{T.stvori}</button>
+    </form>
+  </section>
+
+  {linkovi.length === 0 ? (
+    <p class="mt-8 text-ink-muted">{T.prazno}</p>
+  ) : (
+    <div class="mt-8 overflow-x-auto">
+      <table class={TABLICA}>
+        <thead>
+          <tr>
+            <th scope="col" class={TH}>{T.stupci.link}</th>
+            <th scope="col" class={`${TH} text-right`}>{T.stupci.posjeti}</th>
+            <th scope="col" class={`${TH} text-right`}>{T.stupci.jedinstveni}</th>
+            <th scope="col" class={`${TH} text-right`}>{T.stupci.doprinosi}</th>
+            <th scope="col" class={`${TH} text-right`}>{T.stupci.iznos}</th>
+            <th scope="col" class={TH}>{T.stupci.stanje}</th>
+            <th scope="col" class={TH}><span class="sr-only">{T.iskljuci}</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          {linkovi.map((l) => (
+            <tr id={`l-${l.id}`}>
+              <td class={TD}>
+                <span class="block break-all font-mono text-ink">{prefiks}{l.slug}</span>
+                {l.label && <span class="block text-ink-soft break-words">{l.label}</span>}
+                <span class="block text-xs text-ink-muted">{T.otvorio}: {l.ownerName ?? "—"}</span>
+              </td>
+              <td class={`${TD} text-right tabular-nums`}>{l.posjeti}</td>
+              <td class={`${TD} text-right tabular-nums`}>{l.jedinstveni}</td>
+              <td class={`${TD} text-right tabular-nums`}>{l.n}</td>
+              <td class={`${TD} text-right tabular-nums`}>{novac(l.cents)}</td>
+              <td class={TD}><span class:list={[l.status === "active" ? "text-success" : "text-ink-muted"]}>{T.stanja[l.status] ?? l.status}</span></td>
+              <td class={TD}>
+                {(smijeSve || l.ownerId === korisnikId) && (
+                  <form method="post" action={u.put}>
+                    <input type="hidden" name="akcija" value={l.status === "active" ? "iskljuci" : "ukljuci"} />
+                    <input type="hidden" name="id" value={l.id} />
+                    <button type="submit" class={GUMB_MALI}>{l.status === "active" ? T.iskljuci : T.ukljuci}</button>
+                  </form>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )}
+</OkvirUpravljanja>

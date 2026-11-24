@@ -1,0 +1,101 @@
+---
+// Verifikacija namjene (ekran 15, odluka 18): stanje, prag kao zastava, popis dokumenata, mock upload
+// (samo metapodaci, bez pohrane), „Pošalji na pregled”.
+import FileText from "@lucide/astro/icons/file-text";
+import OkvirUpravljanja from "../../components/upravljanje/OkvirUpravljanja.astro";
+import Poruka from "../../components/upravljanje/Poruka.astro";
+import { GRESKA, GUMB, GUMB_DRUGI, H2, KARTICA, OZNAKA, POLJE, POMOC, rub } from "../../components/upravljanje/stil";
+import { formatDatuma, formatNovca } from "../../components/kampanja/format";
+import { MIME_DOKAZA, VRSTE_DOKUMENATA } from "../../lib/db/upravljanje";
+import { UPRAVLJANJE } from "../sadrzaj/upravljanje";
+import type { PodaciVerifikacije } from "./campaign.manage.verification.ucitaj";
+import type { PropsStranice } from "../tipovi";
+
+type Props = PropsStranice<PodaciVerifikacije>;
+const { lang, podaci } = Astro.props;
+const { u, dokumenti, pragCenti, iznadPraga, smijeDodati, vrijednosti: v, greske, greskaSlanja, poruka } = podaci;
+const T = UPRAVLJANJE[lang].verifikacija;
+const O = UPRAVLJANJE[lang].opce;
+const ver = u.k.verifikacija;
+const stanje = ver?.status ?? "nema";
+const g = (p: "kind" | "label" | "file") => (greske[p] ? O.greske[greske[p]!] : undefined);
+const bojaStanja: Record<string, string> = { approved: "bg-success-bg text-success", rejected: "bg-danger-bg text-danger", expired: "bg-danger-bg text-danger" };
+---
+<OkvirUpravljanja lang={lang} u={u} aktivna="campaign.manage.verification">
+  <h2 class={H2}>{T.naslov}</h2>
+  <p class="mt-1 max-w-[70ch] text-sm text-ink-muted">{T.opis}</p>
+  <Poruka vrsta="ok" tekst={poruka ? T.poruke[poruka] : null} />
+  <Poruka vrsta="greska" tekst={greskaSlanja ? T.greskeSlanja[greskaSlanja] : null} />
+
+  <section aria-labelledby="stanje-naslov" class={`mt-6 max-w-[70ch] ${KARTICA}`}>
+    <h3 id="stanje-naslov" class="text-lg font-semibold text-ink">{T.stanjeNaslov}</h3>
+    <p class="mt-2">
+      <span class:list={["rounded-sm px-2 py-0.5 text-sm font-semibold", bojaStanja[stanje] ?? "bg-mist text-ink"]} data-stanje={stanje}>{T.stanja[stanje] ?? stanje}</span>
+    </p>
+    {ver?.dueAt != null && <p class="mt-2 text-sm text-ink-soft">{T.rok}: <time datetime={new Date(ver.dueAt).toISOString()}>{formatDatuma(lang, ver.dueAt)}</time></p>}
+    {ver?.reason && <p class="mt-2 text-sm text-ink-soft">{T.razlog}: {ver.reason}</p>}
+    <p class="mt-3 text-sm text-ink-muted">{T.prag.replace("{iznos}", formatNovca(lang, u.k.currency)(pragCenti))}</p>
+    {iznadPraga && <p class="mt-2 rounded-md bg-warning-bg p-3 text-sm text-warning">{T.iznadPraga}</p>}
+  </section>
+
+  <section aria-labelledby="dokumenti-naslov" class="mt-8 max-w-[70ch]">
+    <h3 id="dokumenti-naslov" class="text-lg font-semibold text-ink">{T.dokumenti}</h3>
+    {dokumenti.length === 0 ? (
+      <p class="mt-2 text-ink-muted">{T.prazno}</p>
+    ) : (
+      <ul class="mt-3 space-y-2">
+        {dokumenti.map((d) => (
+          <li class={`flex gap-3 ${KARTICA}`}>
+            <FileText size={20} aria-hidden="true" class="mt-0.5 shrink-0 text-ink-muted" />
+            <div class="min-w-0">
+              <p class="font-semibold text-ink break-words">{d.label}</p>
+              <p class="text-sm text-ink-muted">
+                {T.vrste[d.kind] ?? d.kind}
+                {d.issuedAt !== null && <span> · {formatDatuma(lang, d.issuedAt)}</span>}
+                {d.url?.startsWith("r2:") && <span class="block break-all font-mono text-xs">{d.url.split("/").pop()}</span>}
+              </p>
+            </div>
+          </li>
+        ))}
+      </ul>
+    )}
+  </section>
+
+  {smijeDodati ? (
+    <>
+      <section aria-labelledby="dodaj-naslov" class={`mt-6 max-w-[70ch] ${KARTICA}`}>
+        <h3 id="dodaj-naslov" class="text-lg font-semibold text-ink">{T.dodaj}</h3>
+        <p class="mt-1 rounded-md bg-mist p-3 text-sm text-ink-soft">{T.mock}</p>
+        <form method="post" action={u.put} enctype="multipart/form-data" novalidate class="mt-3 space-y-4">
+          <div>
+            <label for="kind" class={OZNAKA}>{T.vrsta}</label>
+            <select id="kind" name="kind" aria-invalid={greske.kind ? "true" : undefined} class:list={[POLJE, rub(greske.kind)]}>
+              {VRSTE_DOKUMENATA.map((x) => <option value={x} selected={v.kind === x}>{T.vrste[x]}</option>)}
+            </select>
+            {g("kind") && <p class={GRESKA}>{g("kind")}</p>}
+          </div>
+          <div>
+            <label for="label" class={OZNAKA}>{T.label} <span class="text-sm font-normal text-ink-muted">({O.obavezno})</span></label>
+            <input id="label" name="label" type="text" required maxlength="120" value={v.label}
+              aria-invalid={greske.label ? "true" : undefined} aria-describedby={greske.label ? "label-greska" : undefined} class:list={[POLJE, rub(greske.label)]} />
+            {g("label") && <p id="label-greska" class={GRESKA}>{g("label")}</p>}
+          </div>
+          <div>
+            <label for="file" class={OZNAKA}>{T.file} <span class="text-sm font-normal text-ink-muted">({O.obavezno})</span></label>
+            <input id="file" name="file" type="file" required accept={MIME_DOKAZA.join(",")}
+              aria-invalid={greske.file ? "true" : undefined} aria-describedby={`file-pomoc${greske.file ? " file-greska" : ""}`} class:list={[POLJE, rub(greske.file)]} />
+            <p id="file-pomoc" class={POMOC}>{T.filePomoc}</p>
+            {g("file") && <p id="file-greska" class={GRESKA}>{g("file")}</p>}
+          </div>
+          <button type="submit" class={GUMB_DRUGI}>{T.dodaj}</button>
+        </form>
+      </section>
+      <form method="post" action={u.put} class="mt-6">
+        <input type="hidden" name="akcija" value="posalji" />
+        <button type="submit" class={GUMB}>{T.posalji}</button>
+      </form>
+    </>
+  ) : (
+    <p class="mt-6 max-w-[70ch] rounded-md bg-mist p-3 text-sm text-ink-soft">{T.zakljucano}</p>
+  )}
+</OkvirUpravljanja>

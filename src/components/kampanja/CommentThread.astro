@@ -1,11 +1,17 @@
 ---
-// Komentari (docs/08 §3.2 CommentThread), samo prikaz: jedna razina odgovora, iznos uz komentar
-// podržavatelja kad je javan, oznaka organizatora, „Prijavi”. Obrazac za komentar je S6.
+// Komentari (docs/08 §3.2 CommentThread): obrazac za komentar po pravu (`komentiranje.pravo`: prijavljeni,
+// „samo podržavatelji”), jedna razina odgovora, iznos uz komentar podržavatelja kad je javan, oznaka
+// organizatora, „Prijavi”. Svaki komentar ima sidro `k-{id}` (303 nakon objave vodi na njega).
 import Flag from "@lucide/astro/icons/flag";
+import Poruka from "../upravljanje/Poruka.astro";
+import { GRESKA, GUMB, POLJE, POMOC, rub } from "../upravljanje/stil";
 import type { Lang } from "../../i18n";
 import type { Komentar, KomentariKampanje } from "../../lib/db/kampanja";
+import { NAJVISE_KOMENTARA } from "../../lib/db/komentari";
 import { url } from "../../lib/rute";
+import type { StanjeKomentiranja } from "../../views/stranice/campaign.ucitaj";
 import { KAMPANJA } from "../../views/sadrzaj/kampanja";
+import { UPRAVLJANJE } from "../../views/sadrzaj/upravljanje";
 import { formatNovca, relativnoVrijeme } from "./format";
 
 interface Props {
@@ -14,9 +20,14 @@ interface Props {
   currency: string;
   /** Poveznica „Prijavite se za komentar” (`sign-in?next=`). */
   prijava: string;
+  /** Put stranice kampanje (POST komentara ide na nju). */
+  akcija: string;
+  komentiranje: StanjeKomentiranja;
 }
-const { lang, komentari, currency, prijava } = Astro.props;
+const { lang, komentari, currency, prijava, akcija, komentiranje: kp } = Astro.props;
 const T = KAMPANJA[lang].komentari;
+const J = UPRAVLJANJE[lang].javno.komentar;
+const greska = kp.greska ? UPRAVLJANJE[lang].opce.greske[kp.greska] : null;
 const novac = formatNovca(lang, currency);
 const sad = Date.now();
 const prijaviHref = (c: Komentar) => `${url(lang, "report")}?target=comment&id=${encodeURIComponent(c.id)}`;
@@ -26,10 +37,26 @@ const prijaviHref = (c: Komentar) => `${url(lang, "report")}?target=comment&id=$
     <p class="text-ink-muted">{T.iskljuceni}</p>
   ) : (
     <div>
-      <div class="rounded-md bg-mist p-4 text-sm">
-        <p class="text-ink-soft">{komentari.nacin === "contributors" ? T.samoPodrzavatelji : T.prijavaTekst}</p>
-        <a href={prijava} class="mt-2 inline-flex min-h-11 items-center rounded-md bg-paper px-4 font-semibold text-action ring-1 ring-action/30 hover:bg-mist">{T.prijava}</a>
-      </div>
+      <Poruka vrsta="ok" tekst={kp.poslano ? J.poslano : null} />
+      {kp.pravo === "da" ? (
+        <form method="post" action={`${akcija}#komentari`} novalidate class="mt-3">
+          <input type="hidden" name="akcija" value="komentar" />
+          <label for="komentar-body" class="font-semibold text-ink">{J.oznaka}</label>
+          <textarea id="komentar-body" name="body" rows="3" required maxlength={NAJVISE_KOMENTARA}
+            aria-invalid={greska ? "true" : undefined} aria-describedby={`komentar-pomoc${greska ? " komentar-greska" : ""}`}
+            class:list={[POLJE, rub(greska)]}>{kp.body}</textarea>
+          <p id="komentar-pomoc" class={POMOC}>{J.pomoc}</p>
+          {greska && <p id="komentar-greska" role="alert" class={GRESKA}>{greska}</p>}
+          <button type="submit" class={`mt-3 ${GUMB}`}>{J.posalji}</button>
+        </form>
+      ) : kp.pravo === "samo_podrzavatelji" ? (
+        <p class="rounded-md bg-mist p-4 text-sm text-ink-soft">{J.samoPodrzavatelji}</p>
+      ) : (
+        <div class="rounded-md bg-mist p-4 text-sm">
+          <p class="text-ink-soft">{komentari.nacin === "contributors" ? T.samoPodrzavatelji : T.prijavaTekst}</p>
+          <a href={prijava} class="mt-2 inline-flex min-h-11 items-center rounded-md bg-paper px-4 font-semibold text-action ring-1 ring-action/30 hover:bg-mist">{T.prijava}</a>
+        </div>
+      )}
       {komentari.komentari.length === 0 ? (
         <p class="mt-4 text-ink-muted">{T.prazno}</p>
       ) : (
@@ -37,7 +64,7 @@ const prijaviHref = (c: Komentar) => `${url(lang, "report")}?target=comment&id=$
           {komentari.komentari.map((c) => (
             <li class="rounded-md bg-paper p-4 shadow-card">
               {[c, ...c.odgovori].map((x, i) => (
-                <article class:list={[i > 0 && "mt-3 ml-4 border-l-2 border-line pl-3 sm:ml-6"]} aria-label={i > 0 ? T.odgovori : undefined}>
+                <article id={`k-${x.id}`} class:list={["scroll-mt-20", i > 0 && "mt-3 ml-4 border-l-2 border-line pl-3 sm:ml-6"]} aria-label={i > 0 ? T.odgovori : undefined}>
                   <p class="flex flex-wrap items-center gap-x-2 text-sm">
                     {x.autor.anonymous || !x.autor.name ? (
                       <span class="font-semibold text-ink-soft italic">{T.anonimno}</span>

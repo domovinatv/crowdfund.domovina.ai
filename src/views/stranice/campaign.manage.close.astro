@@ -1,0 +1,65 @@
+---
+// Zatvori ili obriši (U:owner, P+e; javni pregled §4.5, docs/05): zatvaranje `active → closed`, ponovno
+// otvaranje, brisanje s upisom ID-a kampanje. Svaki POST traži svježu potvrdu kodom (učitavač).
+import TriangleAlert from "@lucide/astro/icons/triangle-exclamation-point";
+import OkvirUpravljanja from "../../components/upravljanje/OkvirUpravljanja.astro";
+import Poruka from "../../components/upravljanje/Poruka.astro";
+import { GRESKA, GUMB, GUMB_OPASNI, H2, KARTICA, OZNAKA, POLJE, rub } from "../../components/upravljanje/stil";
+import { UPRAVLJANJE } from "../sadrzaj/upravljanje";
+import type { PodaciZatvaranja } from "./campaign.manage.close.ucitaj";
+import type { PropsStranice } from "../tipovi";
+
+type Props = PropsStranice<PodaciZatvaranja>;
+const { lang, podaci } = Astro.props;
+const { u, greska, poruka } = podaci;
+const { k } = u;
+const T = UPRAVLJANJE[lang].zatvori;
+---
+<OkvirUpravljanja lang={lang} u={u} aktivna="campaign.manage.close">
+  <h2 class={H2}>{T.naslov}</h2>
+  <p class="mt-1 max-w-[70ch] text-sm text-ink-muted">{T.potvrdaKodom}</p>
+  <Poruka vrsta="ok" tekst={poruka ? T.poruke[poruka] : null} />
+  <Poruka vrsta="greska" tekst={greska === "stanje" ? T.greske.stanje : null} />
+
+  {k.state === "closed" ? (
+    <section aria-labelledby="otvori-naslov" class={`mt-6 max-w-[70ch] ${KARTICA}`}>
+      <h3 id="otvori-naslov" class="text-lg font-semibold text-ink">{T.otvoriNaslov}</h3>
+      <p class="mt-1 text-ink-soft">{T.otvoriTekst}</p>
+      <form method="post" action={u.put} class="mt-3">
+        <input type="hidden" name="akcija" value="otvori" />
+        <button type="submit" class={GUMB}>{T.otvori}</button>
+      </form>
+    </section>
+  ) : (
+    <section aria-labelledby="zatvori-naslov" class={`mt-6 max-w-[70ch] ${KARTICA}`}>
+      <h3 id="zatvori-naslov" class="text-lg font-semibold text-ink">{T.zatvoriNaslov}</h3>
+      <p class="mt-1 text-ink-soft">{T.zatvoriTekst}</p>
+      {k.state === "active" ? (
+        <form method="post" action={u.put} class="mt-3">
+          <input type="hidden" name="akcija" value="zatvori" />
+          <button type="submit" class={GUMB}>{T.zatvori}</button>
+        </form>
+      ) : (
+        <p class="mt-3 text-sm text-ink-muted">{T.nijeAktivna}</p>
+      )}
+    </section>
+  )}
+
+  <section aria-labelledby="obrisi-naslov" class={`mt-6 max-w-[70ch] ring-1 ring-danger/30 ${KARTICA}`}>
+    <h3 id="obrisi-naslov" class="flex items-center gap-2 text-lg font-semibold text-danger">
+      <TriangleAlert size={20} aria-hidden="true" />{T.obrisiNaslov}
+    </h3>
+    <p class="mt-1 text-ink-soft">{T.obrisiTekst}</p>
+    <form method="post" action={u.put} novalidate class="mt-3 space-y-3">
+      <input type="hidden" name="akcija" value="obrisi" />
+      <div>
+        <label for="potvrdaId" class={OZNAKA}>{T.potvrdaId.replace("{id}", k.publicId)}</label>
+        <input id="potvrdaId" name="potvrdaId" type="text" required autocomplete="off" spellcheck="false"
+          aria-invalid={greska === "potvrda_id" ? "true" : undefined} aria-describedby={greska === "potvrda_id" ? "potvrdaId-greska" : undefined}
+          class:list={[POLJE, "max-w-xs font-mono", rub(greska === "potvrda_id")]} />
+        {greska === "potvrda_id" && <p id="potvrdaId-greska" class={GRESKA}>{T.greske.potvrda_id}</p>}
+      </div>
+      <button type="submit" class={GUMB_OPASNI}>{T.obrisi}</button>
+    </form>
+  </section>
+</OkvirUpravljanja>

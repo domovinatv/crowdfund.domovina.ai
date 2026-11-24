@@ -4,6 +4,7 @@
 // Mobitel: ljepljiva donja traka; lg+: dva stupca s ljepljivim panelom desno.
 import Flag from "@lucide/astro/icons/flag";
 import PiggyBank from "@lucide/astro/icons/piggy-bank";
+import Settings from "@lucide/astro/icons/settings";
 import Base from "../../layouts/Base.astro";
 import PhaseBadge from "../../components/PhaseBadge.astro";
 import CampaignHeader from "../../components/kampanja/CampaignHeader.astro";
@@ -23,13 +24,15 @@ import UpdateList from "../../components/kampanja/UpdateList.astro";
 import { formatNovca } from "../../components/kampanja/format";
 import { url } from "../../lib/rute";
 import { KAMPANJA } from "../sadrzaj/kampanja";
+import { UPRAVLJANJE } from "../sadrzaj/upravljanje";
 import type { PodaciKampanje } from "./campaign.ucitaj";
 import type { PropsStranice } from "../tipovi";
 
 type Props = PropsStranice<PodaciKampanje>;
 const { lang, podaci } = Astro.props;
-const { k, novosti, kasice, uplate, stranicaUplata, josUplata, komentari, ponude, adresa, pracenje } = podaci;
+const { k, novosti, kasice, uplate, stranicaUplata, josUplata, komentari, ponude, adresa, pracenje, komentiranje, upravljanje } = podaci;
 const T = KAMPANJA[lang];
+const J = UPRAVLJANJE[lang].javno;
 const put = url(lang, "campaign", { id: k.publicId });
 const novac = formatNovca(lang, k.currency);
 const prijava = `${url(lang, "sign-in")}?next=${encodeURIComponent(`${put}#komentari`)}`;
@@ -49,6 +52,14 @@ const h2 = "text-2xl font-semibold text-ink";
 const opis = (k.description ?? "").trim();
 ---
 <Base lang={lang} title={k.title} description={opis ? opis.slice(0, 160) : undefined} noindex={k.noindex}>
+  {upravljanje && (
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-md bg-mist px-4 py-2 text-sm" data-traka-upravljanja>
+      <span class="text-ink-soft">{J.traka}</span>
+      <a href={upravljanje} class="inline-flex min-h-11 items-center gap-2 font-semibold text-action underline-offset-2 hover:underline">
+        <Settings size={16} aria-hidden="true" />{J.upravljaj}
+      </a>
+    </div>
+  )}
   <div class="lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-10">
     <div class="min-w-0">
       <Galerija lang={lang} tema={k.coverTheme} />
@@ -107,7 +118,7 @@ const opis = (k.description ?? "").trim();
         ) : (
           <section id="komentari" tabindex="-1" aria-labelledby="komentari-naslov" class={`mt-10 ${sekcija}`}>
             <h2 id="komentari-naslov" class={h2}>{T.sekcije.komentari}</h2>
-            <div class="mt-4"><CommentThread lang={lang} komentari={komentari} currency={k.currency} prijava={prijava} /></div>
+            <div class="mt-4"><CommentThread lang={lang} komentari={komentari} currency={k.currency} prijava={prijava} akcija={put} komentiranje={komentiranje} /></div>
           </section>
         )
       }
@@ -143,7 +154,7 @@ const opis = (k.description ?? "").trim();
 
       <section id="prati" tabindex="-1" aria-labelledby="prati-naslov" class={`mt-10 ${sekcija}`}>
         <h2 id="prati-naslov" class={h2}>{T.prati.naslov}</h2>
-        <div class="mt-3"><FollowButton lang={lang} akcija={put} poslano={pracenje.poruka !== null} /></div>
+        <div class="mt-3"><FollowButton lang={lang} akcija={put} pracenje={pracenje} /></div>
       </section>
 
       <p class="mt-10 border-t border-line pt-4">

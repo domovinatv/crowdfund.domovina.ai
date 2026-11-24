@@ -296,7 +296,9 @@ export async function spremiPostavke(
   const minCents = u.minAmount.trim() ? iznosUCente(u.minAmount) : null;
   if (u.minAmount.trim() && (minCents === null || minCents < MIN_DOPRINOS_CENTI || minCents > 1_000_000)) g.minAmount = "nevaljano";
 
-  const endsAt = rokIzDatuma(u.endsAt);
+  // Neizmijenjen datum zadržava spremljeni rok (seed i čarobnjak ne moraju imati 21:59:59.999 UTC), pa ni
+  // prošli rok ne javlja „prosao” kad ga organizator nije dirao.
+  const endsAt = u.endsAt.trim() === datumIzRoka(k.endsAt) ? k.endsAt : rokIzDatuma(u.endsAt);
   if (endsAt === undefined) g.endsAt = "nevaljano";
   else if (endsAt !== null && endsAt !== k.endsAt && endsAt < sad) g.endsAt = "prosao";
 

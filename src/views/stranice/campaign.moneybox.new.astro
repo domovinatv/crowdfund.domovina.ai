@@ -1,11 +1,104 @@
 ---
-// Nova kasica (P): neprijavljeni ne dolaze do pogleda (učitavač, 302). Obrazac s ekrana 24 je S6.
+// Nova kasica (P, ekran 24, tok 6): naziv, adresa `/s/{alias}`, cilj, opis s predloškom, dodatne postavke
+// (obavijesti, zahvala) i prihvat pravila. Bez JS-a: POST na istu rutu, greške uz polja, uspjeh 303 na kasicu.
+import ArrowLeft from "@lucide/astro/icons/arrow-left";
 import Base from "../../layouts/Base.astro";
+import { GRESKA, GUMB, KARTICA, OZNAKA, POLJE, POMOC, rub } from "../../components/upravljanje/stil";
+import { NAJVISE } from "../../lib/db/upravljanje";
+import { url } from "../../lib/rute";
+import { UPRAVLJANJE } from "../sadrzaj/upravljanje";
+import type { PodaciNoveKasice } from "./campaign.moneybox.new.ucitaj";
 import type { PropsStranice } from "../tipovi";
-type Props = PropsStranice;
-const { lang } = Astro.props;
-const naslov = lang === "hr" ? "Nova kasica" : "New moneybox";
+
+type Props = PropsStranice<PodaciNoveKasice>;
+const { lang, podaci } = Astro.props;
+const { k, zatvoreno, vrijednosti: v, greske } = podaci;
+const T = UPRAVLJANJE[lang].novaKasica;
+const O = UPRAVLJANJE[lang].opce;
+type P = "title" | "alias" | "goal" | "description" | "rules" | "thankYou";
+const g = (p: P) => (greske[p] ? O.greske[greske[p]!] : undefined);
+const opis = (p: P, pomoc?: string) => [pomoc ? `${p}-pomoc` : "", greske[p] ? `${p}-greska` : ""].filter(Boolean).join(" ") || undefined;
+const prefiks = new URL(url(lang, "moneybox", { alias: "x" }), Astro.url.origin).href.slice(0, -1);
+const brojGresaka = Object.keys(greske).length;
+const MALO = "text-sm font-normal text-ink-muted";
 ---
-<Base lang={lang} title={naslov} noindex>
-  <h1 class="page-title text-ink">{naslov}</h1>
+<Base lang={lang} title={`${T.naslov} · ${k.title}`} noindex>
+  <a href={url(lang, "campaign", { id: k.publicId })} class="inline-flex min-h-9 items-center gap-1 text-sm font-semibold text-action underline-offset-2 hover:underline">
+    <ArrowLeft size={16} aria-hidden="true" />{T.natrag}
+  </a>
+  <h1 class="page-title mt-2 text-ink">{T.naslov}</h1>
+  <p class="mt-1 break-words text-ink-soft">{k.title}</p>
+  <p class="mt-3 max-w-[70ch] text-ink-soft">{T.uvod}</p>
+
+  {zatvoreno ? (
+    <p role="status" class="mt-6 max-w-[70ch] rounded-md bg-warning-bg p-3 text-warning">
+      {zatvoreno === "kasice" ? T.zatvorenoKasice : T.zatvorenoUplate}
+    </p>
+  ) : (
+    <form method="post" action={url(lang, "campaign.moneybox.new", { id: k.publicId })} novalidate class="mt-6 max-w-[70ch] space-y-6">
+      {brojGresaka > 0 && <p role="alert" class="rounded-md bg-danger-bg p-3 text-sm font-semibold text-danger">{O.greskeNaslov}</p>}
+
+      <fieldset class={`space-y-4 ${KARTICA}`}>
+        <legend class="text-lg font-semibold text-ink">{T.opceNaslov}</legend>
+        <div>
+          <label for="title" class={OZNAKA}>{T.title} <span class={MALO}>({O.obavezno})</span></label>
+          <input id="title" name="title" type="text" required maxlength="60" value={v.title}
+            aria-invalid={greske.title ? "true" : undefined} aria-describedby={opis("title")} class:list={[POLJE, rub(greske.title)]} />
+          {g("title") && <p id="title-greska" class={GRESKA}>{g("title")}</p>}
+        </div>
+        <div>
+          <label for="alias" class={OZNAKA}>{T.alias} <span class={MALO}>({O.obavezno})</span></label>
+          <div class="mt-1.5 flex items-stretch">
+            <span class="inline-flex items-center rounded-l-sm border border-r-0 border-ink-muted/60 bg-mist px-2 font-mono text-sm text-ink-soft">{prefiks}</span>
+            <input id="alias" name="alias" type="text" required maxlength="60" pattern="[a-z0-9-]{3,60}" autocomplete="off" value={v.alias}
+              aria-invalid={greske.alias ? "true" : undefined} aria-describedby={opis("alias", T.aliasPomoc)}
+              class:list={[POLJE, "mt-0 rounded-l-none font-mono", rub(greske.alias)]} />
+          </div>
+          <p id="alias-pomoc" class={POMOC}>{T.aliasPomoc}</p>
+          {g("alias") && <p id="alias-greska" class={GRESKA}>{g("alias")}</p>}
+        </div>
+        <div>
+          <label for="goal" class={OZNAKA}>{T.goal} <span class={MALO}>({O.neobavezno})</span></label>
+          <input id="goal" name="goal" type="text" inputmode="decimal" value={v.goal}
+            aria-invalid={greske.goal ? "true" : undefined} aria-describedby={opis("goal")} class:list={[POLJE, "max-w-xs", rub(greske.goal)]} />
+          {g("goal") && <p id="goal-greska" class={GRESKA}>{g("goal")}</p>}
+        </div>
+        <div>
+          <label for="description" class={OZNAKA}>{T.description} <span class={MALO}>({O.neobavezno})</span></label>
+          <textarea id="description" name="description" rows="5" maxlength="5000"
+            aria-invalid={greske.description ? "true" : undefined} aria-describedby={opis("description")} class:list={[POLJE, rub(greske.description)]}>{v.description}</textarea>
+          {g("description") && <p id="description-greska" class={GRESKA}>{g("description")}</p>}
+        </div>
+      </fieldset>
+
+      <fieldset class={`space-y-4 ${KARTICA}`}>
+        <legend class="text-lg font-semibold text-ink">{T.dodatnoNaslov}</legend>
+        <label class="flex gap-3">
+          <input name="notifications" type="checkbox" value="1" checked={v.notifications} class="mt-1 size-5 shrink-0 accent-action" />
+          <span class="text-ink">{T.notifications}</span>
+        </label>
+        <label class="flex gap-3">
+          <input name="thankYouOn" type="checkbox" value="1" checked={v.thankYouOn} class="mt-1 size-5 shrink-0 accent-action" />
+          <span class="text-ink">{T.thankYouOn}</span>
+        </label>
+        <div>
+          <label for="thankYou" class={OZNAKA}>{T.thankYou}</label>
+          <textarea id="thankYou" name="thankYou" rows="3" maxlength={NAJVISE.thankYou}
+            aria-invalid={greske.thankYou ? "true" : undefined} aria-describedby={opis("thankYou")} class:list={[POLJE, rub(greske.thankYou)]}>{v.thankYou}</textarea>
+          {g("thankYou") && <p id="thankYou-greska" class={GRESKA}>{g("thankYou")}</p>}
+        </div>
+      </fieldset>
+
+      <div>
+        <label class="flex gap-3">
+          <input name="rules" type="checkbox" value="1" checked={v.rules} required
+            aria-invalid={greske.rules ? "true" : undefined} aria-describedby={opis("rules")} class="mt-1 size-5 shrink-0 accent-action" />
+          <span class="text-ink">{T.rules} (<a href={url(lang, "terms")} class="font-semibold text-action underline underline-offset-2">{T.pravila}</a>)</span>
+        </label>
+        {g("rules") && <p id="rules-greska" class={GRESKA}>{g("rules")}</p>}
+      </div>
+
+      <button type="submit" class={GUMB}>{T.stvori}</button>
+    </form>
+  )}
 </Base>
