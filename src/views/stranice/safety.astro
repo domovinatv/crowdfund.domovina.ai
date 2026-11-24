@@ -1,0 +1,8 @@
+---
+import StaticnaStranica from "../../components/StaticnaStranica.astro";
+import { SIGURNOST } from "../sadrzaj/sigurnost";
+import type { PropsStranice } from "../tipovi";
+type Props = PropsStranice;
+const { lang } = Astro.props;
+---
+<StaticnaStranica lang={lang} sadrzaj={SIGURNOST[lang]} skupina="pomoc" aktivna="safety" />

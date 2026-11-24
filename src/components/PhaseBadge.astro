@@ -1,0 +1,30 @@
+---
+// Oznaka „nije u fazi 1” (docs/08 §3.1, odluka 8): funkcija postoji u prototipu kao UI,
+// ali se u prvoj fazi ne nudi (fizičke osobe kao organizatori, nagrade, ponude, premium).
+import Hourglass from "@lucide/astro/icons/hourglass";
+import type { Lang } from "../i18n";
+
+interface Props {
+  lang: Lang;
+  /** `sm` uz naslov odjeljka ili stavku navigacije, `md` uz naslov stranice. */
+  velicina?: "sm" | "md";
+  class?: string;
+}
+const { lang, velicina = "sm", class: klasa = "" } = Astro.props;
+const tekst = { hr: "nije u fazi 1", en: "not in phase 1" }[lang];
+const objasnjenje = {
+  hr: "Prikazano radi cjelovitosti prototipa; u prvoj fazi ova mogućnost nije dostupna.",
+  en: "Shown so the prototype is complete; this option is not available in the first phase.",
+}[lang];
+---
+<span
+  class:list={[
+    "inline-flex shrink-0 items-center gap-1 rounded-sm bg-warning-bg font-semibold whitespace-nowrap text-warning ring-1 ring-warning/25 ring-inset",
+    velicina === "md" ? "px-2.5 py-1 text-sm" : "px-2 py-0.5 text-xs",
+    klasa,
+  ]}
+  title={objasnjenje}
+>
+  <Hourglass size={velicina === "md" ? 16 : 14} aria-hidden="true" />
+  <span>{tekst}</span>
+</span>

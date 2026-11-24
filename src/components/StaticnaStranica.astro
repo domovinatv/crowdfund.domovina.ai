@@ -1,0 +1,166 @@
+---
+// Okvir statične i informativne stranice (S5): naslov, uvod, sadržaj stranice (sidra),
+// odjeljci s prose stilom i bočna navigacija skupine („Kako radi”, „Pomoć”, „Pravno”).
+// Mobilno prvo: na uskom ekranu navigacija skupine ide ispod sadržaja, od `lg` lijevo.
+import Base from "../layouts/Base.astro";
+import PhaseBadge from "./PhaseBadge.astro";
+import Info from "@lucide/astro/icons/info";
+import ArrowRight from "@lucide/astro/icons/arrow-right";
+import type { Lang } from "../i18n";
+import { url, type KljucRute } from "../lib/rute";
+import { NAZIVI, SKUPINE, type Skupina } from "../views/sadrzaj/navigacija";
+import type { SadrzajStranice, Veza } from "../views/sadrzaj/tipovi";
+
+interface Sidro {
+  id: string;
+  naslov: string;
+}
+
+interface Props {
+  lang: Lang;
+  sadrzaj: SadrzajStranice;
+  /** Skupina bočne navigacije; bez nje stranica nema bočnu navigaciju. */
+  skupina?: Skupina;
+  /** Ključ rute koja je u navigaciji označena kao trenutna (`aria-current`). */
+  aktivna?: KljucRute;
+  /** Naslov u `<title>` ako se razlikuje od `h1`. */
+  naslovDokumenta?: string;
+  noindex?: boolean;
+  /** Sidra dijelova koje pogled crta u slotu `prije` (prije odjeljaka) ili u zadanom slotu. */
+  sidraPrije?: Sidro[];
+  sidraPoslije?: Sidro[];
+}
+
+const { lang, sadrzaj, skupina, aktivna, naslovDokumenta, noindex = false, sidraPrije = [], sidraPoslije = [] } = Astro.props;
+const T = {
+  hr: { naOvoj: "Na ovoj stranici", sadrzajStr: "Sadržaj stranice" },
+  en: { naOvoj: "On this page", sadrzajStr: "Page contents" },
+}[lang];
+
+const sidra: Sidro[] = [...sidraPrije, ...sadrzaj.odjeljci.map((o) => ({ id: o.id, naslov: o.naslov })), ...sidraPoslije];
+const nav = skupina ? SKUPINE[skupina] : undefined;
+const href = (v: Veza) => url(lang, v.kljuc, v.params) + (v.upit ? `?${v.upit}` : "") + (v.sidro ? `#${v.sidro}` : "");
+---
+<Base lang={lang} title={naslovDokumenta ?? sadrzaj.naslov} description={sadrzaj.opis} noindex={noindex}>
+  <div class:list={["grid gap-10", nav && "lg:grid-cols-[15rem_minmax(0,1fr)]"]}>
+    <article class:list={["min-w-0", nav && "lg:col-start-2 lg:row-start-1"]}>
+      <header class="max-w-[70ch]">
+        <slot name="iznad" />
+        <h1 class="page-title text-ink">{sadrzaj.naslov}</h1>
+        {sadrzaj.faza2 && <PhaseBadge lang={lang} velicina="md" class="mt-3" />}
+        <p class="mt-3 text-lg text-ink-soft">{sadrzaj.uvod}</p>
+        {
+          sadrzaj.napomena && (
+            <p class="mt-4 flex gap-2 rounded-md bg-warning-bg p-3 text-sm text-warning ring-1 ring-warning/20 ring-inset" role="note">
+              <Info size={18} aria-hidden="true" class="mt-0.5 shrink-0" />
+              <span>{sadrzaj.napomena}</span>
+            </p>
+          )
+        }
+      </header>
+
+      {
+        sidra.length >= 3 && (
+          <nav aria-label={T.sadrzajStr} class="mt-6 max-w-[70ch] rounded-lg bg-mist p-4">
+            <p class="text-sm font-semibold text-ink">{T.naOvoj}</p>
+            <ol class="mt-2 grid gap-1 text-sm sm:grid-cols-2">
+              {sidra.map((s) => (
+                <li>
+                  <a href={`#${s.id}`} class="inline-flex min-h-8 items-center text-action underline-offset-2 hover:underline">
+                    {s.naslov}
+                  </a>
+                </li>
+              ))}
+            </ol>
+          </nav>
+        )
+      }
+
+      <slot name="prije" />
+
+      {
+        sadrzaj.odjeljci.map((o) => (
+          <section aria-labelledby={o.id} class="mt-10 max-w-[70ch] scroll-mt-6">
+            <h2 id={o.id} class="flex flex-wrap items-center gap-x-3 gap-y-1 text-2xl font-semibold text-ink">
+              <span>{o.naslov}</span>
+              {o.faza2 && <PhaseBadge lang={lang} />}
+            </h2>
+            {o.tekst?.map((p) => <p class="mt-3 text-ink-soft">{p}</p>)}
+            {o.koraci && (
+              <ol class="mt-4 space-y-3">
+                {o.koraci.map((k, i) => (
+                  <li class="flex gap-3 text-ink-soft">
+                    <span class="flex size-7 shrink-0 items-center justify-center rounded-full bg-action/10 text-sm font-semibold text-action tabular-nums" aria-hidden="true">
+                      {i + 1}
+                    </span>
+                    <span class="pt-0.5">{k}</span>
+                  </li>
+                ))}
+              </ol>
+            )}
+            {o.popis && (
+              <ul class="mt-3 list-disc space-y-1.5 pl-5 text-ink-soft marker:text-action">
+                {o.popis.map((s) => <li>{s}</li>)}
+              </ul>
+            )}
+            {o.definicije && (
+              <dl class="mt-4 divide-y divide-line rounded-lg shadow-card">
+                {o.definicije.map((d) => (
+                  <div class="p-4">
+                    <dt class="font-semibold text-ink">{d.pojam}</dt>
+                    <dd class="mt-1 text-ink-soft">{d.opis}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+            {o.veze && (
+              <ul class="mt-4 flex flex-wrap gap-x-6 gap-y-2">
+                {o.veze.map((v) => (
+                  <li>
+                    <a href={href(v)} class="inline-flex min-h-11 items-center gap-1.5 font-semibold text-action underline-offset-2 hover:underline">
+                      {v.tekst}
+                      <ArrowRight size={16} aria-hidden="true" />
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        ))
+      }
+
+      <slot />
+    </article>
+
+    {
+      nav && (
+        <nav aria-labelledby="nav-skupine" class="lg:col-start-1 lg:row-start-1">
+          <div class="rounded-lg bg-mist p-4 lg:sticky lg:top-6">
+            <h2 id="nav-skupine" class="text-sm font-semibold text-ink">{nav.naslov[lang]}</h2>
+            <ul class="mt-2 space-y-1">
+              {nav.stranice.map((k) => {
+                const n = NAZIVI[k];
+                const trenutna = k === aktivna;
+                return (
+                  <li>
+                    <a
+                      href={url(lang, k)}
+                      aria-current={trenutna ? "page" : undefined}
+                      class:list={[
+                        "flex min-h-11 flex-wrap items-center gap-x-2 gap-y-1 rounded-md px-3 py-2 text-sm",
+                        trenutna ? "bg-paper font-semibold text-action shadow-card" : "text-ink-soft hover:bg-paper hover:text-action",
+                      ]}
+                    >
+                      <span>{n?.[lang] ?? k}</span>
+                      {n?.faza2 && <PhaseBadge lang={lang} />}
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </nav>
+      )
+    }
+  </div>
+</Base>

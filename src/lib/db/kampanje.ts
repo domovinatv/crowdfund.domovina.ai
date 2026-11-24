@@ -21,6 +21,23 @@ export interface KarticaKampanje {
   hideRaised: boolean;
   hideContributorCount: boolean;
   demo: boolean;
+  // Polja ispod puni katalog (S5, src/lib/db/katalog.ts); aktivneKampanje() ih ne puni.
+  /** Vrsta kampanje (campaign_settings.kind). */
+  kind?: "one_time" | "recurring" | "for_organization";
+  /** Organizacija ima odobren KYB (zadnja `org_kyb` verifikacija `approved`). */
+  verified?: boolean;
+  /** Rok (unix ms) ili null bez roka. */
+  endsAt?: number | null;
+  /** Dana do roka (gore), 0 nakon roka, null bez roka. */
+  daysLeft?: number | null;
+  /** Tema naslovnice (galerija se u prototipu ne seeda). */
+  coverTheme?: string | null;
+  coverImageUrl?: string | null;
+  /** Mjesečne kampanje: plaćeno u zadnjih 30 dana; null kad nije mjesečna ili je iznos skriven. */
+  monthlyCents?: number | null;
+  locationName?: string | null;
+  /** Stanje za prikaz (zatvorena > isključena > aktivna). */
+  state?: "active" | "paused" | "closed";
 }
 
 interface Redak {

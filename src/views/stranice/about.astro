@@ -1,0 +1,8 @@
+---
+import StaticnaStranica from "../../components/StaticnaStranica.astro";
+import { O_NAMA } from "../sadrzaj/pravno";
+import type { PropsStranice } from "../tipovi";
+type Props = PropsStranice;
+const { lang } = Astro.props;
+---
+<StaticnaStranica lang={lang} sadrzaj={O_NAMA[lang]} skupina="pomoc" aktivna="about" />

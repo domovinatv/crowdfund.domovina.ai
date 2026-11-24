@@ -1,0 +1,9 @@
+---
+// Nova ponuda (faza 2): vidi je samo prijavljeni (učitavač); obrazac dolazi s fazom 2.
+import StaticnaStranica from "../../components/StaticnaStranica.astro";
+import { PONUDE_NOVA } from "../sadrzaj/organizacije";
+import type { PropsStranice } from "../tipovi";
+type Props = PropsStranice;
+const { lang } = Astro.props;
+---
+<StaticnaStranica lang={lang} sadrzaj={PONUDE_NOVA[lang]} skupina="kako-radi" noindex />

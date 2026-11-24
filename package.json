@@ -14,7 +14,9 @@
     "db:gen-core": "node scripts/generiraj-core-sql.mjs",
     "db:migrate:local": "wrangler d1 migrations apply crowdfund-dev --local",
     "db:gen-seed": "node scripts/seed.mjs",
-    "db:seed:local": "npm run db:migrate:local && wrangler d1 execute crowdfund-dev --local --file seed/demo.sql"
+    "db:seed:local": "npm run db:migrate:local && wrangler d1 execute crowdfund-dev --local --file seed/demo.sql",
+    "routes": "node scripts/provjera-ruta.ts",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.4.9",
@@ -28,6 +30,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.12",
+    "@playwright/test": "^1.65.1",
     "@tailwindcss/vite": "^4.3.5",
     "@types/node": "^24.0.0",
     "@types/react": "^19.0.0",

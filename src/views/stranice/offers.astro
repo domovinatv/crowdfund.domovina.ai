@@ -1,0 +1,19 @@
+---
+// Katalog ponuda (faza 2, docs/07 red 80): bez upita u bazu, prazan s objašnjenjem.
+import StaticnaStranica from "../../components/StaticnaStranica.astro";
+import Gift from "@lucide/astro/icons/gift";
+import { url } from "../../lib/rute";
+import { PONUDE_KATALOG, PONUDE_PRAZNO } from "../sadrzaj/organizacije";
+import type { PropsStranice } from "../tipovi";
+type Props = PropsStranice;
+const { lang } = Astro.props;
+const T = PONUDE_PRAZNO[lang];
+---
+<StaticnaStranica lang={lang} sadrzaj={PONUDE_KATALOG[lang]} skupina="kako-radi">
+  <section aria-labelledby="prazno" class="mt-8 flex flex-col items-center rounded-lg bg-mist px-6 py-12 text-center">
+    <Gift size={32} aria-hidden="true" class="text-action" />
+    <h2 id="prazno" class="mt-3 text-lg font-semibold text-ink">{T.naslov}</h2>
+    <p class="mt-1 max-w-[50ch] text-sm text-ink-muted">{T.tekst}</p>
+    <a href={url(lang, "how-it-works.offers")} class="mt-5 inline-flex min-h-11 items-center rounded-md px-5 font-semibold text-action ring-1 ring-action/30 hover:bg-action/10">{T.veza}</a>
+  </section>
+</StaticnaStranica>

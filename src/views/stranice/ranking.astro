@@ -1,0 +1,8 @@
+---
+import StaticnaStranica from "../../components/StaticnaStranica.astro";
+import { PRAVILA_PRIKAZA } from "../sadrzaj/pravila-prikaza";
+import type { PropsStranice } from "../tipovi";
+type Props = PropsStranice;
+const { lang } = Astro.props;
+---
+<StaticnaStranica lang={lang} sadrzaj={PRAVILA_PRIKAZA[lang]} skupina="pravno" aktivna="ranking" />

@@ -117,6 +117,37 @@ describe("seed/demo.sql", () => {
     expect(broj(db, "SELECT count(*) FROM contribution_attributions WHERE amount_hidden = 1")).toBeGreaterThan(0);
   });
 
+  it("S5 javni dio: kasice, linkovi i posjeti, vanjske, praćenja, ponude, profili, postavke prikaza", () => {
+    expect(broj(db, "SELECT count(*) FROM moneyboxes WHERE status = 'active'")).toBeGreaterThanOrEqual(5);
+    expect(broj(db, "SELECT max(n) FROM (SELECT count(*) AS n FROM moneyboxes GROUP BY campaign_id)")).toBeGreaterThanOrEqual(2);
+    expect(broj(db, "SELECT count(*) FROM moneyboxes WHERE alias NOT LIKE 'demo-%'")).toBe(0);
+    expect(broj(db, "SELECT count(*) FROM tracking_links WHERE status = 'active'")).toBeGreaterThanOrEqual(3);
+    expect(broj(db, "SELECT count(*) FROM tracking_links WHERE slug NOT LIKE 'demo-%'")).toBe(0);
+    expect(broj(db, "SELECT count(*) FROM link_visits WHERE tracking_link_id IS NOT NULL")).toBeGreaterThan(5);
+    expect(broj(db, "SELECT count(*) FROM link_visits WHERE visitor_hash NOT LIKE 'demo%'")).toBe(0);
+    expect(broj(db, "SELECT count(*) FROM external_campaigns WHERE status = 'active'")).toBeGreaterThanOrEqual(2);
+    expect(broj(db, "SELECT count(*) FROM external_campaigns WHERE url NOT LIKE 'https://4fund.invalid/demo-%'")).toBe(0);
+    expect(broj(db, "SELECT count(*) FROM campaign_follows")).toBeGreaterThanOrEqual(3);
+    expect(broj(db, "SELECT count(*) FROM offers")).toBeGreaterThan(0);
+    // atribucija kasice/linka i checkout se slažu
+    expect(broj(db, `SELECT count(*) FROM contribution_attributions a JOIN checkouts k ON k.id = a.checkout_id
+                      WHERE a.moneybox_id IS NOT k.moneybox_id OR a.tracking_link_id IS NOT k.tracking_link_id`)).toBe(0);
+    expect(broj(db, "SELECT count(*) FROM contribution_attributions WHERE moneybox_id IS NOT NULL")).toBeGreaterThan(0);
+    expect(broj(db, "SELECT count(*) FROM contribution_attributions WHERE tracking_link_id IS NOT NULL")).toBeGreaterThan(0);
+    // profili: privatan (svih 9 prekidača isključeno) i barem dva javna
+    const prekidaci = "show_email + show_avatar + show_phone + show_total_raised + show_registered_date + show_promoted + show_owned + show_donated + show_for_organization";
+    expect(broj(db, `SELECT count(*) FROM user_settings WHERE ${prekidaci} = 0`)).toBeGreaterThanOrEqual(1);
+    expect(broj(db, `SELECT count(*) FROM user_settings WHERE ${prekidaci} > 0`)).toBeGreaterThanOrEqual(2);
+    // postavke prikaza i rok
+    const ima = (sql: string) => broj(db, `SELECT count(*) FROM campaigns c JOIN campaign_settings s ON s.campaign_id = c.id WHERE ${sql}`);
+    expect(ima("s.comments_mode = 'off'")).toBeGreaterThan(0);
+    expect(ima("s.allow_moneyboxes = 0")).toBeGreaterThan(0);
+    expect(ima("json_extract(c.metadata, '$.contributions_list') = 'hidden'")).toBeGreaterThan(0);
+    expect(ima("c.state = 'closed' AND (SELECT raised_cents FROM campaign_stats WHERE campaign_id = c.id) >= c.goal_cents")).toBeGreaterThan(0);
+    expect(ima("c.state = 'active' AND c.ends_at BETWEEN 1795165200000 AND 1795165200000 + 7 * 86400000")).toBeGreaterThan(0);
+    expect(broj(db, "SELECT count(*) FROM verifications WHERE kind = 'org_kyb' AND status != 'approved'")).toBeGreaterThan(0);
+  });
+
   it("vrijednosti su iz skupova campaign-corea", () => {
     for (const k of kampanje) {
       expect(isOneOf(CAMPAIGN_TYPES, k.type), k.type).toBe(true);

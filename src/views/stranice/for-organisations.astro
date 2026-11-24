@@ -1,0 +1,8 @@
+---
+import StaticnaStranica from "../../components/StaticnaStranica.astro";
+import { ZA_ORGANIZACIJE } from "../sadrzaj/organizacije";
+import type { PropsStranice } from "../tipovi";
+type Props = PropsStranice;
+const { lang } = Astro.props;
+---
+<StaticnaStranica lang={lang} sadrzaj={ZA_ORGANIZACIJE[lang]} skupina="kako-radi" aktivna="for-organisations" />

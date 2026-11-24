@@ -15,14 +15,21 @@
 //    zato idempotentan, ali briše i ručno unesene lokalne podatke.
 //  - `funded` se ne koristi (odluka 204), vertikala je uvijek `none` (docs/09).
 //
-// Upotreba: npm run db:gen-seed   (piše seed/demo.sql)
+//  - S5: kasice, linkovi za praćenje s posjetima, vanjske kampanje, praćenja, ponude (faza 2) i rubni
+//    slučajevi javnog dijela. Nove kampanje su na kraju popisa, a checkouti/atribucije se upisuju
+//    nakon kasica, pa ranije kampanje i doprinosi ostaju isti. Uz SQL nastaje seed/primjeri.json.
+//    Galerija (campaign_media) se ne seeda: slika traži datoteku u R2, pa kartice koriste temu naslovnice.
+//
+// Upotreba: npm run db:gen-seed   (piše seed/demo.sql i seed/primjeri.json)
 //           node scripts/seed.mjs --stdout
+import { createHmac } from "node:crypto";
 import { mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 export const SEED_PATH = join(ROOT, "seed", "demo.sql");
+export const PRIMJERI_PATH = join(ROOT, "seed", "primjeri.json");
 
 const SJEME = 20261124;
 const SAD = Date.UTC(2026, 10, 20, 9, 0, 0); // 2026-11-20 09:00 UTC
@@ -183,6 +190,21 @@ const KAMPANJE = [
     opis: "Redovna mjesečna podrška omogućuje nam da planiramo hranu i veterinarske troškove unaprijed." },
   { org: 1, by: 1, type: "donation", cat: "other", title: "Knjižnica u kutiji za parkove", goal: null, n: 7, eur: [5, 30], hideRaised: true,
     opis: "Postavljamo drvene kućice za razmjenu knjiga u pet gradskih parkova. Kampanja nema cilj ni prikaz iznosa." },
+  // S5: rubni slučajevi javnog dijela (dodane na kraj da PRNG ne pomakne ranije kampanje)
+  { org: 4, by: 6, type: "donation", cat: "needs", title: "Defibrilator za mjesni dom", goal: 1000, n: 14, eur: [40, 150], zavrsila: 6,
+    sort: "highest", komentari: "contributors",
+    opis: "Rok kampanje je prošao, a cilj je dosegnut. Defibrilator je naručen i stiže prije blagdana." },
+  { org: 2, by: 2, type: "donation", cat: "charity", title: "Božićni paketi za samce", goal: 2500, n: 10, eur: [10, 80], rokZa: 3, popisSkriven: true,
+    opis: "Pakete s hranom i toplom odjećom dijelimo starijima koji blagdane provode sami. Popis uplata organizator ne prikazuje." },
+  { org: 3, by: 5, type: "donation", cat: "projects", title: "Obnova društvenog doma u selu", goal: 9000, n: 8, eur: [20, 200], komentari: "off", bezKasica: true,
+    opis: "Mijenjamo stolariju i krov društvenog doma. Komentari i kasice su za ovu kampanju isključeni." },
+];
+
+/** Ponude (faza 2, samo UI) po indeksu kampanje: [naslov, način, cijena €, status, prodavatelj]. */
+const PONUDE = [
+  [16, "Portret vašeg psa u olovci", "buy_now", 40, "active", 3],
+  [16, "Vikend šetnje sa psima iz skloništa", "auction", 30, "active", 7],
+  [15, "Ručno pletena dekica za mačke", "buy_now", 25, "sold", 4],
 ];
 
 // --- SQL pomoćnici ------------------------------------------------------------------------------
@@ -201,6 +223,26 @@ function lit(v) {
 
 /** Cijeli sadržaj seed/demo.sql (deterministički). */
 export function demoSql() {
+  return generiraj().sql;
+}
+
+/** Sadržaj seed/primjeri.json: po jedan primjer za svaki dinamički parametar javnih ruta (S5). */
+export function demoPrimjeri() {
+  return generiraj().primjeri;
+}
+
+/**
+ * Token praćenja za poveznicu `/hr/pracenje/{token}` (S5): shema nema stupac tokena, pa je token
+ * `{user_id}.{campaign_id}.{HMAC-SHA256 base64url}`; provjera u src/lib/db/pracenje.ts.
+ * Lokalna tajna vrijedi samo za demo; Worker koristi tajnu iz okoline.
+ */
+export const DEMO_TAJNA_PRACENJA = "demo-tajna-pracenja-samo-lokalno";
+export function tokenPracenja(/** @type {string} */ userId, /** @type {string} */ campaignId, tajna = DEMO_TAJNA_PRACENJA) {
+  const p = `${userId}.${campaignId}`;
+  return `${p}.${createHmac("sha256", tajna).update(p).digest("base64url")}`;
+}
+
+function generiraj() {
   const rnd = mulberry32(SJEME);
   const int = (/** @type {number} */ a, /** @type {number} */ b) => a + Math.floor(rnd() * (b - a + 1));
   const sansa = (/** @type {number} */ p) => rnd() < p;
@@ -247,7 +289,19 @@ export function demoSql() {
       created_at: t, updated_at: t, deleted_at: null,
     });
     upisi("auth_identities", { id: uuid7(t), user_id: u.id, provider: "email_link", subject: email, created_at: t, last_used_at: SAD - int(1, 20) * DAN });
-    upisi("user_settings", { user_id: u.id, updated_at: t });
+    // Javni profil (S5): osoba 3 isključila je svih 9 prekidača (profil nije javan, 404);
+    // osoba 1 prikazuje i ukupno prikupljeno, osoba 4 ne želi indeksiranje.
+    const privatan = i === 3;
+    upisi("user_settings", {
+      user_id: u.id,
+      ...(privatan
+        ? { show_email: 0, show_avatar: 0, show_phone: 0, show_total_raised: 0, show_registered_date: 0,
+            show_promoted: 0, show_owned: 0, show_donated: 0, show_for_organization: 0 }
+        : {}),
+      ...(i === 1 ? { show_total_raised: 1 } : {}),
+      ...(i === 4 ? { indexable: 0 } : {}),
+      updated_at: t,
+    });
     return u;
   });
   const moderator = users[9];
@@ -275,9 +329,11 @@ export function demoSql() {
       upisi("memberships", { user_id: users[c].id, organization_id: orgId, role: uloga, invited_by: users[vlasnik].id, created_at: t + DAN, updated_at: t + DAN });
     }
     upisi("verifications", {
-      id: uuid7(t + SAT), kind: "org_kyb", subject_type: "organization", subject_id: orgId, status: "approved",
+      id: uuid7(t + SAT), kind: "org_kyb", subject_type: "organization", subject_id: orgId,
+      // Sunčani krov (3) je još u pregledu: filtar `verified` u katalogu ima što isključiti (S5).
+      status: i === 3 ? "in_review" : "approved",
       provider: "mock", provider_ref: `DEMO-KYB-${i + 1}`, trigger: "user", reason: null,
-      requested_at: t + SAT, decided_at: t + 2 * DAN, due_at: null,
+      requested_at: t + SAT, decided_at: i === 3 ? null : t + 2 * DAN, due_at: null,
     });
     return { organizerId, orgId, safe, vlasnik: users[vlasnik], naziv, t };
   });
@@ -291,14 +347,28 @@ export function demoSql() {
   }));
 
   // Kampanje ------------------------------------------------------------------------------------
+  // Checkouti i atribucije upisuju se tek nakon kasica i linkova (S5), da im se doda kasica/link
+  // bez trošenja PRNG-a unutar petlje (ranije kampanje ostaju bajt-jednake).
+  /** @type {Record<string, unknown>[]} */
+  const checkouti = [];
+  /** @type {Record<string, any>[]} */
+  const atribucije = [];
+  /** @type {Map<string, {idx: number, t: number, placen: boolean, checkoutId: string | null}>} */
+  const doprinosMeta = new Map();
+  /** @type {{id: string, publicId: string, t: number, autor: typeof users[number], org: typeof orgs[number], kraj: number}[]} */
+  const kInfo = [];
   KAMPANJE.forEach((k, idx) => {
     const org = orgs[k.org];
     const autor = users[k.by];
     const state = k.state ?? "active";
     const t = SAD - (95 - idx * 3) * DAN - int(0, 20) * SAT;
     const id = uuid7(t);
-    const ends = k.recurrence ? null : t + (k.dana ?? int(45, 120)) * DAN;
+    const ends = k.recurrence ? null
+      : k.zavrsila ? SAD - k.zavrsila * DAN
+      : k.rokZa ? SAD + k.rokZa * DAN
+      : t + (k.dana ?? int(45, 120)) * DAN;
     const krajAktivnosti = k.zatvorena ? SAD - k.zatvorena * DAN
+      : k.zavrsila ? SAD - k.zavrsila * DAN
       : k.obrisana ? SAD - k.obrisana * DAN
       : k.pauzirana ? SAD - k.pauzirana * DAN
       : k.blokirana ? SAD - k.blokirana * DAN
@@ -315,7 +385,8 @@ export function demoSql() {
       recurrence: k.recurrence ?? "none", cover_image_url: null, lat: null, lng: null,
       location_name: ORGANIZACIJE[k.org][5],
       surplus_intent: k.goal ? "Višak prikupljenog ide u redovni rad organizacije." : null,
-      demo: 1, metadata: { demo: true }, created_by: autor.id, created_at: t, updated_at: azurirana,
+      // Popis uplata skriven: shema nema stupac, pa platformska postavka ide u metadata (S5).
+      demo: 1, metadata: k.popisSkriven ? { demo: true, contributions_list: "hidden" } : { demo: true }, created_by: autor.id, created_at: t, updated_at: azurirana,
       deleted_at: k.obrisana ? krajAktivnosti : null,
     });
     upisi("campaign_safes", {
@@ -324,15 +395,18 @@ export function demoSql() {
       platform_signer_count: 0, deployed_at: org.t + 3 * DAN,
       verified_at: state === "draft" ? null : t + SAT,
     });
+    const publicId = javniId();
+    kInfo.push({ id, publicId, t, autor, org, kraj: krajAktivnosti });
     upisi("campaign_settings", {
-      campaign_id: id, public_id: javniId(), kind: k.za ? "for_organization" : k.recurrence ? "recurring" : "one_time",
+      campaign_id: id, public_id: publicId, kind: k.za ? "for_organization" : k.recurrence ? "recurring" : "one_time",
       category_key: k.cat, cover_theme: TEME[k.cat], created_by_user_id: autor.id,
       beneficiary_organization_id: k.za ? org.orgId : null,
       beneficiary_approved_at: k.za && state === "active" ? t + 2 * SAT : null,
       beneficiary_approved_by: k.za && state === "active" ? org.vlasnik.id : null,
       amount_presets: [2000, 5000, 10000, 30000, 50000], indexable: 1,
       hide_raised: k.hideRaised ? 1 : 0, hide_contributor_count: k.hideCount ? 1 : 0,
-      contributions_sort: "latest", comments_mode: "everyone", allow_moneyboxes: 1, allow_external_offers: 0,
+      contributions_sort: k.sort ?? "latest", comments_mode: k.komentari ?? "everyone",
+      allow_moneyboxes: k.bezKasica ? 0 : 1, allow_external_offers: PONUDE.some((p) => p[0] === idx) ? 1 : 0,
       contribution_notifications: 1, thank_you_message: "Hvala na podršci! (demo)",
       purpose_verified: k.purpose ? 1 : 0,
       paused_at: k.pauzirana ? krajAktivnosti : null,
@@ -397,7 +471,7 @@ export function demoSql() {
       });
       const checkoutId = s ? uuid7(tc - 5 * 60_000) : null;
       if (s) {
-        upisi("checkouts", {
+        checkouti.push({
           id: checkoutId, campaign_id: id, contribution_sid: s, amount_cents: iznos,
           tip_cents: 0,
           intent_state: { paid: "paid", refunded: "paid", pending: "open", expired: "expired", failed: "rejected" }[stanje],
@@ -412,7 +486,8 @@ export function demoSql() {
         contribution_id: cid, anonymous: anon ? 1 : 0, display_name: anon ? null : platitelj.ime,
         display_name_verified: 0, message: poruka, message_hidden: 0, link_url: null, bank_verified: 1, updated_at: tc + SAT,
       });
-      upisi("contribution_attributions", {
+      doprinosMeta.set(cid, { idx, t: tc, placen: stanje === "paid", checkoutId });
+      atribucije.push({
         contribution_id: cid, checkout_id: checkoutId, user_id: platitelj.user?.id ?? null, moneybox_id: null,
         tracking_link_id: null, share_link_id: null, offer_id: null, amount_hidden: sansa(0.15) ? 1 : 0,
         show_message_as_comment: poruka && sansa(0.5) ? 1 : 0, source: preko,
@@ -464,7 +539,7 @@ export function demoSql() {
         tier_id: null, published_at: ta, updated_at: ta, deleted_at: null,
       });
     }
-    const brojKomentara = int(0, 3);
+    const brojKomentara = k.komentari === "off" ? 0 : int(0, 3);
     /** @type {string | null} */
     let prvi = null;
     for (let c = 0; c < brojKomentara; c++) {
@@ -490,7 +565,7 @@ export function demoSql() {
       });
     }
     // Poruke iz checkouta prikazane kao komentar (show_message_as_comment)
-    for (const p of placeni.filter((x) => x.poruka).slice(0, 2)) {
+    for (const p of placeni.filter((x) => x.poruka && k.komentari !== "off").slice(0, 2)) {
       upisi("comments", {
         id: uuid7(p.t + 60_000), campaign_id: id, update_id: null, parent_id: null,
         author_id: p.anon ? null : p.platitelj.user?.id ?? null, contribution_id: p.id, body: p.poruka,
@@ -514,6 +589,165 @@ export function demoSql() {
       });
     }
   });
+
+  // --- Javni dio (S5): kasice, linkovi za praćenje, posjeti, vanjske kampanje, praćenja, ponude ----
+  // [kampanja, vlasnik, alias, naslov, cilj €, status]
+  const KASICE = [
+    [15, 4, "demo-macke-petra", "Petrina kasica za mačke", 300, "active"],
+    [15, 7, "demo-josip-za-macke", "Josipov rođendan za mačke", 200, "active"],
+    [0, 1, "demo-obroci-marko", "Ručak za susjede", 500, "active"],
+    [12, 7, "demo-dresovi-juniori", "Dresovi za juniore", null, "active"],
+    [18, 8, "demo-autobus-festival", "Autobus za festival", 1000, "active"],
+    [25, 6, "demo-paketi-maja", "Majini paketi za samce", 400, "active"],
+    [16, 4, "demo-kalendar-stara", "Stara kasica za kalendar", null, "disabled"],
+  ];
+  const kasice = KASICE.map(([ki, vl, alias, naslov, cilj, status]) => {
+    const tm = kInfo[ki].t + 3 * DAN;
+    const mid = uuid7(tm);
+    upisi("moneyboxes", {
+      id: mid, campaign_id: kInfo[ki].id, owner_user_id: users[vl].id, alias, title: naslov,
+      description: `${users[vl].display_name} skuplja za kampanju preko svoje kasice (demo).`,
+      goal_cents: cilj === null ? null : cilj * 100, cover_file_id: null, payment_notifications: 1,
+      thank_you_message: null, status, created_at: tm, updated_at: status === "active" ? tm : SAD - 5 * DAN,
+    });
+    return { id: mid, ki, t: tm, status, alias };
+  });
+  // [kampanja, vlasnik, slug, oznaka, status]
+  const LINKOVI = [
+    [0, 2, "demo-obroci-fb", "Objava na društvenoj mreži", "active"],
+    [15, 0, "demo-macke-insta", "Priča na Instagramu", "active"],
+    [6, 5, "demo-elektrana-letak", "Letak u domu kulture", "active"],
+    [12, 6, "demo-oprema-stari", "Stari plakat", "disabled"],
+  ];
+  const linkovi = LINKOVI.map(([ki, vl, lslug, oznaka, status]) => {
+    const tl = kInfo[ki].t + 2 * DAN;
+    const lid = uuid7(tl);
+    upisi("tracking_links", {
+      id: lid, campaign_id: kInfo[ki].id, owner_user_id: users[vl].id, slug: lslug, label: oznaka, status, created_at: tl,
+    });
+    return { id: lid, ki, t: tl, status, slug: lslug };
+  });
+  // Atribucija: svaki 3. plaćeni doprinos kroz checkout ide kasici (druga kasica iste kampanje uzima
+  // pomak 1), svaki 4. linku; samo doprinosi nakon nastanka kasice/linka.
+  /** @type {Map<number, number>} */
+  const brojac = new Map();
+  for (const a of atribucije) {
+    const m = doprinosMeta.get(a.contribution_id);
+    if (!m || !m.placen || !m.checkoutId) continue;
+    const j = brojac.get(m.idx) ?? 0;
+    brojac.set(m.idx, j + 1);
+    const kas = kasice.filter((x) => x.ki === m.idx);
+    const kasica = kas.find((x, slot) => j % 3 === slot && m.t > x.t);
+    const link = linkovi.find((x) => x.ki === m.idx && j % 4 === 3 && m.t > x.t);
+    if (kasica) a.moneybox_id = kasica.id;
+    else if (link) a.tracking_link_id = link.id;
+    const c = checkouti.find((x) => x.id === m.checkoutId);
+    if (c) Object.assign(c, { moneybox_id: a.moneybox_id, tracking_link_id: a.tracking_link_id });
+  }
+  for (const c of checkouti) upisi("checkouts", c);
+  for (const a of atribucije) upisi("contribution_attributions", a);
+
+  // Posjeti: hash posjetitelja iz bazena (ponavljaju se), najviše jedan po satu po izvoru.
+  const posjetitelji = Array.from({ length: 12 }, () => `demo${hex(28)}`);
+  for (const izvor of [...linkovi.map((l) => ({ ...l, kolona: "tracking_link_id" })), ...kasice.map((x) => ({ ...x, kolona: "moneybox_id" }))]) {
+    if (izvor.status !== "active") continue;
+    const sati = new Set();
+    const n = int(3, 8);
+    while (sati.size < n) sati.add(int(1, Math.floor((SAD - izvor.t) / SAT) - 1));
+    for (const h of [...sati].sort((a, b) => b - a)) {
+      const tv = SAD - h * SAT;
+      upisi("link_visits", {
+        id: uuid7(tv), tracking_link_id: izvor.kolona === "tracking_link_id" ? izvor.id : null, share_link_id: null,
+        moneybox_id: izvor.kolona === "moneybox_id" ? izvor.id : null, visitor_hash: odaberi(posjetitelji), visited_at: tv,
+      });
+    }
+  }
+
+  // Vanjske 4fund kampanje (tok 9, odluka 209): URL na rezerviranoj domeni .invalid, bez stvarnih poveznica.
+  // [organizacija, naslov, kategorija, status]
+  const VANJSKE = [
+    [0, "Hrana za pse u skloništu tijekom zime", "animals", "active"],
+    [2, "Topla zima za beskućnike", "charity", "active"],
+    [1, "Nove nošnje za dječji ansambl", "culture", "pending"],
+  ];
+  const vanjske = VANJSKE.map(([oi, naslov, kat, status], i) => {
+    const te = orgs[oi].t + (20 + i) * DAN;
+    const eid = uuid7(te);
+    const ext = `demo-${hex(8)}`;
+    upisi("external_campaigns", {
+      id: eid, organization_id: orgs[oi].orgId, platform: "4fund", external_id: ext,
+      url: `https://4fund.invalid/${ext}`, title: naslov, image_url: null, category_key: kat,
+      verify_code: `DEMO-VERIFY-${i + 1}`, status, verified_at: status === "active" ? te + DAN : null,
+      created_at: te, updated_at: te + DAN,
+    });
+    return { id: eid, status };
+  });
+
+  // Praćenja (campaign_follows): [osoba, kampanja, komentari, novosti, kraj]
+  const PRACENJA = [
+    [1, 0, 1, 1, 1],
+    [4, 15, 0, 1, 0],
+    [6, 16, 0, 0, 1],
+    [8, 25, 1, 1, 0],
+  ];
+  for (const [ui, ki, kom, nov, kraj] of PRACENJA) {
+    upisi("campaign_follows", {
+      user_id: users[ui].id, campaign_id: kInfo[ki].id, notify_comments: kom, notify_updates: nov, notify_end: kraj,
+      created_at: kInfo[ki].t + (ui + 1) * DAN,
+    });
+  }
+
+  // Ponude (faza 2, samo UI)
+  for (const [ki, naslov, nacin, eur, status, prodavatelj] of PONUDE) {
+    const to = kInfo[ki].t + 4 * DAN;
+    const oid = uuid7(to);
+    upisi("offers", {
+      id: oid, campaign_id: kInfo[ki].id, seller_user_id: users[prodavatelj].id, is_founder: 0, founder_status: null,
+      title: naslov, description: "Prihod od ponude ide u kampanju (demo, nije u fazi 1).", mode: nacin,
+      price_cents: eur * 100, quantity: 1, delivery: nacin === "auction" ? "in_person" : "post", status,
+      ends_at: nacin === "auction" ? SAD + 10 * DAN : null, created_at: to, updated_at: to,
+    });
+    if (nacin === "auction") {
+      [1, 2].forEach((ui, b) => upisi("offer_bids", {
+        id: uuid7(to + (b + 1) * DAN), offer_id: oid, user_id: users[ui].id, amount_cents: (eur + 5 * (b + 1)) * 100,
+        created_at: to + (b + 1) * DAN,
+      }));
+    }
+  }
+
+  const prvaKasica = kasice.find((x) => x.status === "active");
+  const primjeri = {
+    kampanja: {
+      aktivna: kInfo[0].publicId,
+      unlisted: kInfo[17].publicId,
+      paused: kInfo[11].publicId,
+      zavrsena: kInfo[10].publicId,
+      rokIstekaoUspjesna: kInfo[24].publicId,
+      uskoroZavrsava: kInfo[25].publicId,
+      skrivenIznos: kInfo[4].publicId,
+      skrivenBroj: kInfo[9].publicId,
+      popisUplataSkriven: kInfo[25].publicId,
+      komentariIskljuceni: kInfo[26].publicId,
+      zaOrganizaciju: kInfo[1].publicId,
+      mjesecna: kInfo[22].publicId,
+      sPonudama: kInfo[16].publicId,
+      review404: kInfo[2].publicId,
+      draft404: kInfo[8].publicId,
+      blokirana404: kInfo[21].publicId,
+      obrisana404: kInfo[20].publicId,
+    },
+    korisnik: { javni: users[0].id, javniNeindeksiran: users[4].id, privatni404: users[3].id },
+    organizacija: ORGANIZACIJE[0][1],
+    organizacijaNeverificirana: ORGANIZACIJE[3][1],
+    kasica: prvaKasica?.alias,
+    kasicaNeaktivna404: kasice.find((x) => x.status !== "active")?.alias,
+    linkZaPracenje: linkovi[0].slug,
+    linkZaPracenjeNeaktivan404: linkovi.find((l) => l.status !== "active")?.slug,
+    vanjska: vanjske.find((v) => v.status === "active")?.id,
+    vanjskaNeaktivna404: vanjske.find((v) => v.status !== "active")?.id,
+    pracenjeToken: tokenPracenja(users[PRACENJA[0][0]].id, kInfo[PRACENJA[0][1]].id),
+    kategorija: "animals",
+  };
 
   // Nacrt u čarobnjaku (odluka 211): red u campaigns još ne postoji.
   const tn = SAD - 2 * DAN;
@@ -541,15 +775,16 @@ export function demoSql() {
     if (!r) continue;
     out.push(`-- ${t} (${r.length})`, ...r, "");
   }
-  return out.join("\n");
+  return { sql: out.join("\n"), primjeri };
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
-  const sql = demoSql();
+  const { sql, primjeri } = generiraj();
   if (process.argv.includes("--stdout")) process.stdout.write(sql);
   else {
     mkdirSync(dirname(SEED_PATH), { recursive: true });
     writeFileSync(SEED_PATH, sql);
-    console.log(`Zapisano ${SEED_PATH} (${sql.split("\n").filter((l) => l.startsWith("INSERT")).length} redaka)`);
+    writeFileSync(PRIMJERI_PATH, `${JSON.stringify(primjeri, null, 2)}\n`);
+    console.log(`Zapisano ${SEED_PATH} (${sql.split("\n").filter((l) => l.startsWith("INSERT")).length} redaka) i ${PRIMJERI_PATH}`);
   }
 }

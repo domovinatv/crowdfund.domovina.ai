@@ -1,0 +1,119 @@
+---
+// Kontakt (ekran 21, docs/08 ContactForm): obrazac s 10 tema, greške uz polje, mock Turnstile.
+import StaticnaStranica from "../../components/StaticnaStranica.astro";
+import CircleCheck from "@lucide/astro/icons/circle-check";
+import CircleExclamationPoint from "@lucide/astro/icons/circle-exclamation-point";
+import ShieldCheck from "@lucide/astro/icons/shield-check";
+import Send from "@lucide/astro/icons/send";
+import { NAJVISE, TEME_KONTAKTA, type PoljeKontakta } from "../../lib/db/kontakt";
+import { url } from "../../lib/rute";
+import { GRESKE, KONTAKT, OBRAZAC, TEME } from "../sadrzaj/kontakt";
+import type { PodaciKontakta } from "./contact.ucitaj";
+import type { PropsStranice } from "../tipovi";
+
+type Props = PropsStranice<PodaciKontakta>;
+const { lang, podaci } = Astro.props;
+const T = OBRAZAC[lang];
+const { greske, vrijednosti, poslano } = podaci;
+const poruka = (p: PoljeKontakta) => {
+  const g = greske[p];
+  return g ? (GRESKE[lang][p][g] ?? GRESKE[lang][p].obavezno) : undefined;
+};
+const polja: { id: PoljeKontakta; oznaka: string }[] = [
+  { id: "name", oznaka: T.ime },
+  { id: "email", oznaka: T.eposta },
+  { id: "topic", oznaka: T.tema },
+  { id: "content", oznaka: T.poruka },
+];
+const sGreskom = polja.filter((p) => greske[p.id]);
+const opisano = (p: PoljeKontakta, pomoc?: boolean) =>
+  [pomoc ? `${p}-pomoc` : "", greske[p] ? `${p}-greska` : ""].filter(Boolean).join(" ") || undefined;
+const polje = "mt-1.5 block w-full rounded-sm border bg-paper px-3 py-2.5 text-base text-ink placeholder:text-ink-muted";
+const rub = (p: PoljeKontakta) => (greske[p] ? "border-danger ring-1 ring-danger" : "border-ink-muted/60");
+---
+<StaticnaStranica lang={lang} sadrzaj={KONTAKT[lang]} skupina="pomoc" aktivna="contact" sidraPrije={[{ id: "obrazac", naslov: T.naslov }]}>
+  <section slot="prije" aria-labelledby="obrazac" class="mt-10 max-w-[70ch]">
+    <h2 id="obrazac" class="text-2xl font-semibold text-ink">{T.naslov}</h2>
+
+    {
+      poslano && (
+        <div role="status" class="mt-4 flex gap-3 rounded-md bg-success-bg p-4 text-success ring-1 ring-success/20 ring-inset">
+          <CircleCheck size={20} aria-hidden="true" class="mt-0.5 shrink-0" />
+          <div>
+            <p class="font-semibold">{T.poslanoNaslov}</p>
+            <p class="mt-1 text-sm">{T.poslanoTekst}</p>
+          </div>
+        </div>
+      )
+    }
+
+    {
+      sGreskom.length > 0 && (
+        <div role="alert" class="mt-4 flex gap-3 rounded-md bg-danger-bg p-4 text-danger ring-1 ring-danger/20 ring-inset">
+          <CircleExclamationPoint size={20} aria-hidden="true" class="mt-0.5 shrink-0" />
+          <div>
+            <p class="font-semibold">{T.greskeNaslov}</p>
+            <ul class="mt-1 list-disc pl-5 text-sm">
+              {sGreskom.map((p) => (
+                <li>
+                  <a href={`#${p.id}`} class="underline">
+                    {p.oznaka}: {poruka(p.id)}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )
+    }
+
+    <form method="post" action={url(lang, "contact")} class="mt-6 space-y-5" novalidate>
+      <div>
+        <label for="name" class="font-semibold text-ink">{T.ime} <span class="text-sm font-normal text-ink-muted">({T.obavezno})</span></label>
+        <input id="name" name="name" type="text" autocomplete="name" required maxlength={NAJVISE.name} value={vrijednosti.name}
+          aria-invalid={greske.name ? "true" : undefined} aria-describedby={opisano("name")} class:list={[polje, rub("name")]} />
+        {greske.name && <p id="name-greska" class="mt-1.5 text-sm font-medium text-danger">{poruka("name")}</p>}
+      </div>
+
+      <div>
+        <label for="email" class="font-semibold text-ink">{T.eposta} <span class="text-sm font-normal text-ink-muted">({T.obavezno})</span></label>
+        <input id="email" name="email" type="email" autocomplete="email" inputmode="email" required maxlength={NAJVISE.email} value={vrijednosti.email}
+          aria-invalid={greske.email ? "true" : undefined} aria-describedby={opisano("email", true)} class:list={[polje, rub("email")]} />
+        <p id="email-pomoc" class="mt-1.5 text-sm text-ink-muted">{T.epostaPomoc}</p>
+        {greske.email && <p id="email-greska" class="mt-1 text-sm font-medium text-danger">{poruka("email")}</p>}
+      </div>
+
+      <div>
+        <label for="topic" class="font-semibold text-ink">{T.tema} <span class="text-sm font-normal text-ink-muted">({T.obavezno})</span></label>
+        <select id="topic" name="topic" required aria-invalid={greske.topic ? "true" : undefined} aria-describedby={opisano("topic")}
+          class:list={[polje, rub("topic"), "min-h-11"]}>
+          <option value="" selected={!vrijednosti.topic}>{T.odaberi}</option>
+          {TEME_KONTAKTA.map((t) => <option value={t} selected={vrijednosti.topic === t}>{TEME[lang][t]}</option>)}
+        </select>
+        {greske.topic && <p id="topic-greska" class="mt-1.5 text-sm font-medium text-danger">{poruka("topic")}</p>}
+      </div>
+
+      <div>
+        <label for="content" class="font-semibold text-ink">{T.poruka} <span class="text-sm font-normal text-ink-muted">({T.obavezno})</span></label>
+        <textarea id="content" name="content" rows="7" required maxlength={NAJVISE.content}
+          aria-invalid={greske.content ? "true" : undefined} aria-describedby={opisano("content", true)} class:list={[polje, rub("content")]}>{vrijednosti.content}</textarea>
+        <p id="content-pomoc" class="mt-1.5 text-sm text-ink-muted">{T.porukaPomoc}</p>
+        {greske.content && <p id="content-greska" class="mt-1 text-sm font-medium text-danger">{poruka("content")}</p>}
+      </div>
+
+      <fieldset class="rounded-md border border-dashed border-ink-muted/60 p-4">
+        <legend class="px-1 text-sm font-semibold text-ink">{T.provjera}</legend>
+        <p class="flex gap-2 text-sm text-ink-muted">
+          <ShieldCheck size={18} aria-hidden="true" class="mt-0.5 shrink-0" />
+          <span>{T.provjeraTekst}</span>
+        </p>
+        <input type="hidden" name="cf-turnstile-response" value="mock-prototip" />
+      </fieldset>
+
+      <button type="submit" class="inline-flex min-h-11 items-center gap-2 rounded-md bg-action px-5 font-semibold text-paper hover:bg-action-strong">
+        <Send size={18} aria-hidden="true" />
+        {T.posalji}
+      </button>
+    </form>
+  </section>
+</StaticnaStranica>

@@ -1,0 +1,36 @@
+{
+  "kampanja": {
+    "aktivna": "1h01zm",
+    "unlisted": "64rszd",
+    "paused": "t5cv87",
+    "zavrsena": "sb1h2n",
+    "rokIstekaoUspjesna": "e9ncsp",
+    "uskoroZavrsava": "wx464z",
+    "skrivenIznos": "f9ahje",
+    "skrivenBroj": "2njgbe",
+    "popisUplataSkriven": "wx464z",
+    "komentariIskljuceni": "0s5f3h",
+    "zaOrganizaciju": "mtpa8x",
+    "mjesecna": "s91fkd",
+    "sPonudama": "tftt9n",
+    "review404": "r5rzsb",
+    "draft404": "ryhs5w",
+    "blokirana404": "w70emf",
+    "obrisana404": "necdy4"
+  },
+  "korisnik": {
+    "javni": "019df237-3e80-72fa-bdb3-a8c1e48e8d77",
+    "javniNeindeksiran": "019e8269-4e80-7065-83f5-438082d23899",
+    "privatni404": "019e5e5c-ca80-7ec2-8c33-33302c6d606e"
+  },
+  "organizacija": "demo-sapica",
+  "organizacijaNeverificirana": "demo-suncani-krov",
+  "kasica": "demo-macke-petra",
+  "kasicaNeaktivna404": "demo-kalendar-stara",
+  "linkZaPracenje": "demo-obroci-fb",
+  "linkZaPracenjeNeaktivan404": "demo-oprema-stari",
+  "vanjska": "019ec035-9e80-755f-ba1f-d2648d7250bf",
+  "vanjskaNeaktivna404": "019efe01-ee80-733a-ae33-6596bf583905",
+  "pracenjeToken": "019e1643-c280-757b-a8f1-690dce1d00c9.01a00c28-de00-795d-a1cc-4538bacfd1e4.nRPuqHpXVfsOAerftCTeRl2oXdi1J1pHus-0oBLj-Y0",
+  "kategorija": "animals"
+}

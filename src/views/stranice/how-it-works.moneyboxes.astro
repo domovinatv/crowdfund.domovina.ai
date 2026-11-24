@@ -1,0 +1,8 @@
+---
+import StaticnaStranica from "../../components/StaticnaStranica.astro";
+import { KASICE } from "../sadrzaj/kako-radi";
+import type { PropsStranice } from "../tipovi";
+type Props = PropsStranice;
+const { lang } = Astro.props;
+---
+<StaticnaStranica lang={lang} sadrzaj={KASICE[lang]} skupina="kako-radi" aktivna="how-it-works.moneyboxes" />

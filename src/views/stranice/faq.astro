@@ -1,0 +1,45 @@
+---
+// Česta pitanja: kategorije kao kartice, svaka vodi na `faq.category` (ključ engleski, odluka 502).
+import StaticnaStranica from "../../components/StaticnaStranica.astro";
+import ArrowRight from "@lucide/astro/icons/arrow-right";
+import { url } from "../../lib/rute";
+import { FAQ, FAQ_STRANICA, KATEGORIJE_FAQ } from "../sadrzaj/faq";
+import type { PropsStranice } from "../tipovi";
+type Props = PropsStranice;
+const { lang } = Astro.props;
+const T = {
+  hr: { pitanja: (n: number) => `${n} ${n % 10 === 1 && n % 100 !== 11 ? "pitanje" : "pitanja"}`, sva: "Sva pitanja", nema: "Nisi našao odgovor?", kontakt: "Piši nam" },
+  en: { pitanja: (n: number) => `${n} question${n === 1 ? "" : "s"}`, sva: "All questions", nema: "Can't find an answer?", kontakt: "Write to us" },
+}[lang];
+---
+<StaticnaStranica lang={lang} sadrzaj={FAQ_STRANICA[lang]} skupina="pomoc" aktivna="faq">
+  <ul class="mt-8 grid gap-4 sm:grid-cols-2">
+    {
+      KATEGORIJE_FAQ.map((k) => {
+        const kat = FAQ[lang][k];
+        return (
+          <li class="flex flex-col rounded-lg p-5 shadow-card">
+            <h2 class="text-lg font-semibold text-ink">
+              <a href={url(lang, "faq.category", { category: k })} class="hover:text-action hover:underline">{kat.naziv}</a>
+            </h2>
+            <p class="mt-1 text-sm text-ink-muted">{kat.opis} · {T.pitanja(kat.pitanja.length)}</p>
+            <ul class="mt-3 flex-1 space-y-1.5 text-sm text-ink-soft">
+              {kat.pitanja.slice(0, 3).map((p) => (
+                <li>
+                  <a href={url(lang, "faq.category", { category: k }) + `#${p.id}`} class="hover:text-action hover:underline">{p.naslov}</a>
+                </li>
+              ))}
+            </ul>
+            <a href={url(lang, "faq.category", { category: k })} class="mt-4 inline-flex min-h-11 items-center gap-1.5 self-start font-semibold text-action hover:underline" aria-label={`${T.sva}: ${kat.naziv}`}>
+              {T.sva}
+              <ArrowRight size={16} aria-hidden="true" />
+            </a>
+          </li>
+        );
+      })
+    }
+  </ul>
+  <p class="mt-10 text-ink-soft">
+    {T.nema} <a href={url(lang, "contact")} class="font-semibold text-action underline">{T.kontakt}</a>
+  </p>
+</StaticnaStranica>
