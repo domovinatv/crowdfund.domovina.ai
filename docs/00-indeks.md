@@ -1,7 +1,7 @@
 # 00 — Indeks baze znanja
 
-Baza osnovana 24. 11. 2026. Dokumenti 03–05 i 09 su iz S2; 07–08 nastaju u S3.
-Provjera mermaida i SQL-a: `scripts/provjera-docs.sh`.
+Baza osnovana 24. 11. 2026. Dokumenti 03–05 i 09 su iz S2; 07–08 iz S3.
+Provjera mermaida, SQL-a i pokrivenosti ruta 4funda: `scripts/provjera-docs.sh`.
 
 | # | Dokument | Sadržaj |
 |---|---|---|
@@ -11,6 +11,8 @@ Provjera mermaida i SQL-a: `scripts/provjera-docs.sh`.
 | 04 | [tokovi](04-tokovi.md) | 12 sequence dijagrama: prijava, organizacija i KYB, objava, uplata i webhook, napojnica, kasica, tracking, moderacija, vanjska kampanja, ponavljanje, povrat, trajni QR |
 | 05 | [zivotni-ciklus](05-zivotni-ciklus.md) | Stanja kampanje (s preklopima), doprinosa (MPT intent → `contribution_states`), verifikacije, prijave i manjih entiteta |
 | 06 | [arhitektura](06-arhitektura.md) | Astro + Workers + D1, MPT kao tenant, campaign-core, što se ponovno koristi |
+| 07 | [rute](07-rute.md) | Sitemap hr/en, pristup po ruti, API i sustav, preslikavanje 85 ruta 4funda (naša ruta ili ✗) |
+| 08 | [dizajn-sustav](08-dizajn-sustav.md) | Brend (privremeni), tokeni s kontrastom, komponente po ekranu, reuse iz energyja i mpt-landinga, 8 žičanih okvira, prijedlozi imena |
 | 09 | [d1-shema](09-d1-shema.md) | Nacrt D1 migracija: `0001_core` (generira se iz campaign-corea), `0002_platform` (37 tablica), seed kategorija |
 | — | [plan](plan.md) · [decisions](decisions.md) · [handoffs](handoffs/README.md) | Lanac sesija do UI prototipa |
 

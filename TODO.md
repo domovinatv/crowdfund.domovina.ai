@@ -28,9 +28,9 @@ Legenda: `[x]` gotovo · `[ ]` otvoreno · `[~]` u radu · `(!)` traži korisnik
 - [x] `docs/05-zivotni-ciklus.md` (kampanja, doprinos, verifikacija, prijava) → S2
 - [x] Razlika prema campaign-core + nacrt D1 migracija (`docs/09-d1-shema.md`) → S2
 - [ ] (!) Prijedlozi za campaign-core (`foundation`, `purpose_evidence`, `amount_hidden`, J2), odluka 213 — vlasnik jezgre
-- [ ] `docs/07-rute.md` (hr/en sitemap) → S3
-- [ ] `docs/08-dizajn-sustav.md` (tokeni, komponente, žičani okviri) → S3
-- [ ] (!) Ime i brend platforme → S3
+- [x] `docs/07-rute.md` (hr/en sitemap, 85 ruta 4funda preslikano) → S3
+- [x] `docs/08-dizajn-sustav.md` (tokeni, komponente, žičani okviri) → S3
+- [ ] (!) Ime i brend platforme: 5 prijedloga u `08` §6, do odgovora radno ime (odluka 305), pitanje na vrhu S4
 
 ## F2 — Prototip
 

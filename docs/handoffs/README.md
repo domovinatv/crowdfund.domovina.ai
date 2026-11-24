@@ -25,7 +25,7 @@ Plan je u [`docs/plan.md`](../plan.md). Svaka sesija ima svoj handoff `SN.md`. K
 | S1 | Prijavljeni obilazak A | gotovo | 2312e75 | – | 18 ekrana (`ls docs/research/obilazak/*.md \| wc -l` = 19 s README); Edit/More/Statistics čekaju vrata u S1b; odluke 100–105 |
 | S1b | Prijavljeni obilazak B (+ C anonimni) | gotovo | b3076d5 | – | 27 ekrana (`ls docs/research/obilazak/[0-9]*.md \| wc -l`); odluke 150–154; ITalk company application čeka 4fund (vrh S2) |
 | S2 | Specifikacija | gotovo | d097151 | `scripts/provjera-docs.sh`: mermaid 20 blokova / 0 neispravnih, SQL 42 tablice (37 platformskih + 5 stubova) | 03, 04 (12 tokova), 05, 09; 27/27 ekrana s entitetom; odluke 200–216; 3 prijedloga za campaign-core (odluka 213) |
-| S3 | Rute i dizajn sustav | vrata: ime/brend | | | |
+| S3 | Rute i dizajn sustav | gotovo, vrata ime/brend otvorena | 5730472 | `scripts/provjera-docs.sh`: mermaid 21 / 0 neispravnih, SQL 42 tablice, rute 4funda 85 / 0 bez retka u 07 | 07 (sitemap hr/en, pristup po ruti), 08 (tokeni, 74 retka komponenti, 8 žičanih okvira); odluke 300–313; ime: 5 prijedloga, radno ime vrijedi (odluka 305), pitanje na vrhu S4 |
 | S4 | Kostur Astro + D1 | | | | |
 | S5 | Javni dio | | | | |
 | S6 | Organizator | | | | |
