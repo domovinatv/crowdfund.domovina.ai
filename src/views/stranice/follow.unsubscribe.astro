@@ -1,0 +1,38 @@
+---
+// Odjava praćenja (odluka 502): potvrda s gumbom (POST), nakon odjave poruka. Bez JS-a.
+import BellOff from "@lucide/astro/icons/bell-off";
+import CircleCheck from "@lucide/astro/icons/circle-check";
+import Base from "../../layouts/Base.astro";
+import { url } from "../../lib/rute";
+import { PRACENJE } from "../sadrzaj/prijava-sadrzaja";
+import type { PodaciOdjave } from "./follow.unsubscribe.ucitaj";
+import type { PropsStranice } from "../tipovi";
+
+type Props = PropsStranice<PodaciOdjave>;
+const { lang, podaci } = Astro.props;
+const { p, token, odjavljeno } = podaci;
+const T = PRACENJE[lang];
+---
+<Base lang={lang} title={T.odjavaNaslov} noindex>
+  <div class="mx-auto max-w-2xl">
+    <h1 class="page-title text-ink">{odjavljeno ? T.odjavljeniNaslov : T.odjavaNaslov}</h1>
+    {
+      odjavljeno ? (
+        <div role="status" class="mt-4 flex gap-3 rounded-md bg-success-bg p-4 text-success ring-1 ring-success/20 ring-inset">
+          <CircleCheck size={20} aria-hidden="true" class="mt-0.5 shrink-0" />
+          <p>{T.odjavljeniTekst} <strong class="break-words">{p.title}</strong></p>
+        </div>
+      ) : (
+        <form method="post" action={url(lang, "follow.unsubscribe", { token })} class="mt-4">
+          <p class="text-ink-soft">{T.odjavaPitanje} <strong class="text-ink break-words">{p.title}</strong>?</p>
+          <button type="submit" class="mt-4 inline-flex min-h-11 items-center gap-2 rounded-md bg-action px-5 font-semibold text-paper hover:bg-action-strong">
+            <BellOff size={18} aria-hidden="true" />{T.odjavaGumb}
+          </button>
+        </form>
+      )
+    }
+    {p.kampanjaVidljiva && (
+      <p class="mt-6"><a href={url(lang, "campaign", { id: p.publicId })} class="font-medium text-action underline underline-offset-2">{T.otvori}</a></p>
+    )}
+  </div>
+</Base>

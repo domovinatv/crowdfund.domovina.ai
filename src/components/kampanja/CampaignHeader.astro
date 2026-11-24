@@ -1,0 +1,71 @@
+---
+// Zaglavlje kampanje (docs/08 §3.2): kategorija, ID, naslov (jedini h1), organizator s poveznicom
+// na profil, oznake: verificirana, provjerena namjena, za organizaciju, mjesečna, isključena, završena.
+import BadgeCheck from "@lucide/astro/icons/badge-check";
+import Building from "@lucide/astro/icons/building";
+import User from "@lucide/astro/icons/user";
+import type { Lang } from "../../i18n";
+import type { StranicaKampanje } from "../../lib/db/kampanja";
+import { url } from "../../lib/rute";
+import { KAMPANJA } from "../../views/sadrzaj/kampanja";
+
+interface Props {
+  lang: Lang;
+  k: StranicaKampanje;
+}
+const { lang, k } = Astro.props;
+const T = KAMPANJA[lang];
+const kategorija = k.category ? (lang === "hr" ? k.category.nameHr : k.category.nameEn) : null;
+const org = k.organizator;
+const oznake: { tekst: string; ton: "ok" | "info" | "upozorenje" | "neutralno" }[] = [];
+if (k.purposeVerified) oznake.push({ tekst: T.oznake.namjena, ton: "ok" });
+if (k.kind === "for_organization") oznake.push({ tekst: T.oznake.zaOrganizaciju, ton: "info" });
+if (k.kind === "recurring") oznake.push({ tekst: T.oznake.mjesecna, ton: "info" });
+if (k.stanje === "paused") oznake.push({ tekst: T.oznake.iskljucena, ton: "upozorenje" });
+if (k.stanje === "closed") oznake.push({ tekst: T.oznake.zavrsena, ton: "neutralno" });
+const TON = {
+  ok: "bg-success-bg text-success ring-success/20",
+  info: "bg-mist text-action ring-action/20",
+  upozorenje: "bg-warning-bg text-warning ring-warning/25",
+  neutralno: "bg-mist text-ink-soft ring-ink-muted/25",
+};
+---
+<header>
+  <p class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink-muted">
+    {kategorija && <span class="rounded-sm bg-mist px-2 py-0.5 font-medium text-ink-soft">{kategorija}</span>}
+    <span>{T.oznake.id} <span class="font-mono">{k.publicId}</span></span>
+    {k.demo && <span class="rounded-sm bg-warning-bg px-2 py-0.5 font-medium text-warning">{T.oznake.demo}</span>}
+  </p>
+  <h1 class="page-title mt-2 text-ink break-words">{k.title}</h1>
+  <p class="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-ink-soft">
+    <Building size={18} aria-hidden="true" class="shrink-0" />
+    <span class="sr-only">{T.organizator}:</span>
+    {org.organizationSlug
+      ? <a href={url(lang, "org", { slug: org.organizationSlug })} class="font-semibold text-ink underline-offset-2 hover:underline">{org.name}</a>
+      : <span class="font-semibold text-ink">{org.name}</span>}
+    {org.verified && (
+      <span class="inline-flex items-center gap-1 text-sm font-medium text-success">
+        <BadgeCheck size={16} aria-hidden="true" />{T.oznake.verificirana}
+      </span>
+    )}
+    {org.city && <span class="text-sm text-ink-muted">· {org.city}</span>}
+  </p>
+  {
+    k.autor?.name && (
+      <p class="mt-1 flex items-center gap-2 text-sm text-ink-soft">
+        <User size={16} aria-hidden="true" class="shrink-0" />
+        {T.pokrenuo}:
+        {k.autor.profileSlug
+          ? <a href={url(lang, "user", { slug: k.autor.profileSlug })} class="font-medium text-ink underline-offset-2 hover:underline">{k.autor.name}</a>
+          : <span class="font-medium text-ink">{k.autor.name}</span>}
+      </p>
+    )
+  }
+  {
+    oznake.length > 0 && (
+      <ul class="mt-3 flex flex-wrap gap-2" aria-label={lang === "hr" ? "Oznake kampanje" : "Campaign labels"}>
+        {oznake.map((o) => <li class:list={["rounded-sm px-2 py-0.5 text-sm font-semibold ring-1 ring-inset", TON[o.ton]]}>{o.tekst}</li>)}
+      </ul>
+    )
+  }
+</header>

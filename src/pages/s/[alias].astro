@@ -1,0 +1,19 @@
+---
+// Kratki link kasice `/s/{alias}` → 302 na `/{lang}/s/{alias}` (odluka 301); neaktivna kasica → 404.
+import { env } from "cloudflare:workers";
+import { odaberiJezik } from "../../i18n";
+import { kasicaPoAliasu } from "../../lib/db/kasice";
+import { url } from "../../lib/rute";
+import NijePronadeno from "../../components/NijePronadeno.astro";
+
+const lang = odaberiJezik(Astro.cookies.get("lang")?.value, Astro.request.headers.get("accept-language"));
+const kasica = await kasicaPoAliasu(env.DB, Astro.params.alias ?? "");
+if (kasica) {
+  return new Response(null, {
+    status: 302,
+    headers: { Location: url(lang, "moneybox", { alias: kasica.alias }) + Astro.url.search, Vary: "Cookie, Accept-Language", "Cache-Control": "private, no-store" },
+  });
+}
+Astro.response.status = 404;
+---
+<NijePronadeno lang={lang} />

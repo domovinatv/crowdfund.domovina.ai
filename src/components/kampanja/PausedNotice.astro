@@ -1,0 +1,29 @@
+---
+// Obavijest umjesto „Podrži” (docs/08 §3.2 PausedNotice): isključena, završena ili bez provjerenog odredišta.
+import CirclePause from "@lucide/astro/icons/circle-pause";
+import CircleCheck from "@lucide/astro/icons/circle-check";
+import CircleX from "@lucide/astro/icons/circle-x";
+import type { Lang } from "../../i18n";
+import type { StanjeKampanje } from "../../lib/db/zajednicko";
+import { KAMPANJA } from "../../views/sadrzaj/kampanja";
+
+interface Props {
+  lang: Lang;
+  stanje: StanjeKampanje;
+  /** Uz `sazeto` samo naslov (mobilna traka). */
+  sazeto?: boolean;
+}
+const { lang, stanje, sazeto = false } = Astro.props;
+const T = KAMPANJA[lang].stanje;
+const [naslov, tekst, Ikona] =
+  stanje === "paused" ? [T.pauziranaNaslov, T.pauziranaTekst, CirclePause]
+  : stanje === "closed" ? [T.zavrsenaNaslov, T.zavrsenaTekst, CircleCheck]
+  : [T.neprimaNaslov, T.neprimaTekst, CircleX];
+---
+<div role="status" class:list={["flex gap-2 rounded-md p-3 text-sm ring-1 ring-inset", stanje === "closed" ? "bg-mist text-ink-soft ring-ink-muted/25" : "bg-warning-bg text-warning ring-warning/25"]}>
+  <Ikona size={18} aria-hidden="true" class="mt-0.5 shrink-0" />
+  <div>
+    <p class="font-semibold">{naslov}</p>
+    {!sazeto && <p class="mt-1">{tekst}</p>}
+  </div>
+</div>

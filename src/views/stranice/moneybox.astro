@@ -1,0 +1,97 @@
+---
+// Kasica (ekran 24, tok 6): naslov, autor, iznos i napredak kasice, opis, „Podrži” s `?s={alias}`, glavna kampanja.
+import Flag from "@lucide/astro/icons/flag";
+import Heart from "@lucide/astro/icons/heart";
+import PiggyBank from "@lucide/astro/icons/piggy-bank";
+import ShieldCheck from "@lucide/astro/icons/shield-check";
+import Base from "../../layouts/Base.astro";
+import ProgressBar from "../../components/ProgressBar.astro";
+import PausedNotice from "../../components/kampanja/PausedNotice.astro";
+import ShareSheet from "../../components/kampanja/ShareSheet.astro";
+import { formatNovca } from "../../components/kampanja/format";
+import { url } from "../../lib/rute";
+import { KAMPANJA, PODRUTE, mnozina } from "../sadrzaj/kampanja";
+import type { PodaciKasice } from "./moneybox.ucitaj";
+import type { PropsStranice } from "../tipovi";
+
+type Props = PropsStranice<PodaciKasice>;
+const { lang, podaci } = Astro.props;
+const { kasica } = podaci;
+const kp = kasica.kampanja;
+const T = PODRUTE[lang].kasica;
+const novac = formatNovca(lang, "EUR");
+const kampanjaPut = url(lang, "campaign", { id: kp.publicId });
+const podrzi = `${url(lang, "campaign.support", { id: kp.publicId })}?s=${encodeURIComponent(kasica.alias)}`;
+const adresa = new URL(url(lang, "moneybox", { alias: kasica.alias }), Astro.url.origin).href;
+---
+<Base lang={lang} title={kasica.title} description={kasica.description?.slice(0, 160)} noindex={kp.noindex}>
+  <div class="mx-auto max-w-3xl">
+    <p class="flex items-center gap-2 text-sm text-ink-muted">
+      <PiggyBank size={18} aria-hidden="true" class="text-action" />
+      {T.za} <a href={kampanjaPut} class="font-medium text-ink underline underline-offset-2 break-words">{kp.title}</a>
+    </p>
+    <h1 class="page-title mt-2 text-ink break-words">{kasica.title}</h1>
+    {
+      kasica.ownerName && (
+        <p class="mt-2 text-ink-soft">
+          {T.vodi}:{" "}
+          {kasica.ownerProfileSlug
+            ? <a href={url(lang, "user", { slug: kasica.ownerProfileSlug })} class="font-semibold text-ink underline-offset-2 hover:underline">{kasica.ownerName}</a>
+            : <span class="font-semibold text-ink">{kasica.ownerName}</span>}
+        </p>
+      )
+    }
+
+    <div class="mt-6 rounded-md bg-paper p-5 shadow-raised">
+      {
+        kasica.raisedCents !== null && (
+          <p class="tabular-nums">
+            <strong class="text-2xl font-bold text-ink">{novac(kasica.raisedCents)}</strong>
+            <span class="text-ink-soft"> {T.prikupljeno}</span>
+          </p>
+        )
+      }
+      <p class="text-sm text-ink-muted tabular-nums">{kasica.goalCents !== null ? `${T.cilj}: ${novac(kasica.goalCents)}` : T.bezCilja}</p>
+      <ProgressBar lang={lang} raisedCents={kasica.raisedCents} goalCents={kasica.goalCents} showLabel class="mt-3" />
+      {kasica.contributionCount !== null && <p class="mt-2 text-sm text-ink-soft tabular-nums">{mnozina(lang, kasica.contributionCount, T.doprinosa)}</p>}
+      <div class="mt-4">
+        {
+          kp.primaUplate ? (
+            <a href={podrzi} class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-action px-5 text-lg font-semibold text-paper hover:bg-action-strong sm:w-auto">
+              <Heart size={20} aria-hidden="true" />{KAMPANJA[lang].podrska.podrzi}
+            </a>
+          ) : (
+            <PausedNotice lang={lang} stanje={kp.stanje} />
+          )
+        }
+      </div>
+      <p class="mt-4 flex gap-2 text-sm text-ink-muted"><ShieldCheck size={18} aria-hidden="true" class="mt-0.5 shrink-0" />{T.novac}</p>
+    </div>
+
+    {
+      kasica.description && (
+        <section aria-labelledby="opis-kasice" class="mt-8">
+          <h2 id="opis-kasice" class="text-2xl font-semibold text-ink">{T.opis}</h2>
+          <p class="mt-3 whitespace-pre-line break-words text-ink-soft">{kasica.description}</p>
+        </section>
+      )
+    }
+
+    <section aria-labelledby="glavna-kampanja" class="mt-8 rounded-md bg-mist p-4">
+      <h2 id="glavna-kampanja" class="text-lg font-semibold text-ink">{T.kampanja}</h2>
+      <p class="mt-1"><a href={kampanjaPut} class="font-semibold text-action underline underline-offset-2 break-words">{kp.title}</a></p>
+      <p class="text-sm text-ink-muted">{KAMPANJA[lang].organizator}: {kp.organizerName}</p>
+    </section>
+
+    <section aria-labelledby="podijeli-kasicu" class="mt-8">
+      <h2 id="podijeli-kasicu" class="text-2xl font-semibold text-ink">{KAMPANJA[lang].podrska.podijeli}</h2>
+      <div class="mt-3"><ShareSheet lang={lang} adresa={adresa} naslov={kasica.title} idPolja="poveznica-kasice" /></div>
+    </section>
+
+    <p class="mt-10 border-t border-line pt-4">
+      <a href={`${url(lang, "report")}?target=moneybox&id=${encodeURIComponent(kasica.alias)}`} class="inline-flex min-h-11 items-center gap-2 text-sm text-ink-muted underline-offset-2 hover:underline">
+        <Flag size={16} aria-hidden="true" />{KAMPANJA[lang].prijavi}
+      </a>
+    </p>
+  </div>
+</Base>

@@ -1,0 +1,65 @@
+---
+// Komentari (docs/08 §3.2 CommentThread), samo prikaz: jedna razina odgovora, iznos uz komentar
+// podržavatelja kad je javan, oznaka organizatora, „Prijavi”. Obrazac za komentar je S6.
+import Flag from "@lucide/astro/icons/flag";
+import type { Lang } from "../../i18n";
+import type { Komentar, KomentariKampanje } from "../../lib/db/kampanja";
+import { url } from "../../lib/rute";
+import { KAMPANJA } from "../../views/sadrzaj/kampanja";
+import { formatNovca, relativnoVrijeme } from "./format";
+
+interface Props {
+  lang: Lang;
+  komentari: KomentariKampanje;
+  currency: string;
+  /** Poveznica „Prijavite se za komentar” (`sign-in?next=`). */
+  prijava: string;
+}
+const { lang, komentari, currency, prijava } = Astro.props;
+const T = KAMPANJA[lang].komentari;
+const novac = formatNovca(lang, currency);
+const sad = Date.now();
+const prijaviHref = (c: Komentar) => `${url(lang, "report")}?target=comment&id=${encodeURIComponent(c.id)}`;
+---
+{
+  komentari.iskljuceni ? (
+    <p class="text-ink-muted">{T.iskljuceni}</p>
+  ) : (
+    <div>
+      <div class="rounded-md bg-mist p-4 text-sm">
+        <p class="text-ink-soft">{komentari.nacin === "contributors" ? T.samoPodrzavatelji : T.prijavaTekst}</p>
+        <a href={prijava} class="mt-2 inline-flex min-h-11 items-center rounded-md bg-paper px-4 font-semibold text-action ring-1 ring-action/30 hover:bg-mist">{T.prijava}</a>
+      </div>
+      {komentari.komentari.length === 0 ? (
+        <p class="mt-4 text-ink-muted">{T.prazno}</p>
+      ) : (
+        <ol class="mt-4 space-y-4">
+          {komentari.komentari.map((c) => (
+            <li class="rounded-md bg-paper p-4 shadow-card">
+              {[c, ...c.odgovori].map((x, i) => (
+                <article class:list={[i > 0 && "mt-3 ml-4 border-l-2 border-line pl-3 sm:ml-6"]} aria-label={i > 0 ? T.odgovori : undefined}>
+                  <p class="flex flex-wrap items-center gap-x-2 text-sm">
+                    {x.autor.anonymous || !x.autor.name ? (
+                      <span class="font-semibold text-ink-soft italic">{T.anonimno}</span>
+                    ) : x.autor.profileSlug ? (
+                      <a href={url(lang, "user", { slug: x.autor.profileSlug })} class="font-semibold text-ink underline-offset-2 hover:underline">{x.autor.name}</a>
+                    ) : (
+                      <span class="font-semibold text-ink">{x.autor.name}</span>
+                    )}
+                    {x.autor.organizator && <span class="rounded-sm bg-mist px-1.5 text-xs font-semibold text-action">{T.organizator}</span>}
+                    {x.amountCents !== null && <span class="text-ink-muted tabular-nums">· {T.doprinos} {novac(x.amountCents)}</span>}
+                    <time datetime={new Date(x.createdAt).toISOString()} class="text-ink-muted">· {relativnoVrijeme(lang, x.createdAt, sad)}</time>
+                  </p>
+                  <p class="mt-1 whitespace-pre-line break-words text-ink-soft">{x.body}</p>
+                  <a href={prijaviHref(x)} class="mt-1 inline-flex min-h-8 items-center gap-1 text-xs text-ink-muted underline-offset-2 hover:underline">
+                    <Flag size={12} aria-hidden="true" />{T.prijavi}
+                  </a>
+                </article>
+              ))}
+            </li>
+          ))}
+        </ol>
+      )}
+    </div>
+  )
+}

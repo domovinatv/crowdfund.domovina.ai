@@ -1,0 +1,90 @@
+---
+// Pretraga i filtri kataloga kampanja (docs/07 „Javni dio”, 08 §5.5): jedan GET obrazac bez JS-a.
+// Na mobitelu su filtri u `<details>` („Filtri (n)”), od `lg` su uvijek otvoreni (`::details-content`);
+// sažetak ostaje klikabilan pa preglednik bez te podrške samo traži jedan klik.
+// Prazna polja šalje i obrazac; učitavač ih 302 čisti iz URL-a.
+import Search from "@lucide/astro/icons/search";
+import ListFilter from "@lucide/astro/icons/list-filter";
+import { prevoditelj, type Lang } from "../../i18n";
+import { VRSTE, type FiltriKataloga, type Kategorija } from "../../lib/db/katalog";
+
+interface Props {
+  lang: Lang;
+  /** Put na koji obrazac šalje (`url(lang, "campaigns")`). */
+  akcija: string;
+  filtri: FiltriKataloga;
+  kategorije: Kategorija[];
+  /** Broj aktivnih filtara bez pretrage (za „Filtri (n)” i zadano otvoren `<details>` na mobitelu). */
+  brojAktivnih: number;
+}
+const { lang, akcija, filtri, kategorije, brojAktivnih } = Astro.props;
+const t = prevoditelj(lang);
+const polje = "min-h-11 w-full rounded-md border border-line bg-paper px-3 text-ink";
+const oznaka = "block text-sm font-semibold text-ink";
+const PREKIDACI = [
+  { name: "verified", tekst: t("catalog.verified"), on: filtri.verified },
+  { name: "moneyboxes", tekst: t("catalog.moneyboxes"), on: filtri.moneyboxes },
+  { name: "ending", tekst: t("catalog.ending"), on: filtri.ending },
+  { name: "successful", tekst: t("catalog.successful"), on: filtri.successful },
+] as const;
+---
+<form method="get" action={akcija} role="search" class="flex flex-col gap-4">
+  {filtri.sort && <input type="hidden" name="sort" value={filtri.sort} />}
+  <div>
+    <label for="q" class={oznaka}>{t("catalog.search")}</label>
+    <div class="mt-1 flex gap-2">
+      <input id="q" name="q" type="search" value={filtri.q ?? ""} maxlength={100} placeholder={t("catalog.searchHint")} class={`${polje} min-w-0 flex-1`} />
+      <button type="submit" class="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-md bg-action px-4 font-semibold text-paper hover:bg-action-strong">
+        <Search size={18} aria-hidden="true" />
+        <span>{t("catalog.searchButton")}</span>
+      </button>
+    </div>
+  </div>
+
+  <details open={brojAktivnih > 0} class="group rounded-md ring-1 ring-line lg:[&::details-content]:[content-visibility:visible]">
+    <summary class="flex min-h-11 cursor-pointer list-none items-center gap-2 px-3 font-semibold text-ink [&::-webkit-details-marker]:hidden">
+      <ListFilter size={18} aria-hidden="true" />
+      {t("catalog.filters")}{brojAktivnih > 0 && ` (${brojAktivnih})`}
+    </summary>
+    <div class="flex flex-col gap-4 border-t border-line p-3">
+      <div>
+        <label for="category" class={oznaka}>{t("catalog.category")}</label>
+        <select id="category" name="category" class={`${polje} mt-1`}>
+          <option value="">{t("catalog.allCategories")}</option>
+          {
+            kategorije.map((k) => (
+              <option value={k.key} selected={k.key === filtri.category}>
+                {lang === "hr" ? k.nameHr : k.nameEn} ({k.brojAktivnih})
+              </option>
+            ))
+          }
+        </select>
+      </div>
+      <div>
+        <label for="type" class={oznaka}>{t("catalog.type")}</label>
+        <select id="type" name="type" class={`${polje} mt-1`}>
+          <option value="">{t("catalog.allTypes")}</option>
+          {VRSTE.map((v) => <option value={v} selected={v === filtri.type}>{t(`type.${v}`)}</option>)}
+        </select>
+      </div>
+      <fieldset class="flex flex-col gap-1">
+        <legend class="sr-only">{t("catalog.filters")}</legend>
+        {
+          PREKIDACI.map((p) => (
+            <label class="flex min-h-11 cursor-pointer items-center gap-3 text-sm text-ink">
+              <input type="checkbox" name={p.name} value="1" checked={p.on} class="size-5 shrink-0 accent-(--color-action)" />
+              {p.tekst}
+            </label>
+          ))
+        }
+      </fieldset>
+      <div>
+        <label for="near" class={oznaka}>{t("catalog.near")}</label>
+        <input id="near" name="near" type="text" value={filtri.near ?? ""} maxlength={100} placeholder={t("catalog.nearHint")} autocomplete="address-level2" class={`${polje} mt-1`} />
+      </div>
+      <button type="submit" class="inline-flex min-h-11 items-center justify-center rounded-md px-4 font-semibold text-action ring-1 ring-action/30 hover:bg-action/10">
+        {t("catalog.apply")}
+      </button>
+    </div>
+  </details>
+</form>

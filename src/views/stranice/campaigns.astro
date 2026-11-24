@@ -1,0 +1,129 @@
+---
+// Katalog kampanja /hr/kampanje (docs/07, 08 §5.5): pretraga i filtri (GET, bez JS-a), 7 redoslijeda,
+// čipovi aktivnih filtara s ✕, broj rezultata, prazno stanje, paginacija. Od `lg` filtri su lijevo.
+import Base from "../../layouts/Base.astro";
+import KarticaKampanje from "../../components/KarticaKampanje.astro";
+import FiltriKataloga from "../../components/katalog/FiltriKataloga.astro";
+import SortSelect from "../../components/katalog/SortSelect.astro";
+import Paginacija from "../../components/katalog/Paginacija.astro";
+import { brojem } from "../../components/katalog/oblik";
+import { aktivniFiltri, bezFiltra, naStranicu, parovi, sUpitom, type Filtar } from "../../components/katalog/upit";
+import SearchX from "@lucide/astro/icons/search-x";
+import X from "@lucide/astro/icons/x";
+import { prevoditelj, type KljucPrijevoda } from "../../i18n";
+import { url } from "../../lib/rute";
+import { KATALOG, umetni } from "../sadrzaj/javni";
+import type { PropsStranice } from "../tipovi";
+import type { PodaciKataloga } from "./campaigns.ucitaj";
+type Props = PropsStranice<PodaciKataloga>;
+const { lang, podaci } = Astro.props;
+const T = KATALOG[lang];
+const t = prevoditelj(lang);
+const { rezultat, filtri, kategorije } = podaci;
+const put = url(lang, "campaigns");
+const upit = new URLSearchParams(podaci.upit);
+const aktivni = aktivniFiltri(upit);
+const brojFiltara = aktivni.filter((a) => a.kljuc !== "q").length;
+const izvanRaspona = rezultat.ukupno > 0 && rezultat.kartice.length === 0;
+
+const OZNAKE: Partial<Record<Filtar, KljucPrijevoda>> = {
+  verified: "catalog.verified",
+  moneyboxes: "catalog.moneyboxes",
+  ending: "catalog.ending",
+  successful: "catalog.successful",
+};
+const tekstCipa = (k: Filtar, v: string): string => {
+  if (k === "q") return `${t("catalog.chip.q")}: „${v}”`;
+  if (k === "near") return `${t("catalog.chip.near")}: ${v}`;
+  if (k === "category") {
+    const kat = kategorije.find((x) => x.key === v);
+    return kat ? (lang === "hr" ? kat.nameHr : kat.nameEn) : v;
+  }
+  if (k === "type") return t(`type.${v as "one_time" | "recurring" | "for_organization"}`);
+  return t(OZNAKE[k]!);
+};
+const naslovDokumenta = rezultat.stranica > 1 ? `${T.naslov}, ${umetni(T.stranicaNaslova, { n: rezultat.stranica })}` : T.naslov;
+// Čišćenje filtara čuva odabrani redoslijed.
+const ocisti = sUpitom(put, filtri.sort ? [["sort", filtri.sort]] : []);
+---
+<Base lang={lang} title={naslovDokumenta} description={T.opis}>
+  <header class="max-w-[70ch]">
+    <h1 class="page-title text-ink">{T.naslov}</h1>
+    <p class="mt-2 text-ink-soft">{T.uvod}</p>
+  </header>
+
+  <div class="mt-6 grid gap-6 lg:grid-cols-[18rem_minmax(0,1fr)] lg:gap-8">
+    <aside class="min-w-0">
+      <FiltriKataloga lang={lang} akcija={put} filtri={filtri} kategorije={kategorije} brojAktivnih={brojFiltara} />
+    </aside>
+
+    <section class="min-w-0" aria-labelledby="rezultati">
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <h2 id="rezultati" class="text-xl font-semibold tabular-nums">
+          <span class="sr-only">{T.rezultati}: </span>{brojem(lang, "catalog.results", rezultat.ukupno)}
+        </h2>
+        <SortSelect lang={lang} akcija={put} sort={rezultat.sort} skriveni={parovi(upit, ["sort", "page"])} class="sm:w-80" />
+      </div>
+
+      {
+        aktivni.length > 0 && (
+          <div class="mt-4">
+            <h3 class="sr-only">{t("catalog.activeFilters")}</h3>
+            <ul class="flex flex-wrap items-center gap-2">
+              {aktivni.map((a) => (
+                <li>
+                  <a
+                    href={bezFiltra(put, upit, a.kljuc)}
+                    class="inline-flex min-h-11 max-w-full items-center gap-1.5 rounded-full bg-action/10 py-1 pr-2 pl-3 text-sm font-medium text-action hover:bg-action/20"
+                  >
+                    <span class="truncate">{tekstCipa(a.kljuc, a.vrijednost)}</span>
+                    <X size={16} aria-hidden="true" class="shrink-0" />
+                    <span class="sr-only">({t("catalog.removeFilter")})</span>
+                  </a>
+                </li>
+              ))}
+              <li>
+                <a href={ocisti} class="inline-flex min-h-11 items-center px-2 text-sm font-semibold text-ink-soft underline underline-offset-2 hover:text-action">
+                  {t("catalog.clearAll")}
+                </a>
+              </li>
+            </ul>
+          </div>
+        )
+      }
+
+      {
+        rezultat.ukupno === 0 ? (
+          <div class="mt-6 flex flex-col items-center rounded-lg bg-mist px-6 py-12 text-center">
+            <SearchX size={32} aria-hidden="true" class="text-action" />
+            <p class="mt-3 font-semibold">{T.praznoNaslov}</p>
+            <p class="mt-1 text-sm text-ink-muted">{T.praznoTekst}</p>
+            {aktivni.length > 0 && (
+              <a href={ocisti} class="mt-4 inline-flex min-h-11 items-center rounded-md px-4 font-semibold text-action ring-1 ring-action/30 hover:bg-action/10">
+                {T.ocisti}
+              </a>
+            )}
+          </div>
+        ) : izvanRaspona ? (
+          <div class="mt-6 flex flex-col items-center rounded-lg bg-mist px-6 py-12 text-center">
+            <p class="font-semibold">{umetni(T.izvanNaslov, { n: rezultat.stranica })}</p>
+            <p class="mt-1 text-sm text-ink-muted">{umetni(T.izvanTekst, { m: rezultat.ukupnoStranica })}</p>
+            <a href={naStranicu(put, upit, 1)} class="mt-4 inline-flex min-h-11 items-center rounded-md bg-action px-4 font-semibold text-paper hover:bg-action-strong">
+              {T.naPrvu}
+            </a>
+          </div>
+        ) : (
+          <ul class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {rezultat.kartice.map((k) => (
+              <li>
+                <KarticaKampanje lang={lang} k={k} />
+              </li>
+            ))}
+          </ul>
+        )
+      }
+
+      <Paginacija lang={lang} stranica={rezultat.stranica} ukupnoStranica={rezultat.ukupnoStranica} poveznica={(n: number) => naStranicu(put, upit, n)} />
+    </section>
+  </div>
+</Base>

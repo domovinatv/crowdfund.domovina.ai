@@ -1,0 +1,161 @@
+---
+// Stranica kampanje (ekran 22, docs/08 §5.1): galerija, zaglavlje, brojke, sidra sekcija, opis i „Kamo ide
+// novac”, novosti, kasice, uplate, komentari, ponude, dijeljenje i promocija, praćenje, prijava sadržaja.
+// Mobitel: ljepljiva donja traka; lg+: dva stupca s ljepljivim panelom desno.
+import Flag from "@lucide/astro/icons/flag";
+import PiggyBank from "@lucide/astro/icons/piggy-bank";
+import Base from "../../layouts/Base.astro";
+import PhaseBadge from "../../components/PhaseBadge.astro";
+import CampaignHeader from "../../components/kampanja/CampaignHeader.astro";
+import CampaignStats from "../../components/kampanja/CampaignStats.astro";
+import CampaignTabs, { type SidroSekcije } from "../../components/kampanja/CampaignTabs.astro";
+import CommentThread from "../../components/kampanja/CommentThread.astro";
+import ContributorList from "../../components/kampanja/ContributorList.astro";
+import FollowButton from "../../components/kampanja/FollowButton.astro";
+import Galerija from "../../components/kampanja/Galerija.astro";
+import MoneyboxCard from "../../components/kampanja/MoneyboxCard.astro";
+import MoneyDestination from "../../components/kampanja/MoneyDestination.astro";
+import PausedNotice from "../../components/kampanja/PausedNotice.astro";
+import PromoTools from "../../components/kampanja/PromoTools.astro";
+import ShareSheet from "../../components/kampanja/ShareSheet.astro";
+import SupportBar from "../../components/kampanja/SupportBar.astro";
+import UpdateList from "../../components/kampanja/UpdateList.astro";
+import { formatNovca } from "../../components/kampanja/format";
+import { url } from "../../lib/rute";
+import { KAMPANJA } from "../sadrzaj/kampanja";
+import type { PodaciKampanje } from "./campaign.ucitaj";
+import type { PropsStranice } from "../tipovi";
+
+type Props = PropsStranice<PodaciKampanje>;
+const { lang, podaci } = Astro.props;
+const { k, novosti, kasice, uplate, stranicaUplata, josUplata, komentari, ponude, adresa, pracenjePoslano } = podaci;
+const T = KAMPANJA[lang];
+const put = url(lang, "campaign", { id: k.publicId });
+const novac = formatNovca(lang, k.currency);
+const prijava = `${url(lang, "sign-in")}?next=${encodeURIComponent(`${put}#komentari`)}`;
+const prijaviKampanju = `${url(lang, "report")}?target=campaign&id=${k.publicId}`;
+
+const sidra: SidroSekcije[] = [
+  { id: "novosti", kljuc: "novosti", broj: k.brojevi.novosti },
+  { id: "opis", kljuc: "opis", broj: null },
+];
+if (k.postavke.kasiceDopustene) sidra.push({ id: "kasice", kljuc: "kasice", broj: k.brojevi.kasice });
+sidra.push({ id: "uplate", kljuc: "uplate", broj: k.brojevi.uplate });
+if (!komentari.iskljuceni) sidra.push({ id: "komentari", kljuc: "komentari", broj: k.brojevi.komentari });
+if (ponude.length > 0) sidra.push({ id: "ponude", kljuc: "ponude", broj: ponude.length });
+
+const sekcija = "scroll-mt-4 focus:outline-none";
+const h2 = "text-2xl font-semibold text-ink";
+const opis = (k.description ?? "").trim();
+---
+<Base lang={lang} title={k.title} description={opis ? opis.slice(0, 160) : undefined} noindex={k.noindex}>
+  <div class="lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-10">
+    <div class="min-w-0">
+      <Galerija lang={lang} tema={k.coverTheme} />
+      <div class="mt-5"><CampaignHeader lang={lang} k={k} /></div>
+
+      <div class="mt-5 lg:hidden">
+        <CampaignStats lang={lang} k={k} />
+        {!k.primaUplate && <div class="mt-3"><PausedNotice lang={lang} stanje={k.stanje} /></div>}
+      </div>
+
+      <div class="mt-6"><CampaignTabs lang={lang} sidra={sidra} /></div>
+
+      <section id="novosti" tabindex="-1" aria-labelledby="novosti-naslov" class={`mt-8 ${sekcija}`}>
+        <h2 id="novosti-naslov" class={h2}>{T.sekcije.novosti}</h2>
+        <div class="mt-4"><UpdateList lang={lang} novosti={novosti} /></div>
+      </section>
+
+      <section id="opis" tabindex="-1" aria-labelledby="opis-naslov" class={`mt-10 ${sekcija}`}>
+        <h2 id="opis-naslov" class={h2}>{T.sekcije.opis}</h2>
+        {opis ? <p class="mt-4 max-w-[70ch] whitespace-pre-line break-words text-ink-soft">{opis}</p> : <p class="mt-4 text-ink-muted">{T.opis.prazno}</p>}
+        <div class="mt-6"><MoneyDestination lang={lang} novac={k.novac} /></div>
+      </section>
+
+      {
+        k.postavke.kasiceDopustene && (
+          <section id="kasice" tabindex="-1" aria-labelledby="kasice-naslov" class={`mt-10 ${sekcija}`}>
+            <h2 id="kasice-naslov" class={h2}>{T.sekcije.kasice}</h2>
+            <p class="mt-2 max-w-[70ch] text-sm text-ink-muted">{T.kasice.opis}</p>
+            {kasice.length === 0 ? (
+              <p class="mt-4 text-ink-muted">{T.kasice.prazno}</p>
+            ) : (
+              <ul class="mt-4 grid gap-4 sm:grid-cols-2">
+                {kasice.map((m) => <li><MoneyboxCard lang={lang} kasica={m} currency={k.currency} /></li>)}
+              </ul>
+            )}
+            {k.stanje === "active" && (
+              <a href={url(lang, "campaign.moneybox.new", { id: k.publicId })} class="mt-4 inline-flex min-h-11 items-center gap-2 rounded-md px-4 font-semibold text-action ring-1 ring-action/30 hover:bg-mist">
+                <PiggyBank size={18} aria-hidden="true" />{T.kasice.napravi}
+              </a>
+            )}
+          </section>
+        )
+      }
+
+      <section id="uplate" tabindex="-1" aria-labelledby="uplate-naslov" class={`mt-10 ${sekcija}`}>
+        <h2 id="uplate-naslov" class={h2}>{T.sekcije.uplate}</h2>
+        <div class="mt-4">
+          <ContributorList lang={lang} uplate={uplate} currency={k.currency} samoPoVremenu={k.statistika.raisedCents === null}
+            put={put} stranica={stranicaUplata} josIma={josUplata} />
+        </div>
+      </section>
+
+      {
+        komentari.iskljuceni ? (
+          <p class="mt-10 text-ink-muted">{T.komentari.iskljuceni}</p>
+        ) : (
+          <section id="komentari" tabindex="-1" aria-labelledby="komentari-naslov" class={`mt-10 ${sekcija}`}>
+            <h2 id="komentari-naslov" class={h2}>{T.sekcije.komentari}</h2>
+            <div class="mt-4"><CommentThread lang={lang} komentari={komentari} currency={k.currency} prijava={prijava} /></div>
+          </section>
+        )
+      }
+
+      {
+        ponude.length > 0 && (
+          <section id="ponude" tabindex="-1" aria-labelledby="ponude-naslov" class={`mt-10 ${sekcija}`}>
+            <h2 id="ponude-naslov" class={`flex flex-wrap items-center gap-2 ${h2}`}>{T.sekcije.ponude} <PhaseBadge lang={lang} /></h2>
+            <p class="mt-2 text-sm text-ink-muted">{T.ponude.opis}</p>
+            <ul class="mt-4 grid gap-4 sm:grid-cols-2">
+              {ponude.map((p) => (
+                <li class="rounded-md bg-paper p-4 shadow-card">
+                  <h3 class="font-semibold text-ink break-words">{p.title}</h3>
+                  {p.description && <p class="mt-1 line-clamp-3 text-sm text-ink-soft">{p.description}</p>}
+                  <p class="mt-2 text-sm text-ink-soft tabular-nums">
+                    <strong class="text-ink">{novac(p.priceCents)}</strong> · {p.mode === "auction" ? T.ponude.drazba : T.ponude.kupiOdmah}
+                    {p.quantity > 1 && <span> · {T.ponude.kolicina} {p.quantity}</span>}
+                    <span class="block text-ink-muted">{T.ponude.dostava[p.delivery] ?? p.delivery}</span>
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <a href={url(lang, "offers")} class="mt-4 inline-flex min-h-11 items-center font-semibold text-action underline underline-offset-2">{T.ponude.sve}</a>
+          </section>
+        )
+      }
+
+      <section id="podijeli" tabindex="-1" aria-labelledby="podijeli-naslov" class={`mt-10 ${sekcija}`}>
+        <h2 id="podijeli-naslov" class={h2}>{T.dijeljenje.naslov}</h2>
+        <div class="mt-4"><ShareSheet lang={lang} adresa={adresa} naslov={k.title} /></div>
+        <div class="mt-6"><PromoTools lang={lang} publicId={k.publicId} /></div>
+      </section>
+
+      <section id="prati" tabindex="-1" aria-labelledby="prati-naslov" class={`mt-10 ${sekcija}`}>
+        <h2 id="prati-naslov" class={h2}>{T.prati.naslov}</h2>
+        <div class="mt-3"><FollowButton lang={lang} akcija={put} poslano={pracenjePoslano} /></div>
+      </section>
+
+      <p class="mt-10 border-t border-line pt-4">
+        <a href={prijaviKampanju} class="inline-flex min-h-11 items-center gap-2 text-sm text-ink-muted underline-offset-2 hover:underline">
+          <Flag size={16} aria-hidden="true" />{T.prijavi}
+        </a>
+      </p>
+    </div>
+
+    <div class="hidden lg:block">
+      <SupportBar lang={lang} k={k} varijanta="panel" />
+    </div>
+  </div>
+  <SupportBar lang={lang} k={k} varijanta="traka" />
+</Base>

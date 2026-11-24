@@ -1,0 +1,176 @@
+---
+// Javni profil organizacije /hr/o/{slug} (docs/07, ekran 20): opis, oznaka verifikacije, kamo ide novac
+// (Safe organizacije), kampanje, vanjske kampanje i CTA „kampanja za ovu organizaciju” kad organizacija
+// prima tuđe kampanje (Fixed Beneficiary, docs/03 §3). Logotip se u prototipu ne poslužuje: inicijal.
+import Base from "../../layouts/Base.astro";
+import KarticaKampanje from "../../components/KarticaKampanje.astro";
+import ExternalCampaignCard from "../../components/katalog/ExternalCampaignCard.astro";
+import PhaseBadge from "../../components/PhaseBadge.astro";
+import BadgeCheck from "@lucide/astro/icons/badge-check";
+import ShieldQuestion from "@lucide/astro/icons/shield-question-mark";
+import MapPin from "@lucide/astro/icons/map-pin";
+import Globe from "@lucide/astro/icons/globe";
+import Link from "@lucide/astro/icons/link";
+import Wallet from "@lucide/astro/icons/wallet";
+import Plus from "@lucide/astro/icons/plus";
+import Flag from "@lucide/astro/icons/flag";
+import { url } from "../../lib/rute";
+import { PROFIL_ORGANIZACIJE, umetni } from "../sadrzaj/javni";
+import type { PropsStranice } from "../tipovi";
+import type { PodaciOrganizacije } from "./org.ucitaj";
+type Props = PropsStranice<PodaciOrganizacije>;
+const { lang, podaci } = Astro.props;
+const { o } = podaci;
+const T = PROFIL_ORGANIZACIJE[lang];
+const kategorija = o.category ? (lang === "hr" ? o.category.nameHr : o.category.nameEn) : null;
+const oblik = T.oblici[o.legalForm.toLowerCase()] ?? o.legalForm;
+const http = (x: unknown): string | null => {
+  const v = typeof x === "string" ? x : x && typeof x === "object" && "url" in x && typeof x.url === "string" ? x.url : null;
+  return v && /^https?:\/\//i.test(v) ? v : null;
+};
+const web = http(o.website);
+const mreze = o.socialLinks.map(http).filter((x): x is string => x !== null);
+const bezSheme = (u: string) => u.replace(/^https?:\/\//i, "").replace(/\/$/, "");
+const skraceno = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
+const nazivKategorije = (key: string | null) => {
+  const k = podaci.kategorije.find((x) => x.key === key);
+  return k ? (lang === "hr" ? k.nameHr : k.nameEn) : null;
+};
+---
+<Base lang={lang} title={o.displayName} description={o.description?.slice(0, 160) ?? o.displayName}>
+  <header class="flex flex-col gap-4 sm:flex-row sm:items-start">
+    <span class="flex size-16 shrink-0 items-center justify-center rounded-md bg-action text-2xl font-bold text-paper" aria-hidden="true">{o.displayName.trim().charAt(0).toUpperCase()}</span>
+    <div class="min-w-0 max-w-[70ch]">
+      <h1 class="page-title break-words text-ink">{o.displayName}</h1>
+      <div class="mt-2 flex flex-wrap items-center gap-2 text-sm">
+        {
+          o.verified ? (
+            <span class="inline-flex items-center gap-1 rounded-sm bg-success-bg px-2 py-0.5 font-semibold text-success">
+              <BadgeCheck size={16} aria-hidden="true" />
+              {T.verificirana}
+            </span>
+          ) : (
+            <span class="inline-flex items-center gap-1 rounded-sm bg-mist px-2 py-0.5 font-semibold text-ink-soft" title={T.neverificiranaTekst}>
+              <ShieldQuestion size={16} aria-hidden="true" />
+              {T.neverificirana}
+            </span>
+          )
+        }
+        {o.kind === "personal" ? (
+          <span class="inline-flex items-center gap-2 text-ink-soft">{T.osobni} <PhaseBadge lang={lang} /></span>
+        ) : (
+          <span class="text-ink-soft">{oblik}</span>
+        )}
+        {kategorija && <span class="rounded-sm bg-mist px-2 py-0.5 font-medium text-ink-soft">{kategorija}</span>}
+        {
+          o.city && (
+            <span class="inline-flex items-center gap-1 text-ink-soft">
+              <MapPin size={14} aria-hidden="true" />
+              {o.city}
+            </span>
+          )
+        }
+      </div>
+      {!o.verified && <p class="mt-2 text-sm text-ink-muted">{T.neverificiranaTekst}</p>}
+    </div>
+  </header>
+
+  <div class="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
+    <section aria-labelledby="o-organizaciji" class="min-w-0">
+      <h2 id="o-organizaciji" class="text-xl font-semibold">{T.oOrganizaciji}</h2>
+      {o.description && <p class="mt-2 max-w-[70ch] whitespace-pre-line text-ink-soft">{o.description}</p>}
+      {
+        (web || mreze.length > 0) && (
+          <ul class="mt-3 flex flex-col gap-1 text-sm">
+            {web && (
+              <li class="flex min-w-0 items-center gap-1.5">
+                <Globe size={16} aria-hidden="true" class="shrink-0" />
+                <span class="sr-only">{T.web}:</span>
+                <a href={web} rel="nofollow noopener" class="truncate text-action underline underline-offset-2">{bezSheme(web)}</a>
+              </li>
+            )}
+            {mreze.map((m) => (
+              <li class="flex min-w-0 items-center gap-1.5">
+                <Link size={16} aria-hidden="true" class="shrink-0" />
+                <span class="sr-only">{T.mreze}:</span>
+                <a href={m} rel="nofollow noopener" class="truncate text-action underline underline-offset-2">{bezSheme(m)}</a>
+              </li>
+            ))}
+          </ul>
+        )
+      }
+    </section>
+
+    <div class="flex min-w-0 flex-col gap-4">
+      {
+        o.safe && (
+          <section aria-labelledby="kamo-novac" class="rounded-md bg-mist p-4">
+            <h2 id="kamo-novac" class="flex items-center gap-2 font-semibold">
+              <Wallet size={18} aria-hidden="true" class="text-action" />
+              {T.kamoNovac}
+            </h2>
+            <p class="mt-1 text-sm text-ink-soft">
+              {umetni(T.kamoNovacTekst, { adresa: skraceno(o.safe.address) })}{" "}
+              <span class="text-ink-muted">({umetni(T.mreza, { n: o.safe.chainId })})</span>
+            </p>
+          </section>
+        )
+      }
+      {
+        o.fixedBeneficiary && (
+          <section aria-labelledby="cta-org" class="rounded-md p-4 ring-1 ring-action/30">
+            <h2 id="cta-org" class="font-semibold">{umetni(T.ctaNaslov, { ime: o.displayName })}</h2>
+            <p class="mt-1 text-sm text-ink-soft">{T.ctaTekst}</p>
+            <a
+              href={`${url(lang, "new-campaign.type")}?za=${encodeURIComponent(o.slug)}`}
+              class="mt-3 inline-flex min-h-11 items-center gap-2 rounded-md bg-action px-4 font-semibold text-paper hover:bg-action-strong"
+            >
+              <Plus size={18} aria-hidden="true" />
+              {T.ctaGumb}
+            </a>
+          </section>
+        )
+      }
+    </div>
+  </div>
+
+  <section class="mt-10" aria-labelledby="kampanje">
+    <h2 id="kampanje" class="text-2xl font-semibold">{T.kampanje}</h2>
+    {
+      o.kampanje.length === 0 ? (
+        <p class="mt-3 rounded-md bg-mist px-4 py-6 text-sm text-ink-muted">{T.kampanjePrazno}</p>
+      ) : (
+        <ul class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {o.kampanje.map((k) => (
+            <li>
+              <KarticaKampanje lang={lang} k={k} />
+            </li>
+          ))}
+        </ul>
+      )
+    }
+  </section>
+
+  {
+    o.vanjske.length > 0 && (
+      <section class="mt-10" aria-labelledby="vanjske">
+        <h2 id="vanjske" class="text-2xl font-semibold">{T.vanjske}</h2>
+        <p class="mt-1 text-sm text-ink-soft">{T.vanjskeUvod}</p>
+        <ul class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {o.vanjske.map((v) => (
+            <li>
+              <ExternalCampaignCard lang={lang} v={v} kategorija={nazivKategorije(v.categoryKey)} />
+            </li>
+          ))}
+        </ul>
+      </section>
+    )
+  }
+
+  <p class="mt-12 border-t border-line pt-4 text-sm">
+    <a href={`${url(lang, "report")}?target=organization&id=${encodeURIComponent(o.slug)}`} class="inline-flex min-h-11 items-center gap-1.5 text-ink-soft underline underline-offset-2 hover:text-action">
+      <Flag size={14} aria-hidden="true" />
+      {T.prijavi}
+    </a>
+  </p>
+</Base>

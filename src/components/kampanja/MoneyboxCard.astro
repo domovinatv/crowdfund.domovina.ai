@@ -1,0 +1,34 @@
+---
+// Kartica kasice (docs/08 §3.2 MoneyboxCard): naslov, autor, iznos, %, broj doprinosa.
+import PiggyBank from "@lucide/astro/icons/piggy-bank";
+import ProgressBar from "../ProgressBar.astro";
+import type { Lang } from "../../i18n";
+import type { Kasica } from "../../lib/db/kasice";
+import { url } from "../../lib/rute";
+import { KAMPANJA, mnozina } from "../../views/sadrzaj/kampanja";
+import { formatNovca } from "./format";
+
+interface Props {
+  lang: Lang;
+  kasica: Kasica;
+  currency: string;
+}
+const { lang, kasica, currency } = Astro.props;
+const T = KAMPANJA[lang].kasice;
+const novac = formatNovca(lang, currency);
+---
+<article class="flex h-full flex-col rounded-md bg-paper p-4 shadow-card">
+  <h3 class="flex items-start gap-2 font-semibold text-ink">
+    <PiggyBank size={18} aria-hidden="true" class="mt-0.5 shrink-0 text-action" />
+    <a href={url(lang, "moneybox", { alias: kasica.alias })} class="break-words underline-offset-2 hover:underline">{kasica.title}</a>
+  </h3>
+  {kasica.ownerName && <p class="mt-1 text-sm text-ink-muted">{T.autor}: {kasica.ownerName}</p>}
+  <div class="mt-auto pt-3">
+    <ProgressBar lang={lang} raisedCents={kasica.raisedCents} goalCents={kasica.goalCents} />
+    <p class="mt-2 text-sm tabular-nums text-ink-soft">
+      {kasica.raisedCents !== null && <><strong class="text-ink">{novac(kasica.raisedCents)}</strong> {T.prikupljeno}</>}
+      {kasica.goalCents !== null && <span class="block text-ink-muted">{T.cilj}: {novac(kasica.goalCents)}</span>}
+      {kasica.contributionCount !== null && <span class="block text-ink-muted">{mnozina(lang, kasica.contributionCount, T.doprinosa)}</span>}
+    </p>
+  </div>
+</article>

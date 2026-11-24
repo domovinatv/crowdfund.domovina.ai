@@ -1,0 +1,33 @@
+---
+// Sidra sekcija (docs/08 §3.2): Novosti · Opis · Kasice · Uplate · Komentari · Ponude, s brojem gdje
+// je broj javan. Sekcija koje nema (kasice isključene, komentari isključeni, nema ponuda) nema ni sidra.
+import type { Lang } from "../../i18n";
+import { KAMPANJA } from "../../views/sadrzaj/kampanja";
+
+export interface SidroSekcije {
+  id: string;
+  kljuc: "novosti" | "opis" | "kasice" | "uplate" | "komentari" | "ponude";
+  broj: number | null;
+}
+
+interface Props {
+  lang: Lang;
+  sidra: SidroSekcije[];
+}
+const { lang, sidra } = Astro.props;
+const T = KAMPANJA[lang].sekcije;
+---
+<nav aria-label={T.navigacija} class="border-y border-line">
+  <ul class="flex flex-wrap gap-x-1 py-1">
+    {
+      sidra.map((s) => (
+        <li>
+          <a href={`#${s.id}`} class="inline-flex min-h-11 items-center gap-1.5 rounded-sm px-2.5 font-medium text-ink-soft hover:bg-mist hover:text-ink">
+            {T[s.kljuc]}
+            {s.broj !== null && <span class="rounded-full bg-mist px-1.5 text-xs font-semibold text-ink-soft tabular-nums">{s.broj}</span>}
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</nav>

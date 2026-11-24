@@ -1,0 +1,58 @@
+---
+// Ugradiva kartica kampanje (pregled §4.4): `/embed/{id}?lang=en&target=campaign|support`. Poveznice
+// se otvaraju u novoj kartici (izvan iframea). Kampanja koja nije javno vidljiva → 404.
+import { env } from "cloudflare:workers";
+import Heart from "@lucide/astro/icons/heart";
+import Embed from "../../layouts/Embed.astro";
+import ProgressBar from "../../components/ProgressBar.astro";
+import { formatNovca } from "../../components/kampanja/format";
+import { isCiljWidgeta } from "../../components/kampanja/dijeljenje";
+import { isLang, prevoditelj, type Lang } from "../../i18n";
+import { kampanjaPoJavnomId } from "../../lib/db/kampanja";
+import { url } from "../../lib/rute";
+import { KAMPANJA, PODRUTE, mnozina } from "../../views/sadrzaj/kampanja";
+
+const q = Astro.url.searchParams;
+const lang: Lang = isLang(q.get("lang")) ? (q.get("lang") as Lang) : "hr";
+const target = isCiljWidgeta(q.get("target")) ? q.get("target") : "campaign";
+const k = await kampanjaPoJavnomId(env.DB, Astro.params.id ?? "");
+if (!k) Astro.response.status = 404;
+const T = PODRUTE[lang].ugradnja;
+const TK = KAMPANJA[lang];
+const novac = formatNovca(lang, k?.currency ?? "EUR");
+const t = prevoditelj(lang);
+const kampanjaHref = k ? url(lang, "campaign", { id: k.publicId }) : "";
+const gumbHref = k && target === "support" && k.primaUplate ? url(lang, "campaign.support", { id: k.publicId }) : kampanjaHref;
+const gumbTekst = k && target === "support" && k.primaUplate ? T.podrzi : T.vidi;
+---
+<Embed lang={lang} title={k ? k.title : "404"}>
+  {
+    k ? (
+      <article class="flex min-h-dvh flex-col p-4">
+        <p class="text-xs text-ink-muted">{t("site.name")}</p>
+        <h1 class="mt-1 text-lg leading-tight font-semibold text-ink break-words">
+          <a href={kampanjaHref} target="_blank" rel="noopener" class="hover:underline">{k.title}</a>
+        </h1>
+        <p class="mt-1 text-sm text-ink-soft">{k.organizator.name}</p>
+        <div class="mt-auto pt-4">
+          <ProgressBar lang={lang} raisedCents={k.statistika.raisedCents} goalCents={k.goalCents} showLabel />
+          {k.statistika.raisedCents !== null && (
+            <p class="mt-2 text-sm tabular-nums">
+              <strong class="text-base text-ink">{novac(k.statistika.raisedCents)}</strong> {T.prikupljeno}
+              {k.goalCents && <span class="text-ink-muted"> {T.od} {novac(k.goalCents)}</span>}
+            </p>
+          )}
+          {k.statistika.contributorCount !== null && (
+            <p class="text-xs text-ink-muted tabular-nums">{mnozina(lang, k.statistika.contributorCount, TK.statistika.podrzavatelja)}</p>
+          )}
+          {!k.primaUplate && <p class="mt-2 text-sm font-medium text-warning">{k.stanje === "closed" ? TK.stanje.zavrsenaNaslov : k.stanje === "paused" ? TK.stanje.pauziranaNaslov : TK.stanje.neprimaNaslov}</p>}
+          <a href={gumbHref} target="_blank" rel="noopener" class="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-action px-4 font-semibold text-paper hover:bg-action-strong">
+            <Heart size={18} aria-hidden="true" />{gumbTekst}
+          </a>
+        </div>
+      </article>
+    ) : (
+      <p class="p-4 text-sm text-ink-muted">{lang === "hr" ? "Kampanja nije pronađena." : "Campaign not found."}</p>
+    )
+  }
+</Embed>

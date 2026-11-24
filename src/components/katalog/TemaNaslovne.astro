@@ -1,0 +1,45 @@
+---
+// Naslovna ploha kartice (docs/08 §3.2, odluka 216): tema kao gradijent iz semantičkih tokena + ikona
+// kategorije. Bez vanjskih slika (prototip ne poslužuje datoteke), ukrasna je (`aria-hidden`).
+import HandHeart from "@lucide/astro/icons/hand-heart";
+import Drama from "@lucide/astro/icons/drama";
+import Lightbulb from "@lucide/astro/icons/lightbulb";
+import Package from "@lucide/astro/icons/package";
+import Trophy from "@lucide/astro/icons/trophy";
+import PawPrint from "@lucide/astro/icons/paw-print";
+import Plane from "@lucide/astro/icons/plane";
+import Shapes from "@lucide/astro/icons/shapes";
+
+interface Props {
+  /** `campaign_settings.cover_theme` (ključ teme) ili null. */
+  tema: string | null;
+  /** Ključ kategorije za ikonu. */
+  kategorija: string | null;
+  class?: string;
+}
+const { tema, kategorija, class: klasa = "" } = Astro.props;
+
+// Parovi tokena (od, do); nepoznata tema → navy.
+const GRADIJENTI: Record<string, [string, string]> = {
+  charity: ["--action", "--accent-text"],
+  event: ["--action-strong", "--ink-soft"],
+  project: ["--action", "--success"],
+  needs: ["--warning", "--action-strong"],
+  sports: ["--success", "--action"],
+  animals: ["--success", "--warning"],
+  travel: ["--action", "--ink-muted"],
+  general: ["--ink-soft", "--action"],
+};
+const IKONE = { charity: HandHeart, culture: Drama, projects: Lightbulb, needs: Package, sport: Trophy, animals: PawPrint, travel: Plane, other: Shapes };
+const [od, do_] = GRADIJENTI[tema ?? ""] ?? ["--action", "--action-strong"];
+const Ikona = IKONE[(kategorija ?? "other") as keyof typeof IKONE] ?? Shapes;
+---
+<div
+  class={`relative flex items-end justify-end overflow-hidden ${klasa}`}
+  style={`background-image: linear-gradient(135deg, rgb(var(${od})) 0%, rgb(var(${do_})) 100%)`}
+  aria-hidden="true"
+>
+  <span class="absolute -left-6 -top-8 size-28 rounded-full bg-paper/10"></span>
+  <span class="absolute left-1/3 -bottom-10 size-24 rotate-45 rounded-md bg-paper/10"></span>
+  <Ikona size={40} class="relative m-4 text-paper/85" stroke-width={1.5} />
+</div>

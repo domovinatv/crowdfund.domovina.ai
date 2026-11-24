@@ -1,0 +1,87 @@
+---
+// Katalog organizacija /hr/organizacije (docs/07, pregled §8.4 funkcionalno): filtar kategorije kao
+// poveznice (bez JS-a, `aria-current`), abecedni popis (neutralan redoslijed), paginacija, CTA.
+import Base from "../../layouts/Base.astro";
+import KarticaOrganizacije from "../../components/katalog/KarticaOrganizacije.astro";
+import Paginacija from "../../components/katalog/Paginacija.astro";
+import { brojem } from "../../components/katalog/oblik";
+import { naStranicu, sUpitom } from "../../components/katalog/upit";
+import Building from "@lucide/astro/icons/building";
+import Plus from "@lucide/astro/icons/plus";
+import { url } from "../../lib/rute";
+import { ORGANIZACIJE, umetni } from "../sadrzaj/javni";
+import type { PropsStranice } from "../tipovi";
+import type { PodaciOrganizacija } from "./organisations.ucitaj";
+type Props = PropsStranice<PodaciOrganizacija>;
+const { lang, podaci } = Astro.props;
+const T = ORGANIZACIJE[lang];
+const { katalog, kategorije, kategorija } = podaci;
+const put = url(lang, "organisations");
+const upit = new URLSearchParams(podaci.upit);
+const izvanRaspona = katalog.ukupno > 0 && katalog.organizacije.length === 0;
+const izbor = [{ key: null as string | null, naziv: T.sve }, ...kategorije.map((k) => ({ key: k.key as string | null, naziv: lang === "hr" ? k.nameHr : k.nameEn }))];
+const naslovDokumenta = katalog.stranica > 1 ? `${T.naslov} (${katalog.stranica})` : T.naslov;
+---
+<Base lang={lang} title={naslovDokumenta} description={T.opis}>
+  <header class="max-w-[70ch]">
+    <h1 class="page-title text-ink">{T.naslov}</h1>
+    <p class="mt-2 text-ink-soft">{T.uvod}</p>
+  </header>
+
+  <nav aria-labelledby="filtar-org" class="mt-6">
+    <h2 id="filtar-org" class="text-sm font-semibold text-ink">{T.filtar}</h2>
+    <ul class="mt-2 flex flex-wrap gap-2">
+      {
+        izbor.map((k) => (
+          <li>
+            <a
+              href={sUpitom(put, k.key ? [["category", k.key]] : [])}
+              aria-current={(kategorija ?? null) === k.key ? "page" : undefined}
+              class="inline-flex min-h-11 items-center rounded-full px-4 text-sm font-medium text-ink-soft ring-1 ring-line hover:bg-mist aria-[current=page]:bg-action aria-[current=page]:text-paper aria-[current=page]:ring-action"
+            >
+              {k.naziv}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </nav>
+
+  <section class="mt-8" aria-labelledby="popis-org">
+    <h2 id="popis-org" class="text-xl font-semibold tabular-nums">{brojem(lang, "count.organisations", katalog.ukupno)}</h2>
+    {
+      katalog.ukupno === 0 ? (
+        <div class="mt-4 flex flex-col items-center rounded-lg bg-mist px-6 py-12 text-center">
+          <Building size={32} aria-hidden="true" class="text-action" />
+          <p class="mt-3 font-semibold">{T.praznoNaslov}</p>
+          <p class="mt-1 text-sm text-ink-muted">{T.praznoTekst}</p>
+        </div>
+      ) : izvanRaspona ? (
+        <div class="mt-4 flex flex-col items-center rounded-lg bg-mist px-6 py-12 text-center">
+          <p class="font-semibold">{umetni(T.izvanNaslov, { n: katalog.stranica })}</p>
+          <a href={naStranicu(put, upit, 1)} class="mt-4 inline-flex min-h-11 items-center rounded-md bg-action px-4 font-semibold text-paper hover:bg-action-strong">{T.naPrvu}</a>
+        </div>
+      ) : (
+        <ul class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {katalog.organizacije.map((o) => (
+            <li>
+              <KarticaOrganizacije lang={lang} o={o} />
+            </li>
+          ))}
+        </ul>
+      )
+    }
+    <Paginacija lang={lang} stranica={katalog.stranica} ukupnoStranica={katalog.ukupnoStranica} poveznica={(n: number) => naStranicu(put, upit, n)} />
+  </section>
+
+  <aside class="mt-12 flex flex-col gap-4 rounded-lg bg-mist p-6 md:flex-row md:items-center md:justify-between" aria-labelledby="cta-org">
+    <div class="max-w-[60ch]">
+      <h2 id="cta-org" class="text-xl font-semibold">{T.ctaNaslov}</h2>
+      <p class="mt-1 text-sm text-ink-soft">{T.ctaTekst}</p>
+    </div>
+    <a href={url(lang, "new-campaign")} class="inline-flex min-h-11 shrink-0 items-center gap-2 self-start rounded-md bg-action px-5 font-semibold text-paper hover:bg-action-strong md:self-auto">
+      <Plus size={18} aria-hidden="true" />
+      {T.ctaGumb}
+    </a>
+  </aside>
+</Base>

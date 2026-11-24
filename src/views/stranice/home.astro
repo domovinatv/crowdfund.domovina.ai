@@ -1,7 +1,129 @@
 ---
-import Naslovnica from "../../components/Naslovnica.astro";
+// Naslovnica /hr i /en (docs/07 „Javni dio”, pregled §8.2 funkcionalno): uvod i CTA, tri vrste kampanje,
+// urednički izbor (pravilo, ne plaćanje), brojači, kategorije s brojem aktivnih, najnovije aktivne.
+import Base from "../../layouts/Base.astro";
+import KarticaKampanje from "../../components/KarticaKampanje.astro";
+import Brojaci from "../../components/katalog/Brojaci.astro";
+import { brojem } from "../../components/katalog/oblik";
+import HandHeart from "@lucide/astro/icons/hand-heart";
+import Repeat from "@lucide/astro/icons/repeat";
+import Building from "@lucide/astro/icons/building";
+import ArrowRight from "@lucide/astro/icons/arrow-right";
+import Plus from "@lucide/astro/icons/plus";
+import { url } from "../../lib/rute";
+import { NASLOVNICA } from "../sadrzaj/javni";
 import type { PropsStranice } from "../tipovi";
-type Props = PropsStranice;
-const { lang } = Astro.props;
+import type { PodaciNaslovnice } from "./home.ucitaj";
+type Props = PropsStranice<PodaciNaslovnice>;
+const { lang, podaci } = Astro.props;
+const T = NASLOVNICA[lang];
+const IKONE = { one_time: HandHeart, recurring: Repeat, for_organization: Building };
+const katalog = url(lang, "campaigns");
+const veza = "inline-flex min-h-11 items-center gap-1.5 font-semibold text-action underline-offset-2 hover:underline";
 ---
-<Naslovnica lang={lang} />
+<Base lang={lang}>
+  <section class="py-4 sm:py-6">
+    <h1 class="page-title max-w-3xl text-ink">{T.naslov}</h1>
+    <p class="mt-3 max-w-[70ch] text-lg text-ink-soft">{T.uvod}</p>
+    <div class="mt-6 flex flex-wrap gap-3">
+      <a href={url(lang, "new-campaign")} class="inline-flex min-h-11 items-center gap-2 rounded-md bg-action px-5 font-semibold text-paper hover:bg-action-strong">
+        <Plus size={18} aria-hidden="true" />
+        {T.pokreni}
+      </a>
+      <a href={katalog} class="inline-flex min-h-11 items-center rounded-md px-5 font-semibold text-action ring-1 ring-action/30 hover:bg-action/10">{T.pregledaj}</a>
+    </div>
+  </section>
+
+  <section class="mt-10" aria-labelledby="vrste">
+    <h2 id="vrste" class="text-2xl font-semibold">{T.vrsteNaslov}</h2>
+    <ul class="mt-4 grid gap-4 md:grid-cols-3">
+      {
+        T.vrste.map((v) => {
+          const Ikona = IKONE[v.vrsta];
+          return (
+            <li class="flex flex-col rounded-md bg-mist p-5">
+              <Ikona size={28} aria-hidden="true" class="text-action" />
+              <h3 class="mt-3 text-lg font-semibold">{v.naslov}</h3>
+              <p class="mt-1 text-sm text-ink-soft">{v.opis}</p>
+              <div class="mt-auto flex flex-col pt-3">
+                <a href={`${katalog}?type=${v.vrsta}`} class={veza}>
+                  {v.katalog}
+                  <ArrowRight size={16} aria-hidden="true" />
+                </a>
+                <a href={url(lang, v.vise.kljuc)} class="inline-flex min-h-11 items-center text-sm text-ink-soft underline underline-offset-2 hover:text-action">{v.vise.tekst}</a>
+              </div>
+            </li>
+          );
+        })
+      }
+    </ul>
+  </section>
+
+  {
+    podaci.izbor.length > 0 && (
+      <section class="mt-12" aria-labelledby="izbor">
+        <h2 id="izbor" class="text-2xl font-semibold">{T.izborNaslov}</h2>
+        <p class="mt-1 max-w-[70ch] text-sm text-ink-soft">
+          {T.izborKriterij}{" "}
+          <a href={url(lang, "ranking")} class="font-semibold text-action underline underline-offset-2">{T.izborVeza}</a>
+        </p>
+        <ul class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {podaci.izbor.map((k) => (
+            <li>
+              <KarticaKampanje lang={lang} k={k} />
+            </li>
+          ))}
+        </ul>
+      </section>
+    )
+  }
+
+  <section class="mt-12" aria-labelledby="brojaci">
+    <h2 id="brojaci" class="text-2xl font-semibold">{T.brojaciNaslov}</h2>
+    <Brojaci lang={lang} b={podaci.brojaci} class="mt-4" />
+    <p class="mt-2 text-xs text-ink-muted">{T.brojaciNapomena}</p>
+  </section>
+
+  <section class="mt-12" aria-labelledby="kategorije">
+    <h2 id="kategorije" class="text-2xl font-semibold">{T.kategorijeNaslov}</h2>
+    <ul class="mt-4 grid grid-cols-1 gap-2 min-[420px]:grid-cols-2 md:grid-cols-4">
+      {
+        podaci.kategorije.map((k) => (
+          <li>
+            <a href={`${katalog}?category=${encodeURIComponent(k.key)}`} class="flex min-h-11 flex-col rounded-md px-4 py-3 ring-1 ring-line hover:bg-mist">
+              <span class="font-semibold text-ink">{lang === "hr" ? k.nameHr : k.nameEn}</span>
+              <span class="text-xs text-ink-muted tabular-nums">{brojem(lang, "count.active", k.brojAktivnih)}</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  <section class="mt-12" aria-labelledby="aktivne">
+    <div class="flex flex-wrap items-baseline justify-between gap-x-4">
+      <h2 id="aktivne" class="text-2xl font-semibold">{T.aktivneNaslov}</h2>
+      <a href={`${katalog}?sort=newest`} class={veza}>
+        {T.sveKampanje}
+        <ArrowRight size={16} aria-hidden="true" />
+      </a>
+    </div>
+    {
+      podaci.aktivne.length === 0 ? (
+        <div class="mt-4 flex flex-col items-center rounded-lg bg-mist px-6 py-12 text-center">
+          <HandHeart size={32} aria-hidden="true" class="text-action" />
+          <p class="mt-3 font-semibold">{T.praznoNaslov}</p>
+          <p class="mt-1 text-sm text-ink-muted">{T.praznoTekst}</p>
+        </div>
+      ) : (
+        <ul class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {podaci.aktivne.map((k) => (
+            <li>
+              <KarticaKampanje lang={lang} k={k} />
+            </li>
+          ))}
+        </ul>
+      )
+    }
+  </section>
+</Base>

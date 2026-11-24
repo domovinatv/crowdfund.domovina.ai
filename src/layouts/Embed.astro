@@ -1,0 +1,25 @@
+---
+// Mali layout za ugradnju u iframe (`/embed/{id}`, `/embed/{id}/stream`): bez zaglavlja, podnožja i
+// demo trake, `noindex`, bez vanjskih resursa. `prozirno` za overlay streama.
+import "../styles/global.css";
+import type { Lang } from "../i18n";
+
+interface Props {
+  lang: Lang;
+  title: string;
+  prozirno?: boolean;
+}
+const { lang, title, prozirno = false } = Astro.props;
+---
+<!doctype html>
+<html lang={lang} class:list={[prozirno && "bg-transparent"]}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>{title}</title>
+  </head>
+  <body class:list={["text-ink antialiased", prozirno ? "bg-transparent" : "bg-paper"]}>
+    <slot />
+  </body>
+</html>

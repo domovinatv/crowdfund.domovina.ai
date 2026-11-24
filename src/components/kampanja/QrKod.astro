@@ -1,0 +1,13 @@
+---
+// QR kod kao inline SVG generiran na poslužitelju (`qr.ts`); bez JS-a i vanjskih slika.
+import { qrSvg } from "./qr";
+
+interface Props {
+  tekst: string;
+  naslov: string;
+  class?: string;
+}
+const { tekst, naslov, class: klasa = "h-48 w-48" } = Astro.props;
+const svg = qrSvg(tekst, { naslov, atributi: `class="${klasa}"` });
+---
+<Fragment set:html={svg} />

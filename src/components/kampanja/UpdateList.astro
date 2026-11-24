@@ -1,0 +1,35 @@
+---
+// Novosti kampanje (docs/08 §3.2 UpdateList/UpdateItem): datum, naslov, tekst, broj komentara.
+import type { Lang } from "../../i18n";
+import type { Novost } from "../../lib/db/kampanja";
+import { KAMPANJA, mnozina } from "../../views/sadrzaj/kampanja";
+import { formatDatuma } from "./format";
+
+interface Props {
+  lang: Lang;
+  novosti: Novost[];
+}
+const { lang, novosti } = Astro.props;
+const T = KAMPANJA[lang].novosti;
+---
+{
+  novosti.length === 0 ? (
+    <p class="text-ink-muted">{T.prazno}</p>
+  ) : (
+    <ol class="space-y-4">
+      {novosti.map((n) => (
+        <li>
+          <article class="rounded-md bg-paper p-4 shadow-card">
+            <p class="text-sm text-ink-muted">
+              <time datetime={new Date(n.publishedAt).toISOString()}>{formatDatuma(lang, n.publishedAt)}</time>
+              {n.authorName && <span> · {T.objavio} {n.authorName}</span>}
+            </p>
+            {n.title && <h3 class="mt-1 text-lg font-semibold text-ink">{n.title}</h3>}
+            <p class="mt-2 whitespace-pre-line break-words text-ink-soft">{n.body}</p>
+            {n.brojKomentara > 0 && <p class="mt-2 text-sm text-ink-muted">{mnozina(lang, n.brojKomentara, T.komentara)}</p>}
+          </article>
+        </li>
+      ))}
+    </ol>
+  )
+}

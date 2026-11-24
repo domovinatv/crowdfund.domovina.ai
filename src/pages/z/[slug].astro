@@ -1,0 +1,44 @@
+---
+// Link za praćenje `/z/{slug}` (docs/04 tok 7): bilježi posjet (hash posjetitelja, isti posjetitelj
+// jednom u 10 min), postavlja kolačić atribucije na 30 dana i preusmjerava (302) na kampanju.
+// Sirovi IP i User-Agent se ne spremaju, samo HMAC s danom (`posjetitelj.ts`).
+import { env } from "cloudflare:workers";
+import { odaberiJezik } from "../../i18n";
+import { linkZaPracenje, zabiljeziPosjet } from "../../lib/db/kasice";
+import { url } from "../../lib/rute";
+import { ATRIBUCIJA_S, KOLACIC_ATRIBUCIJE, hashPosjetitelja } from "../../components/kampanja/posjetitelj";
+import NijePronadeno from "../../components/NijePronadeno.astro";
+
+const lang = odaberiJezik(Astro.cookies.get("lang")?.value, Astro.request.headers.get("accept-language"));
+const link = await linkZaPracenje(env.DB, Astro.params.slug ?? "");
+if (link) {
+  let ip = Astro.request.headers.get("cf-connecting-ip") ?? "";
+  if (!ip) {
+    try {
+      ip = Astro.clientAddress;
+    } catch {
+      ip = "nepoznato";
+    }
+  }
+  const tajna = (env as unknown as Record<string, unknown>).TAJNA_POSJETA;
+  const hash = await hashPosjetitelja(
+    { ip, userAgent: Astro.request.headers.get("user-agent") ?? "" },
+    typeof tajna === "string" && tajna ? tajna : undefined,
+  );
+  await zabiljeziPosjet(env.DB, link.id, hash);
+  Astro.cookies.set(KOLACIC_ATRIBUCIJE, link.id, {
+    path: "/",
+    maxAge: ATRIBUCIJA_S,
+    httpOnly: true,
+    sameSite: "lax",
+    secure: Astro.url.protocol === "https:",
+  });
+  // Bez predmemorije: svaki dolazak mora proći ovuda da se posjet zabilježi.
+  return new Response(null, {
+    status: 302,
+    headers: { Location: url(lang, "campaign", { id: link.publicId }), Vary: "Cookie, Accept-Language", "Cache-Control": "private, no-store" },
+  });
+}
+Astro.response.status = 404;
+---
+<NijePronadeno lang={lang} />

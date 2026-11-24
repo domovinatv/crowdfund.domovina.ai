@@ -1,0 +1,48 @@
+---
+// QR kampanje (pregled §4.4): QR poveznice na kampanju, preuzimanje SVG-a; trajni uplatni QR je S7.
+import ArrowLeft from "@lucide/astro/icons/arrow-left";
+import Download from "@lucide/astro/icons/download";
+import Hourglass from "@lucide/astro/icons/hourglass";
+import Base from "../../layouts/Base.astro";
+import QrKod from "../../components/kampanja/QrKod.astro";
+import { url } from "../../lib/rute";
+import { KAMPANJA, PODRUTE } from "../sadrzaj/kampanja";
+import type { PodaciQr } from "./campaign.qr.ucitaj";
+import type { PropsStranice } from "../tipovi";
+
+type Props = PropsStranice<PodaciQr>;
+const { lang, podaci } = Astro.props;
+const { k, cilj } = podaci;
+const T = PODRUTE[lang].qr;
+const put = url(lang, "campaign", { id: k.publicId });
+---
+<Base lang={lang} title={`${T.naslov} · ${k.title}`} noindex={k.noindex}>
+  <a href={put} class="inline-flex min-h-11 items-center gap-1 text-sm font-medium text-action underline-offset-2 hover:underline">
+    <ArrowLeft size={16} aria-hidden="true" />{KAMPANJA[lang].natrag}
+  </a>
+  <h1 class="page-title mt-2 text-ink">{T.naslov}</h1>
+  <p class="mt-1 text-lg text-ink-soft break-words">{k.title}</p>
+  <p class="mt-3 max-w-[70ch] text-ink-soft">{T.uvod}</p>
+
+  <div class="mt-6 flex flex-col gap-6 sm:flex-row sm:items-start">
+    <div class="w-fit rounded-md bg-paper p-3 shadow-card">
+      <QrKod tekst={cilj} naslov={`${T.opisSlike}: ${k.title}`} class="h-56 w-56 sm:h-64 sm:w-64" />
+    </div>
+    <div class="min-w-0">
+      <p class="text-sm text-ink-muted">{T.vodiNa}</p>
+      <p class="font-mono text-ink break-all">{cilj}</p>
+      <a href={`${url(lang, "campaign.qr", { id: k.publicId })}?format=svg`} download={`qr-${k.publicId}.svg`}
+        class="mt-4 inline-flex min-h-11 items-center gap-2 rounded-md bg-action px-5 font-semibold text-paper hover:bg-action-strong">
+        <Download size={18} aria-hidden="true" />{T.preuzmi}
+      </a>
+      <p class="mt-2 text-sm text-ink-muted">{T.png}</p>
+    </div>
+  </div>
+
+  <section aria-labelledby="uplatni-qr" class="mt-10 max-w-[70ch] rounded-md border border-dashed border-ink-muted/60 p-4">
+    <h2 id="uplatni-qr" class="flex items-center gap-2 text-xl font-semibold text-ink">
+      <Hourglass size={20} aria-hidden="true" class="text-warning" />{T.uplatniNaslov}
+    </h2>
+    <p class="mt-2 text-ink-soft">{T.uplatniTekst}</p>
+  </section>
+</Base>

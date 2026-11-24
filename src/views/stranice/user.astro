@@ -1,0 +1,107 @@
+---
+// Javni profil osobe /hr/u/{slug} (docs/07, ekran 12): samo ono što prekidači vidljivosti dopuštaju
+// (upit vraća null za isključeno, pa se ni ne crta); `noindex` kad korisnik nije dopustio indeksiranje.
+// Sekcija s isključenim prekidačem se ne prikazuje; uključena a prazna kaže da je prazna.
+import Base from "../../layouts/Base.astro";
+import KarticaKampanje from "../../components/KarticaKampanje.astro";
+import { datum, iznos } from "../../components/katalog/oblik";
+import CalendarDays from "@lucide/astro/icons/calendar-days";
+import Mail from "@lucide/astro/icons/mail";
+import Phone from "@lucide/astro/icons/phone";
+import Globe from "@lucide/astro/icons/globe";
+import Flag from "@lucide/astro/icons/flag";
+import { url } from "../../lib/rute";
+import type { PunaKartica } from "../../lib/db/zajednicko";
+import { PROFIL_OSOBE, umetni } from "../sadrzaj/javni";
+import type { PropsStranice } from "../tipovi";
+import type { ProfilKorisnika } from "../../lib/db/profili";
+type Props = PropsStranice<ProfilKorisnika>;
+const { lang, podaci: p } = Astro.props;
+const T = PROFIL_OSOBE[lang];
+const ime = p.displayName?.trim() || T.bezImena;
+const inicijal = ime.charAt(0).toUpperCase();
+const webHref = p.website && /^https?:\/\//i.test(p.website) ? p.website : null;
+const sekcije: { id: string; naslov: string; napomena?: string; kartice: PunaKartica[] | null }[] = [
+  { id: "kampanje", naslov: T.vlastite, kartice: p.kampanje.vlastite },
+  { id: "za-organizacije", naslov: T.zaOrganizacije, kartice: p.kampanje.zaOrganizacije },
+  { id: "podrzane", naslov: T.podrzane, kartice: p.kampanje.podrzane },
+  { id: "promovira", naslov: T.promovirane, napomena: T.promoviraneNapomena, kartice: p.kampanje.promovirane },
+];
+const stavka = "flex min-w-0 items-center gap-1.5";
+---
+<Base lang={lang} title={ime} description={p.about?.slice(0, 160) || T.opis} noindex={p.noindex}>
+  <header class="flex flex-col gap-4 sm:flex-row sm:items-start">
+    <span class="flex size-16 shrink-0 items-center justify-center rounded-full bg-action text-2xl font-bold text-paper" aria-hidden="true">{inicijal}</span>
+    <div class="min-w-0 max-w-[70ch]">
+      <h1 class="page-title break-words text-ink">{ime}</h1>
+      {p.about && <p class="mt-2 whitespace-pre-line text-ink-soft">{p.about}</p>}
+      <ul class="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-ink-soft">
+        {
+          p.registeredAt !== null && (
+            <li class={stavka}>
+              <CalendarDays size={16} aria-hidden="true" class="shrink-0" />
+              {umetni(T.odDatuma, { datum: datum(lang, p.registeredAt) })}
+            </li>
+          )
+        }
+        {
+          webHref && (
+            <li class={stavka}>
+              <Globe size={16} aria-hidden="true" class="shrink-0" />
+              <span class="sr-only">{T.web}:</span>
+              <a href={webHref} rel="nofollow ugc noopener" class="truncate text-action underline underline-offset-2">{webHref.replace(/^https?:\/\//i, "")}</a>
+            </li>
+          )
+        }
+        {
+          p.email && (
+            <li class={stavka}>
+              <Mail size={16} aria-hidden="true" class="shrink-0" />
+              <span class="sr-only">{T.eposta}:</span>
+              <a href={`mailto:${p.email}`} class="truncate text-action underline underline-offset-2">{p.email}</a>
+            </li>
+          )
+        }
+        {
+          p.phone && (
+            <li class={stavka}>
+              <Phone size={16} aria-hidden="true" class="shrink-0" />
+              <span class="sr-only">{T.telefon}:</span>
+              <a href={`tel:${p.phone.replace(/\s+/g, "")}`} class="text-action underline underline-offset-2">{p.phone}</a>
+            </li>
+          )
+        }
+      </ul>
+      {p.totalRaisedCents !== null && <p class="mt-3 text-sm font-semibold text-ink tabular-nums">{umetni(T.ukupno, { iznos: iznos(lang, p.totalRaisedCents) })}</p>}
+    </div>
+  </header>
+
+  {
+    sekcije
+      .filter((s) => s.kartice !== null)
+      .map((s) => (
+        <section class="mt-10" aria-labelledby={s.id}>
+          <h2 id={s.id} class="text-2xl font-semibold">{s.naslov}</h2>
+          {s.napomena && <p class="mt-1 text-sm text-ink-soft">{s.napomena}</p>}
+          {s.kartice!.length === 0 ? (
+            <p class="mt-3 rounded-md bg-mist px-4 py-6 text-sm text-ink-muted">{T.prazno}</p>
+          ) : (
+            <ul class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {s.kartice!.map((k) => (
+                <li>
+                  <KarticaKampanje lang={lang} k={k} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      ))
+  }
+
+  <p class="mt-12 border-t border-line pt-4 text-sm">
+    <a href={`${url(lang, "report")}?target=user&id=${encodeURIComponent(p.slug)}`} class="inline-flex min-h-11 items-center gap-1.5 text-ink-soft underline underline-offset-2 hover:text-action">
+      <Flag size={14} aria-hidden="true" />
+      {T.prijavi}
+    </a>
+  </p>
+</Base>

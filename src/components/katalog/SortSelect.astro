@@ -1,0 +1,53 @@
+---
+// Odabir redoslijeda kataloga (odluka 501): svih 7 javno opisanih redoslijeda, GET obrazac bez JS-a
+// (gumb „Primijeni”). Ostali parametri upita idu kao skrivena polja; stranica se vraća na prvu.
+// Opis odabranog kriterija stoji ispod, uz link na pravila prikaza (DSA čl. 27).
+import ArrowUpDown from "@lucide/astro/icons/arrow-up-down";
+import { prevoditelj, type Lang } from "../../i18n";
+import { OPIS_REDOSLIJEDA, REDOSLIJEDI, type Redoslijed } from "../../lib/redoslijedi";
+import { url } from "../../lib/rute";
+import type { Parovi } from "./upit";
+
+interface Props {
+  lang: Lang;
+  /** Put na koji obrazac šalje (`url(lang, "campaigns")`). */
+  akcija: string;
+  sort: Redoslijed;
+  /** Ostali parametri upita bez `sort` i `page`. */
+  skriveni: Parovi;
+  class?: string;
+}
+const { lang, akcija, sort, skriveni, class: klasa = "" } = Astro.props;
+const t = prevoditelj(lang);
+const opis = OPIS_REDOSLIJEDA[sort][lang];
+---
+<form method="get" action={akcija} class={`flex flex-col gap-1 ${klasa}`}>
+  {skriveni.map(([k, v]) => <input type="hidden" name={k} value={v} />)}
+  <label for="sort" class="flex items-center gap-1.5 text-sm font-semibold text-ink">
+    <ArrowUpDown size={16} aria-hidden="true" />
+    {t("catalog.sort")}
+  </label>
+  <div class="flex gap-2">
+    <select
+      id="sort"
+      name="sort"
+      aria-describedby="sort-opis"
+      class="min-h-11 min-w-0 flex-1 rounded-md border border-line bg-paper px-3 text-ink"
+    >
+      {
+        REDOSLIJEDI.map((r) => (
+          <option value={r} selected={r === sort} title={OPIS_REDOSLIJEDA[r][lang].opis}>
+            {OPIS_REDOSLIJEDA[r][lang].naziv}
+          </option>
+        ))
+      }
+    </select>
+    <button type="submit" class="inline-flex min-h-11 shrink-0 items-center rounded-md px-4 text-sm font-semibold text-action ring-1 ring-action/30 hover:bg-action/10">
+      {t("catalog.apply")}
+    </button>
+  </div>
+  <p id="sort-opis" class="text-xs text-ink-muted">
+    {opis.opis}
+    <a href={url(lang, "ranking")} class="ml-1 font-semibold text-action underline-offset-2 hover:underline">{t("catalog.howWeSort")}</a>
+  </p>
+</form>

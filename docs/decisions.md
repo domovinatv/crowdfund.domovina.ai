@@ -236,3 +236,30 @@ koja se na nju poziva. Blokovi brojeva po sesiji: S1 od 100, S1b od 150, S2 od 2
 517. **Impresum i pravni tekstovi:** neprovjereni podaci ITalka (OIB, sjedište, registar, odgovorna osoba) stoje
      kao „[upisuje se prije objave]”; uvjeti i privatnost nose oznaku „Nacrt prototipa”. Tvrdnje koje dokumenti ne
      pokrivaju doslovno (instant SEPA ne skuplja od obične, AZOP, Safe „npr. 2 od 3”) provjeriti prije objave. (potvrditi)
+518. **`/hr` i `/en` hvata `src/pages/[id].astro`** (Astro ga za jedan segment rangira iznad `[lang]/[...put]`);
+     on za `hr`/`en` crta naslovnicu istim pogledom i učitavačem kao dispečer. (potvrditi; alternativa su
+     `src/pages/{hr,en}/index.astro` koji zovu dispečer)
+519. **QR kampanje kodira kratki link `/{id}`** (jezik se bira pri skeniranju), korekcija M, margina 4 modula;
+     ovisnost `uqr@0.1.3` (čisti JS), SVG renderer vlastiti; samo SVG preuzimanje, bez PNG-a. Uplatni QR je S7.
+520. **Apsolutni linkovi** (QR, dijeljenje, kod widgeta) grade se iz origina zahtjeva, pa rade i lokalno.
+521. **Popis uplata bez JS-a:** `?contributions=latest|highest` i `?contributions_page=N` (engleski ključevi, odluka
+     303), 10 po stranici kumulativno, najviše 9 stranica (`uplateKampanje` ograničava `limit` na 100).
+522. **Checkout korak 1 (`/hr/{id}/podrzi`) je stub do S7;** kampanja koja ne prima uplate vraća 200 s porukom i
+     `noindex`; `?s=` se prikazuje samo ako kasica pripada kampanji.
+523. **„Prati” POST** vraća 303 na `?prati=s6#prati` i ništa ne sprema (sesije i e-pošta neprijavljenog su S6).
+524. **DSA prijava:** izjava u dobroj vjeri je zasebna kućica; bez nje `spremiPrijavu` samo validira i ništa ne piše.
+525. **Posjet linku za praćenje:** hash posjetitelja = HMAC-SHA256(UTC dan, IP, User-Agent) s ključem `TAJNA_POSJETA`
+     (lokalno demo), sirovi IP se ne sprema; kolačić `atribucija` (id linka, 30 dana, HttpOnly, Lax); `/z` je `no-store`.
+526. **Velika slova u ID-u kampanje ili aliasu kasice → 301 na mala;** neaktivna kasica ili link → 404.
+527. **Embed stranice** su `noindex`, linkovi se otvaraju u novoj kartici; `target=support` pada na link kampanje
+     kad ona ne prima uplate.
+528. **CSS za ispis plakata** je izvan `@layer` (iznimka od pravila `global.css`) da nadjača Tailwind u ispisu.
+529. **Katalog:** učitavač preusmjerava (302) na čisti upit (bez praznih polja, bez `page=1`), jer GET obrazac bez
+     JS-a šalje prazna polja; stranica iza zadnje vraća 200 s linkom na prvu. Filtri su `<details>`, zatvoreni na
+     mobitelu, otvoreni na desktopu (`::details-content`).
+530. **Naslovnica:** 3 vrste kampanje, urednički izbor (3), brojači, kategorije s brojem, 6 najnovijih aktivnih.
+     Kartice uvijek crtaju temu naslovnice (gradijent iz tokena + ikona kategorije); vanjske slike se ne učitavaju.
+531. **Profil organizacije:** CTA „Pokreni kampanju za ovu organizaciju” samo kad je `is_fixed_beneficiary = 1`;
+     katalog organizacija filtrira kategoriju linkovima, abecedno. Profili osobe i organizacije imaju link „Prijavi”.
+532. **Seed „sad” (2026-11-20) i stvarni sat se razilaze:** stranice računaju rok od stvarnog datuma, pa dio demo
+     kampanja pokazuje „rok je prošao”. Popravak u S6: seed relativno na datum seedanja ili `DEMO_SAD` u okolini.

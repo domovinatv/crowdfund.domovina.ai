@@ -1,0 +1,38 @@
+---
+// Overlay za stream (`/embed/{id}/stream`, docs/02 Streaming widget): naslov i napredak na prozirnoj
+// pozadini za OBS i slične alate. Nije u fazi 1 (oznaka). Kampanja koja nije javno vidljiva → 404.
+import { env } from "cloudflare:workers";
+import Embed from "../../../layouts/Embed.astro";
+import PhaseBadge from "../../../components/PhaseBadge.astro";
+import ProgressBar from "../../../components/ProgressBar.astro";
+import { formatNovca } from "../../../components/kampanja/format";
+import { isLang, type Lang } from "../../../i18n";
+import { kampanjaPoJavnomId } from "../../../lib/db/kampanja";
+import { PODRUTE } from "../../../views/sadrzaj/kampanja";
+
+const q = Astro.url.searchParams;
+const lang: Lang = isLang(q.get("lang")) ? (q.get("lang") as Lang) : "hr";
+const k = await kampanjaPoJavnomId(env.DB, Astro.params.id ?? "");
+if (!k) Astro.response.status = 404;
+const T = PODRUTE[lang].ugradnja;
+const novac = formatNovca(lang, k?.currency ?? "EUR");
+---
+<Embed lang={lang} title={k ? `${T.stream} · ${k.title}` : "404"} prozirno>
+  {
+    k ? (
+      <div class="m-3 max-w-xl rounded-md bg-ink/85 p-4 text-paper">
+        <p class="flex flex-wrap items-center gap-2 text-xs opacity-80">{T.stream} <PhaseBadge lang={lang} /></p>
+        <p class="mt-1 text-xl leading-tight font-bold break-words">{k.title}</p>
+        {k.statistika.raisedCents !== null && (
+          <p class="mt-2 text-lg tabular-nums">
+            <strong>{novac(k.statistika.raisedCents)}</strong>
+            {k.goalCents && <span class="opacity-80"> / {novac(k.goalCents)}</span>}
+          </p>
+        )}
+        <ProgressBar lang={lang} raisedCents={k.statistika.raisedCents} goalCents={k.goalCents} class="mt-2" />
+      </div>
+    ) : (
+      <p class="p-4 text-sm">404</p>
+    )
+  }
+</Embed>

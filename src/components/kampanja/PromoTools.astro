@@ -1,0 +1,42 @@
+---
+// Alati za promociju (docs/08 §3.2 PromoTools): QR, plakat, widget; link za praćenje traži prijavu (S6).
+import Code from "@lucide/astro/icons/code";
+import Link from "@lucide/astro/icons/link";
+import Printer from "@lucide/astro/icons/printer";
+import QrCode from "@lucide/astro/icons/qr-code";
+import type { Lang } from "../../i18n";
+import { url } from "../../lib/rute";
+import { KAMPANJA } from "../../views/sadrzaj/kampanja";
+
+interface Props {
+  lang: Lang;
+  publicId: string;
+}
+const { lang, publicId } = Astro.props;
+const T = KAMPANJA[lang].promo;
+const p = { id: publicId };
+const alati = [
+  { href: url(lang, "campaign.qr", p), Ikona: QrCode, naslov: T.qr, opis: T.qrOpis },
+  { href: url(lang, "campaign.poster", p), Ikona: Printer, naslov: T.plakat, opis: T.plakatOpis },
+  { href: url(lang, "campaign.widget", p), Ikona: Code, naslov: T.widget, opis: T.widgetOpis },
+];
+---
+<div>
+  <h3 class="text-lg font-semibold text-ink">{T.naslov}</h3>
+  <ul class="mt-3 grid gap-2 sm:grid-cols-2">
+    {
+      alati.map(({ href, Ikona, naslov, opis }) => (
+        <li>
+          <a href={href} class="flex min-h-11 items-start gap-3 rounded-md p-3 ring-1 ring-line hover:bg-mist">
+            <Ikona size={20} aria-hidden="true" class="mt-0.5 shrink-0 text-action" />
+            <span><span class="block font-semibold text-ink">{naslov}</span><span class="block text-sm text-ink-muted">{opis}</span></span>
+          </a>
+        </li>
+      ))
+    }
+    <li class="flex items-start gap-3 rounded-md p-3 ring-1 ring-line ring-dashed">
+      <Link size={20} aria-hidden="true" class="mt-0.5 shrink-0 text-ink-muted" />
+      <span><span class="block font-semibold text-ink-soft">{T.link}</span><span class="block text-sm text-ink-muted">{T.linkOpis}</span></span>
+    </li>
+  </ul>
+</div>

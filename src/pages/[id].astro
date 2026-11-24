@@ -1,0 +1,51 @@
+---
+// Kratki link kampanje `/{id}` (docs/07 konvencija 2, odluka 301): 302 na `/{lang}/{id}` po kolačiću
+// `lang`, pa `Accept-Language`, zadano hr. Samo za postojeću javno vidljivu kampanju, inače 404.
+//
+// Astro jednosegmentnim putovima daje prednost ovoj ruti pred `[lang]/[...put]` (kraća ruta bez rest
+// parametra je specifičnija), pa `/hr` i `/en` stižu ovamo: za njih se crta naslovnica istim putem kao
+// u dispečeru (pogled + učitavač ključa `home`, odluka 500).
+import { env } from "cloudflare:workers";
+import { isLang, odaberiJezik } from "../i18n";
+import { kampanjaPoJavnomId } from "../lib/db/kampanja";
+import { url } from "../lib/rute";
+import { pogled, ucitavac } from "../views/registar";
+import NijePronadeno from "../components/NijePronadeno.astro";
+
+const { id = "" } = Astro.params;
+const jezikPosjetitelja = odaberiJezik(Astro.cookies.get("lang")?.value, Astro.request.headers.get("accept-language"));
+let Pogled: ReturnType<typeof pogled>;
+let podaci: unknown = null;
+let nema = true;
+
+if (isLang(id)) {
+  Pogled = pogled("home");
+  if (Pogled) {
+    const ucitaj = ucitavac("home");
+    const r = ucitaj
+      ? await ucitaj({ lang: id, params: {}, url: Astro.url, request: Astro.request, cookies: Astro.cookies, db: env.DB })
+      : { podaci: null };
+    if (r instanceof Response) {
+      if (r.status !== 404) return r;
+    } else {
+      podaci = r.podaci;
+      nema = false;
+    }
+  }
+} else {
+  const k = await kampanjaPoJavnomId(env.DB, id);
+  if (k) {
+    return new Response(null, {
+      status: 302,
+      headers: {
+        Location: url(jezikPosjetitelja, "campaign", { id: k.publicId }) + Astro.url.search,
+        Vary: "Cookie, Accept-Language",
+        "Cache-Control": "private, no-store",
+      },
+    });
+  }
+}
+if (nema) Astro.response.status = 404;
+const jezik = isLang(id) ? id : jezikPosjetitelja;
+---
+{nema || !Pogled ? <NijePronadeno lang={jezik} /> : <Pogled lang={jezik} params={{}} podaci={podaci} />}

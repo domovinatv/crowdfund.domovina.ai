@@ -1,0 +1,62 @@
+---
+// Checkout korak 1 (docs/08 §5.2) kao stub do S7: sažetak kampanje, kasica iz `?s=`, jasna poruka.
+import ArrowLeft from "@lucide/astro/icons/arrow-left";
+import Hourglass from "@lucide/astro/icons/hourglass";
+import PiggyBank from "@lucide/astro/icons/piggy-bank";
+import ShieldCheck from "@lucide/astro/icons/shield-check";
+import Base from "../../layouts/Base.astro";
+import CampaignStats from "../../components/kampanja/CampaignStats.astro";
+import PausedNotice from "../../components/kampanja/PausedNotice.astro";
+import { url } from "../../lib/rute";
+import { KAMPANJA, PODRUTE } from "../sadrzaj/kampanja";
+import type { PodaciPodrske } from "./campaign.support.ucitaj";
+import type { PropsStranice } from "../tipovi";
+
+type Props = PropsStranice<PodaciPodrske>;
+const { lang, podaci } = Astro.props;
+const { k, kasica } = podaci;
+const T = PODRUTE[lang].podrska;
+---
+<Base lang={lang} title={`${T.naslov} · ${k.title}`} noindex>
+  <div class="mx-auto max-w-2xl">
+    <a href={url(lang, "campaign", { id: k.publicId })} class="inline-flex min-h-11 items-center gap-1 text-sm font-medium text-action underline-offset-2 hover:underline">
+      <ArrowLeft size={16} aria-hidden="true" />{KAMPANJA[lang].natrag}
+    </a>
+    <h1 class="page-title mt-2 text-ink">{T.naslov}</h1>
+
+    <div class="mt-4 rounded-md bg-paper p-4 shadow-card">
+      <p class="text-lg font-semibold text-ink break-words">{k.title}</p>
+      <p class="text-sm text-ink-muted">{KAMPANJA[lang].organizator}: {k.organizator.name}</p>
+      <CampaignStats lang={lang} k={k} class="mt-3" />
+    </div>
+
+    {
+      kasica && (
+        <p class="mt-4 flex gap-2 rounded-md bg-mist p-3 text-sm text-ink-soft">
+          <PiggyBank size={18} aria-hidden="true" class="mt-0.5 shrink-0 text-action" />
+          <span>
+            {T.kasica} <a href={url(lang, "moneybox", { alias: kasica.alias })} class="font-semibold text-ink underline underline-offset-2">{kasica.title}</a>
+            {kasica.ownerName && <> {T.kasicuVodi} {kasica.ownerName}</>}.
+          </span>
+        </p>
+      )
+    }
+
+    {
+      k.primaUplate ? (
+        <section aria-labelledby="s7" class="mt-6 rounded-md border border-dashed border-warning/60 bg-warning-bg p-4">
+          <h2 id="s7" class="flex items-center gap-2 text-lg font-semibold text-warning">
+            <Hourglass size={20} aria-hidden="true" />{T.s7Naslov}
+          </h2>
+          <p class="mt-2 text-ink-soft">{T.s7Tekst}</p>
+        </section>
+      ) : (
+        <div class="mt-6"><PausedNotice lang={lang} stanje={k.stanje} /></div>
+      )
+    }
+
+    <p class="mt-6 flex gap-2 text-sm text-ink-muted">
+      <ShieldCheck size={18} aria-hidden="true" class="mt-0.5 shrink-0" />{T.novac}
+    </p>
+  </div>
+</Base>

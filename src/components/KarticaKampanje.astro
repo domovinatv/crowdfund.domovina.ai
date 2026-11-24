@@ -1,58 +1,103 @@
 ---
-// Kartica kampanje (docs/08 §3.2), bez stanja. Link na /{lang}/{public_id}.
+// Kartica kampanje (docs/08 §3.2 `CampaignCard`), bez stanja: tema, kategorija, naslov u 2 retka,
+// organizator + oznaka verifikacije, ProgressBar, iznos, % i dani do kraja; mjesečna „€ mjesečno · € ukupno
+// · podržavatelja”. Skriveno (null iz upita, odluka 406) se ne crta kao 0: piše „Iznos skriven” ili ništa.
+// Polja koja puni samo katalog (`kind`, `verified`, `daysLeft`, …) su opcionalna, pa radi i s `aktivneKampanje()`.
 import Building from "@lucide/astro/icons/building";
-import { LOCALE, prevoditelj, type Lang } from "../i18n";
+import BadgeCheck from "@lucide/astro/icons/badge-check";
+import EyeOff from "@lucide/astro/icons/eye-off";
+import Clock from "@lucide/astro/icons/clock";
+import ProgressBar from "./ProgressBar.astro";
+import TemaNaslovne from "./katalog/TemaNaslovne.astro";
+import { brojem, iznos } from "./katalog/oblik";
+import { prevoditelj, type Lang } from "../i18n";
 import type { KarticaKampanje } from "../lib/db/kampanje";
 import { url } from "../lib/rute";
 
 interface Props {
   lang: Lang;
   k: KarticaKampanje;
+  /** Razina naslova kartice (zadano h3: kartice stoje pod `h2` odjeljka). */
+  razina?: "h2" | "h3";
 }
-const { lang, k } = Astro.props;
+const { lang, k, razina = "h3" } = Astro.props;
 const t = prevoditelj(lang);
-const novac = new Intl.NumberFormat(LOCALE[lang], { style: "currency", currency: k.currency, maximumFractionDigits: 0 });
-const iznos = (c: number) => novac.format(c / 100);
-const prikupljeno = k.raisedCents;
-const postotak = prikupljeno !== null && k.goalCents ? Math.min(100, Math.round((prikupljeno / k.goalCents) * 100)) : null;
+const Naslov = razina;
 const kategorija = lang === "hr" ? k.categoryHr : k.categoryEn;
+const mjesecna = k.kind === "recurring";
+const zaOrganizaciju = k.kind === "for_organization";
+const novac = (c: number) => iznos(lang, c, k.currency);
+
+let rok: string | null = null;
+if (k.state === "closed") rok = t("card.closed");
+else if (k.state === "paused") rok = t("card.paused");
+else if (k.daysLeft === 0) rok = t("card.ended");
+else if (typeof k.daysLeft === "number") rok = brojem(lang, "card.daysLeft", k.daysLeft);
+else if (k.daysLeft === null) rok = t("card.noEnd");
 ---
-<article class="flex h-full flex-col rounded-md bg-paper p-4 shadow-card">
-  <div class="flex items-center gap-2 text-xs text-ink-muted">
-    {kategorija && <span class="rounded-sm bg-mist px-2 py-0.5 font-medium text-ink-soft">{kategorija}</span>}
-    {k.demo && <span class="rounded-sm bg-warning-bg px-2 py-0.5 font-medium text-warning">{t("demo.badge")}</span>}
-  </div>
-  <h3 class="mt-3 text-lg font-semibold leading-tight">
-    <a href={url(lang, "campaign", { id: k.publicId })} class="hover:text-action hover:underline">{k.title}</a>
-  </h3>
-  <p class="mt-1 flex items-center gap-1 text-sm text-ink-soft">
-    <Building size={16} aria-hidden="true" />
-    <span class="sr-only">{t("card.by")}:</span>
-    {k.organizerName}
-  </p>
-  <div class="mt-auto pt-4">
-    {
-      prikupljeno !== null && (
-        <>
-          {postotak !== null && (
-            <div
-              class="h-2 overflow-hidden rounded-full bg-progress/15"
-              role="progressbar"
-              aria-label={t("card.progress")}
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={postotak}
-            >
-              <div class="h-full rounded-full bg-progress" style={`width: ${postotak}%`} />
-            </div>
-          )}
-          <p class="mt-2 text-sm tabular-nums">
-            <strong class="text-base text-ink">{iznos(prikupljeno)}</strong> {t("card.raised")}
-            {k.goalCents ? <span class="text-ink-muted"> {t("card.of")} {iznos(k.goalCents)}</span> : <span class="text-ink-muted"> · {t("card.noGoal")}</span>}
+<article class="flex h-full flex-col overflow-hidden rounded-md bg-paper shadow-card">
+  <TemaNaslovne tema={k.coverTheme ?? null} kategorija={k.categoryKey} class="h-24 shrink-0" />
+  <div class="flex flex-1 flex-col p-4">
+    <div class="flex flex-wrap items-center gap-1.5 text-xs">
+      {kategorija && <span class="rounded-sm bg-mist px-2 py-0.5 font-medium text-ink-soft">{kategorija}</span>}
+      {mjesecna && <span class="rounded-sm bg-action/10 px-2 py-0.5 font-medium text-action">{t("card.monthly")}</span>}
+      {zaOrganizaciju && <span class="rounded-sm bg-success-bg px-2 py-0.5 font-medium text-success">{t("card.forOrganisation")}</span>}
+      {k.demo && <span class="rounded-sm bg-warning-bg px-2 py-0.5 font-medium text-warning">{t("demo.badge")}</span>}
+    </div>
+    <Naslov class="mt-2 line-clamp-2 text-lg font-semibold leading-tight">
+      <a href={url(lang, "campaign", { id: k.publicId })} class="hover:text-action hover:underline">{k.title}</a>
+    </Naslov>
+    <p class="mt-1 flex min-w-0 items-center gap-1 text-sm text-ink-soft">
+      <Building size={16} aria-hidden="true" class="shrink-0" />
+      <span class="sr-only">{t("card.by")}:</span>
+      {
+        k.organizationSlug ? (
+          <a href={url(lang, "org", { slug: k.organizationSlug })} class="truncate hover:text-action hover:underline">{k.organizerName}</a>
+        ) : (
+          <span class="truncate">{k.organizerName}</span>
+        )
+      }
+      {
+        k.verified && (
+          <span class="inline-flex shrink-0 text-success" title={t("card.verified")}>
+            <BadgeCheck size={16} aria-hidden="true" />
+            <span class="sr-only">({t("card.verified")})</span>
+          </span>
+        )
+      }
+    </p>
+
+    <div class="mt-auto pt-4">
+      <ProgressBar lang={lang} raisedCents={k.raisedCents} goalCents={k.goalCents} showLabel />
+      {
+        k.raisedCents === null ? (
+          <p class="mt-2 flex items-center gap-1 text-sm text-ink-muted">
+            <EyeOff size={14} aria-hidden="true" />
+            {t("card.hiddenAmount")}
           </p>
-        </>
-      )
-    }
-    {k.contributorCount !== null && <p class="mt-1 text-xs text-ink-muted tabular-nums">{k.contributorCount} {t("card.contributors")}</p>}
+        ) : mjesecna && typeof k.monthlyCents === "number" ? (
+          <p class="mt-2 text-sm tabular-nums">
+            <strong class="text-base text-ink">{novac(k.monthlyCents)}</strong> {t("card.perMonth")}
+            <span class="text-ink-muted"> · {novac(k.raisedCents)} {t("card.total")}</span>
+          </p>
+        ) : (
+          <p class="mt-2 text-sm tabular-nums">
+            <strong class="text-base text-ink">{novac(k.raisedCents)}</strong> {t("card.raised")}
+            {k.goalCents ? <span class="text-ink-muted"> {t("card.of")} {novac(k.goalCents)}</span> : <span class="text-ink-muted"> · {t("card.noGoal")}</span>}
+          </p>
+        )
+      }
+      <p class="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-ink-muted tabular-nums">
+        {k.contributorCount !== null && <span>{brojem(lang, "card.supporters", k.contributorCount)}</span>}
+        {
+          rok && (
+            <span class="inline-flex items-center gap-1">
+              <Clock size={12} aria-hidden="true" />
+              {rok}
+            </span>
+          )
+        }
+      </p>
+    </div>
   </div>
 </article>

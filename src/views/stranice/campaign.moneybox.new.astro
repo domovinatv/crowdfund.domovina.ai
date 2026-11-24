@@ -1,0 +1,11 @@
+---
+// Nova kasica (P): neprijavljeni ne dolaze do pogleda (učitavač, 302). Obrazac s ekrana 24 je S6.
+import Base from "../../layouts/Base.astro";
+import type { PropsStranice } from "../tipovi";
+type Props = PropsStranice;
+const { lang } = Astro.props;
+const naslov = lang === "hr" ? "Nova kasica" : "New moneybox";
+---
+<Base lang={lang} title={naslov} noindex>
+  <h1 class="page-title text-ink">{naslov}</h1>
+</Base>

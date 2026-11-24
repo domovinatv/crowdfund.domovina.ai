@@ -1,0 +1,82 @@
+---
+// Popis uplata (docs/08 §3.2 ContributorList): „Najnovije | Najveće” kao obične poveznice, red: vrijeme,
+// ime ili „Anonimno”, iznos ili „iznos skriven”, poruka. „Prikaži još” bez JS-a (`?contributions_page=`).
+import Lock from "@lucide/astro/icons/lock";
+import type { Lang } from "../../i18n";
+import type { UplateKampanje } from "../../lib/db/kampanja";
+import { KAMPANJA } from "../../views/sadrzaj/kampanja";
+import { formatNovca, relativnoVrijeme } from "./format";
+
+interface Props {
+  lang: Lang;
+  uplate: UplateKampanje;
+  currency: string;
+  /** Kampanja skriva prikupljeno: redoslijed „Najveće” se ne nudi (odluka 505). */
+  samoPoVremenu: boolean;
+  /** Put stranice kampanje (bez upita) za poveznice redoslijeda i „još”. */
+  put: string;
+  stranica: number;
+  josIma: boolean;
+}
+const { lang, uplate, currency, samoPoVremenu, put, stranica, josIma } = Astro.props;
+const T = KAMPANJA[lang].uplate;
+const novac = formatNovca(lang, currency);
+const veza = (sort: string, str = 1) => `${put}?contributions=${sort}${str > 1 ? `&contributions_page=${str}` : ""}#uplate`;
+const sad = Date.now();
+---
+{
+  uplate.skriveno ? (
+    <p class="flex items-center gap-2 text-ink-muted"><Lock size={16} aria-hidden="true" />{T.skriveno}</p>
+  ) : (
+    <div>
+      {samoPoVremenu ? (
+        <p class="text-sm text-ink-muted">{T.samoPoVremenu}</p>
+      ) : (
+        <nav aria-label={T.redoslijed} class="flex gap-1 text-sm">
+          {(["latest", "highest"] as const).map((s) => (
+            <a
+              href={veza(s)}
+              aria-current={uplate.sort === s ? "true" : undefined}
+              class:list={[
+                "inline-flex min-h-11 items-center rounded-sm px-3 font-medium",
+                uplate.sort === s ? "bg-action text-paper" : "text-ink-soft hover:bg-mist",
+              ]}
+            >
+              {s === "latest" ? T.najnovije : T.najvece}
+            </a>
+          ))}
+        </nav>
+      )}
+      {uplate.uplate.length === 0 ? (
+        <p class="mt-3 text-ink-muted">{T.prazno}</p>
+      ) : (
+        <ol class="mt-3 divide-y divide-line">
+          {uplate.uplate.map((u) => (
+            <li class="flex items-start gap-3 py-3">
+              <div class="min-w-0 flex-1">
+                <p class="font-medium text-ink break-words">
+                  {u.anonymous ? <span class="text-ink-soft italic">{T.anonimno}</span> : u.name}
+                  {u.nameVerified && <span class="ml-1 text-xs font-normal text-success">({T.provjereno})</span>}
+                </p>
+                <p class="text-xs text-ink-muted">
+                  <time datetime={new Date(u.paidAt).toISOString()}>{relativnoVrijeme(lang, u.paidAt, sad)}</time>
+                  {u.tierTitle && <span> · {T.razina}: {u.tierTitle}{u.quantity > 1 && ` × ${u.quantity}`}</span>}
+                </p>
+                {u.message && <p class="mt-1 text-sm text-ink-soft break-words">{u.message}</p>}
+              </div>
+              <p class="shrink-0 text-right tabular-nums">
+                {u.amountCents !== null ? <strong class="text-ink">{novac(u.amountCents)}</strong> : <span class="text-sm text-ink-muted">{T.iznosSkriven}</span>}
+              </p>
+            </li>
+          ))}
+        </ol>
+      )}
+      <div class="mt-2 flex flex-wrap items-center gap-3 text-sm text-ink-muted">
+        {uplate.ukupno !== null && uplate.uplate.length > 0 && <span class="tabular-nums">{T.prikazano} {uplate.uplate.length} {T.od} {uplate.ukupno}</span>}
+        {josIma && (
+          <a href={veza(uplate.sort, stranica + 1)} class="inline-flex min-h-11 items-center rounded-md px-3 font-semibold text-action ring-1 ring-action/30 hover:bg-mist">{T.jos}</a>
+        )}
+      </div>
+    </div>
+  )
+}

@@ -72,6 +72,6 @@ export function javneRute(p: Primjeri): ProvjeraRute[] {
   }
   out.push({ put: `/hr/u/${p.korisnik.privatni404}`, status: 404, opis: "user (privatan profil)" });
   out.push({ put: "/hr/zzzzzz", status: 404, opis: "campaign (nepostojeći ID)" });
-  out.push({ put: `/hr/kampanje?category=${p.kategorija}&sort=newest&page=1`, status: 200, opis: "campaigns (filtar)" });
+  out.push({ put: `/hr/kampanje?category=${p.kategorija}&sort=newest&page=2`, status: 200, opis: "campaigns (filtar)" });
   return out;
 }

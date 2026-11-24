@@ -1,0 +1,20 @@
+---
+// Galerija kampanje (docs/08 §3.2 CampaignGallery). Seed nema medija (odluka 513): crta se tema
+// naslovnice kao ukrasno polje. Otok s listanjem `1/9` dolazi kad kampanja ima medije.
+import ImageIcon from "@lucide/astro/icons/image";
+import type { Lang } from "../../i18n";
+import { KAMPANJA, TEME_NASLOVNICE } from "../../views/sadrzaj/kampanja";
+
+interface Props {
+  lang: Lang;
+  tema: string | null;
+  class?: string;
+}
+const { lang, tema, class: klasa = "" } = Astro.props;
+const T = KAMPANJA[lang];
+const naziv = tema ? (TEME_NASLOVNICE[lang][tema] ?? tema) : null;
+---
+<figure class:list={["relative flex aspect-[16/9] w-full items-end overflow-hidden rounded-md bg-gradient-to-br from-action/90 to-action-strong text-paper", klasa]}>
+  <ImageIcon size={72} aria-hidden="true" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-25" />
+  {naziv && <figcaption class="m-3 rounded-sm bg-ink/40 px-2 py-1 text-xs font-medium">{T.galerija}: {naziv}</figcaption>}
+</figure>

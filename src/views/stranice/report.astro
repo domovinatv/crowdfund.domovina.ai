@@ -1,0 +1,153 @@
+---
+// DSA prijava sadržaja (ekran 22, docs/08 ReportForm): vrsta i oznaka sadržaja, razlog, opis 50–500,
+// e-pošta, neobavezni telefon, izjava u dobroj vjeri, privola. Radi bez JS-a, greške uz polje.
+import CircleCheck from "@lucide/astro/icons/circle-check";
+import CircleExclamationPoint from "@lucide/astro/icons/circle-exclamation-point";
+import Send from "@lucide/astro/icons/send";
+import Base from "../../layouts/Base.astro";
+import { CILJEVI_PRIJAVE, OPIS_MAX, OPIS_MIN, RAZLOZI_PRIJAVE } from "../../lib/db/prijave";
+import { url } from "../../lib/rute";
+import { PRIJAVA, type PoljeObrasca } from "../sadrzaj/prijava-sadrzaja";
+import type { PodaciPrijave } from "./report.ucitaj";
+import type { PropsStranice } from "../tipovi";
+
+type Props = PropsStranice<PodaciPrijave>;
+const { lang, podaci } = Astro.props;
+const T = PRIJAVA[lang];
+const { greske, vrijednosti: v, poslano } = podaci;
+const poruka = (p: PoljeObrasca) => {
+  const g = greske[p];
+  return g ? (T.greske[p][g] ?? T.greske[p].obavezno) : undefined;
+};
+// id polja u obrascu → ključ greške
+const POLJA: { id: string; polje: PoljeObrasca; oznaka: string }[] = [
+  { id: "target", polje: "targetType", oznaka: T.tip },
+  { id: "id", polje: "targetId", oznaka: T.idCilja },
+  { id: "reason", polje: "reason", oznaka: T.razlog },
+  { id: "description", polje: "description", oznaka: T.opis },
+  { id: "email", polje: "email", oznaka: T.eposta },
+  { id: "phone", polje: "phone", oznaka: T.telefon },
+  { id: "izjava", polje: "izjava", oznaka: T.izjava },
+  { id: "privola", polje: "privola", oznaka: T.privola },
+];
+const sGreskom = POLJA.filter((p) => greske[p.polje]);
+const opisano = (id: string, polje: PoljeObrasca, pomoc = false) =>
+  [pomoc ? `${id}-pomoc` : "", greske[polje] ? `${id}-greska` : ""].filter(Boolean).join(" ") || undefined;
+const unos = "mt-1.5 block w-full rounded-sm border bg-paper px-3 py-2.5 text-base text-ink";
+const rub = (p: PoljeObrasca) => (greske[p] ? "border-danger ring-1 ring-danger" : "border-ink-muted/60");
+const oznakaObavezno = `(${T.obavezno})`;
+---
+<Base lang={lang} title={T.naslov} description={T.uvod}>
+  <div class="mx-auto max-w-2xl">
+    <h1 class="page-title text-ink">{T.naslov}</h1>
+    <p class="mt-3 text-ink-soft">{T.uvod}</p>
+    <p class="mt-2 text-sm font-medium text-danger">{T.hitno}</p>
+
+    {
+      poslano && (
+        <div role="status" class="mt-6 flex gap-3 rounded-md bg-success-bg p-4 text-success ring-1 ring-success/20 ring-inset">
+          <CircleCheck size={20} aria-hidden="true" class="mt-0.5 shrink-0" />
+          <div>
+            <p class="font-semibold">{T.poslanoNaslov}</p>
+            <p class="mt-1 text-sm">{T.poslanoTekst}</p>
+          </div>
+        </div>
+      )
+    }
+
+    {
+      sGreskom.length > 0 && (
+        <div role="alert" class="mt-6 flex gap-3 rounded-md bg-danger-bg p-4 text-danger ring-1 ring-danger/20 ring-inset">
+          <CircleExclamationPoint size={20} aria-hidden="true" class="mt-0.5 shrink-0" />
+          <div>
+            <p class="font-semibold">{T.greskeNaslov}</p>
+            <ul class="mt-1 list-disc pl-5 text-sm">
+              {sGreskom.map((p) => <li><a href={`#${p.id}`} class="underline">{poruka(p.polje)}</a></li>)}
+            </ul>
+          </div>
+        </div>
+      )
+    }
+
+    {
+      !poslano && (
+        <form method="post" action={url(lang, "report")} class="mt-6 space-y-6" novalidate>
+          <fieldset class="space-y-5">
+            <legend class="text-xl font-semibold text-ink">{T.ciljNaslov}</legend>
+            <div>
+              <label for="target" class="font-semibold text-ink">{T.tip} <span class="text-sm font-normal text-ink-muted">{oznakaObavezno}</span></label>
+              <select id="target" name="target" required aria-invalid={greske.targetType ? "true" : undefined} aria-describedby={opisano("target", "targetType")}
+                class:list={[unos, rub("targetType"), "min-h-11"]}>
+                <option value="" selected={!v.targetType}>{T.odaberi}</option>
+                {CILJEVI_PRIJAVE.map((c) => <option value={c} selected={v.targetType === c}>{T.ciljevi[c]}</option>)}
+              </select>
+              {greske.targetType && <p id="target-greska" class="mt-1.5 text-sm font-medium text-danger">{poruka("targetType")}</p>}
+            </div>
+            <div>
+              <label for="id" class="font-semibold text-ink">{T.idCilja} <span class="text-sm font-normal text-ink-muted">{oznakaObavezno}</span></label>
+              <input id="id" name="id" type="text" required maxlength="64" value={v.targetId} autocomplete="off" spellcheck="false"
+                aria-invalid={greske.targetId ? "true" : undefined} aria-describedby={opisano("id", "targetId", true)} class:list={[unos, rub("targetId"), "font-mono"]} />
+              <p id="id-pomoc" class="mt-1.5 text-sm text-ink-muted">{T.idPomoc}</p>
+              {greske.targetId && <p id="id-greska" class="mt-1 text-sm font-medium text-danger">{poruka("targetId")}</p>}
+            </div>
+          </fieldset>
+
+          <fieldset aria-describedby={greske.reason ? "reason-greska" : undefined}>
+            <legend id="reason" tabindex="-1" class="font-semibold text-ink">{T.razlog} <span class="text-sm font-normal text-ink-muted">{oznakaObavezno}</span></legend>
+            <div class="mt-2 grid gap-2 sm:grid-cols-2">
+              {RAZLOZI_PRIJAVE.map((r) => (
+                <label class:list={["flex min-h-11 items-center gap-2 rounded-md px-3 py-2 ring-1 has-[:checked]:bg-mist has-[:checked]:ring-action", greske.reason ? "ring-danger" : "ring-line"]}>
+                  <input type="radio" name="reason" value={r} checked={v.reason === r} required />
+                  <span class="text-ink">{T.razlozi[r]}</span>
+                </label>
+              ))}
+            </div>
+            {greske.reason && <p id="reason-greska" class="mt-1.5 text-sm font-medium text-danger">{poruka("reason")}</p>}
+          </fieldset>
+
+          <div>
+            <label for="description" class="font-semibold text-ink">{T.opis} <span class="text-sm font-normal text-ink-muted">{oznakaObavezno}</span></label>
+            <textarea id="description" name="description" rows="6" required minlength={OPIS_MIN} maxlength={OPIS_MAX}
+              aria-invalid={greske.description ? "true" : undefined} aria-describedby={opisano("description", "description", true)}
+              class:list={[unos, rub("description")]}>{v.description}</textarea>
+            <p id="description-pomoc" class="mt-1.5 text-sm text-ink-muted">{T.opisPomoc}</p>
+            {greske.description && <p id="description-greska" class="mt-1 text-sm font-medium text-danger">{poruka("description")}</p>}
+          </div>
+
+          <div>
+            <label for="email" class="font-semibold text-ink">{T.eposta} <span class="text-sm font-normal text-ink-muted">{oznakaObavezno}</span></label>
+            <input id="email" name="email" type="email" autocomplete="email" inputmode="email" required maxlength="254" value={v.email}
+              aria-invalid={greske.email ? "true" : undefined} aria-describedby={opisano("email", "email", true)} class:list={[unos, rub("email")]} />
+            <p id="email-pomoc" class="mt-1.5 text-sm text-ink-muted">{T.epostaPomoc}</p>
+            {greske.email && <p id="email-greska" class="mt-1 text-sm font-medium text-danger">{poruka("email")}</p>}
+          </div>
+
+          <div>
+            <label for="phone" class="font-semibold text-ink">{T.telefon} <span class="text-sm font-normal text-ink-muted">({T.neobavezno})</span></label>
+            <input id="phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" maxlength="30" value={v.phone}
+              aria-invalid={greske.phone ? "true" : undefined} aria-describedby={opisano("phone", "phone")} class:list={[unos, rub("phone")]} />
+            {greske.phone && <p id="phone-greska" class="mt-1.5 text-sm font-medium text-danger">{poruka("phone")}</p>}
+          </div>
+
+          <div class="space-y-3">
+            {(["izjava", "privola"] as const).map((p) => (
+              <div>
+                <label class="flex items-start gap-3">
+                  <input id={p} name={p} type="checkbox" value="1" required checked={v[p]} class="mt-1 h-5 w-5 shrink-0"
+                    aria-invalid={greske[p] ? "true" : undefined} aria-describedby={opisano(p, p)} />
+                  <span class="text-ink">{T[p]}</span>
+                </label>
+                {greske[p] && <p id={`${p}-greska`} class="mt-1 ml-8 text-sm font-medium text-danger">{poruka(p)}</p>}
+              </div>
+            ))}
+            <p class="text-sm"><a href={url(lang, "privacy")} class="text-action underline underline-offset-2">{lang === "hr" ? "Politika privatnosti" : "Privacy policy"}</a></p>
+          </div>
+
+          <button type="submit" class="inline-flex min-h-11 items-center gap-2 rounded-md bg-action px-5 font-semibold text-paper hover:bg-action-strong">
+            <Send size={18} aria-hidden="true" />{T.posalji}
+          </button>
+        </form>
+      )
+    }
+  </div>
+</Base>

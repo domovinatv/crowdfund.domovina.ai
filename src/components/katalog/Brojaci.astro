@@ -1,0 +1,32 @@
+---
+// Brojači naslovnice (docs/07: „brojači iz knjige”, pregled §8.2 funkcionalno): aktivne kampanje, plaćeni
+// doprinosi, prikupljeno (bez kampanja sa skrivenim iznosom, odluka 406) i doprinosi u zadnjih 30 dana.
+import { broj, iznos } from "./oblik";
+import { prevoditelj, type Lang } from "../../i18n";
+import type { BrojaciNaslovnice } from "../../lib/db/katalog";
+
+interface Props {
+  lang: Lang;
+  b: BrojaciNaslovnice;
+  class?: string;
+}
+const { lang, b, class: klasa = "" } = Astro.props;
+const t = prevoditelj(lang);
+const stavke = [
+  { oznaka: t("stats.active"), vrijednost: broj(lang, b.aktivnihKampanja) },
+  { oznaka: t("stats.contributions"), vrijednost: broj(lang, b.placenihDoprinosa) },
+  { oznaka: t("stats.raised"), vrijednost: iznos(lang, b.prikupljenoCents), napomena: t("stats.raisedNote") },
+  { oznaka: t("stats.last30"), vrijednost: broj(lang, b.doprinosaZadnjih30Dana) },
+];
+---
+<dl class={`grid grid-cols-2 gap-3 lg:grid-cols-4 ${klasa}`}>
+  {
+    stavke.map((s) => (
+      <div class="flex flex-col rounded-md bg-mist p-4">
+        <dt class="order-2 mt-1 text-sm text-ink-soft">{s.oznaka}</dt>
+        <dd class="order-1 text-2xl font-bold tabular-nums text-action sm:text-3xl">{s.vrijednost}</dd>
+        {s.napomena && <dd class="order-3 mt-1 text-xs text-ink-muted">{s.napomena}</dd>}
+      </div>
+    ))
+  }
+</dl>

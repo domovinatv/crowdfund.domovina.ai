@@ -1,0 +1,80 @@
+---
+// Plakat za ispis (pregled §4.4): na zaslonu pregled A4 lista s uputom, u ispisu samo list (`@media print`).
+import ArrowLeft from "@lucide/astro/icons/arrow-left";
+import Printer from "@lucide/astro/icons/printer";
+import Base from "../../layouts/Base.astro";
+import QrKod from "../../components/kampanja/QrKod.astro";
+import { url } from "../../lib/rute";
+import { KAMPANJA, PODRUTE } from "../sadrzaj/kampanja";
+import type { PodaciPlakata } from "./campaign.poster.ucitaj";
+import type { PropsStranice } from "../tipovi";
+
+type Props = PropsStranice<PodaciPlakata>;
+const { lang, podaci } = Astro.props;
+const { k, cilj } = podaci;
+const T = PODRUTE[lang].plakat;
+const opis = (k.description ?? "").trim();
+const kratki = opis.length > 280 ? `${opis.slice(0, 277).trimEnd()}…` : opis;
+const prikazAdrese = cilj.replace(/^https?:\/\//, "");
+---
+<Base lang={lang} title={`${T.naslov} · ${k.title}`} noindex>
+  <div class="ne-ispisuj">
+    <a href={url(lang, "campaign", { id: k.publicId })} class="inline-flex min-h-11 items-center gap-1 text-sm font-medium text-action underline-offset-2 hover:underline">
+      <ArrowLeft size={16} aria-hidden="true" />{KAMPANJA[lang].natrag}
+    </a>
+    <h1 class="page-title mt-2 text-ink">{T.naslov}</h1>
+    <p class="mt-2 flex max-w-[70ch] gap-2 text-ink-soft"><Printer size={20} aria-hidden="true" class="mt-0.5 shrink-0" />{T.uputa}</p>
+  </div>
+
+  <article class="plakat mx-auto mt-6 flex aspect-[210/297] w-full max-w-[210mm] flex-col items-center bg-paper p-[6%] text-center shadow-raised">
+    {k.category && <p class="text-sm font-semibold tracking-wide text-accent-text uppercase">{lang === "hr" ? k.category.nameHr : k.category.nameEn}</p>}
+    <h2 class="mt-3 text-[clamp(1.5rem,6vw,2.75rem)] leading-tight font-bold text-ink break-words">{k.title}</h2>
+    <p class="mt-2 text-ink-soft">{T.organizator}: <strong class="text-ink">{k.organizator.name}</strong></p>
+    {kratki && <p class="mt-4 max-w-[60ch] text-ink-soft">{kratki}</p>}
+    <div class="mt-auto flex flex-col items-center pt-6">
+      <p class="text-xl font-semibold text-ink">{T.skeniraj}</p>
+      <QrKod tekst={cilj} naslov={`QR: ${k.title}`} class="mt-3 h-48 w-48 sm:h-64 sm:w-64" />
+      <p class="mt-3 text-sm text-ink-muted">{T.ili}</p>
+      <p class="font-mono text-lg font-semibold text-ink break-all">{prikazAdrese}</p>
+      <p class="mt-4 text-sm text-ink-muted">{T.bezProvizije}</p>
+    </div>
+  </article>
+</Base>
+
+<style is:global>
+  /* Namjerno izvan slojeva: u ispisu ovo mora nadjačati Tailwindove utility klase (sjena, širina, `visible`). */
+  @media print {
+    @page {
+      size: A4;
+      margin: 0;
+    }
+    body {
+      background: #fff;
+    }
+    body * {
+      visibility: hidden !important;
+    }
+    .plakat,
+    .plakat * {
+      visibility: visible !important;
+    }
+    .plakat {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 210mm;
+      max-width: none;
+      height: 297mm;
+      margin: 0;
+      box-shadow: none;
+      padding: 18mm 15mm;
+    }
+    .plakat svg {
+      width: 85mm;
+      height: 85mm;
+    }
+    .ne-ispisuj {
+      display: none;
+    }
+  }
+</style>

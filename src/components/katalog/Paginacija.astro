@@ -1,0 +1,72 @@
+---
+// Paginacija kataloga (bez JS-a): prethodna/sljedeća s `rel=prev/next`, brojevi s „…”, `aria-current`.
+// Jedna stranica → ništa. Trenutna izvan raspona (prevelik `page`) nema oznaku trenutne.
+import ChevronLeft from "@lucide/astro/icons/chevron-left";
+import ChevronRight from "@lucide/astro/icons/chevron-right";
+import { prevoditelj, type Lang } from "../../i18n";
+import { brojeviStranica } from "./upit";
+
+interface Props {
+  lang: Lang;
+  stranica: number;
+  ukupnoStranica: number;
+  /** Link na stranicu `n` uz isti upit. */
+  poveznica: (n: number) => string;
+}
+const { lang, stranica, ukupnoStranica, poveznica } = Astro.props;
+const t = prevoditelj(lang);
+const brojevi = brojeviStranica(stranica, ukupnoStranica);
+const prethodna = stranica > 1 && stranica <= ukupnoStranica ? stranica - 1 : null;
+const sljedeca = stranica < ukupnoStranica ? stranica + 1 : null;
+const gumb = "inline-flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-md px-3 text-sm font-semibold";
+---
+{
+  ukupnoStranica > 1 && (
+    <nav aria-label={t("pagination.label")} class="mt-8">
+      <ul class="flex flex-wrap items-center justify-center gap-1">
+        <li>
+          {prethodna ? (
+            <a href={poveznica(prethodna)} rel="prev" class={`${gumb} text-action hover:bg-action/10`}>
+              <ChevronLeft size={16} aria-hidden="true" />
+              <span>{t("pagination.prev")}</span>
+            </a>
+          ) : (
+            <span class={`${gumb} text-ink-muted`} aria-disabled="true">
+              <ChevronLeft size={16} aria-hidden="true" />
+              <span>{t("pagination.prev")}</span>
+            </span>
+          )}
+        </li>
+        {brojevi.map((n) =>
+          n === null ? (
+            <li aria-hidden="true" class="px-1 text-ink-muted">…</li>
+          ) : (
+            <li>
+              <a
+                href={poveznica(n)}
+                aria-current={n === stranica ? "page" : undefined}
+                aria-label={`${t("pagination.page")} ${n}`}
+                class={`${gumb} text-ink-soft hover:bg-mist aria-[current=page]:bg-action aria-[current=page]:text-paper`}
+              >
+                {n}
+              </a>
+            </li>
+          ),
+        )}
+        <li>
+          {sljedeca ? (
+            <a href={poveznica(sljedeca)} rel="next" class={`${gumb} text-action hover:bg-action/10`}>
+              <span>{t("pagination.next")}</span>
+              <ChevronRight size={16} aria-hidden="true" />
+            </a>
+          ) : (
+            <span class={`${gumb} text-ink-muted`} aria-disabled="true">
+              <span>{t("pagination.next")}</span>
+              <ChevronRight size={16} aria-hidden="true" />
+            </span>
+          )}
+        </li>
+      </ul>
+    </nav>
+  )
+}
