@@ -1,0 +1,85 @@
+---
+// Čarobnjak, korak 1 (ekran 03): vrsta kampanje kao radio kartice i kategorija (8, odluka 216); za organizaciju
+// se kategorija skriva i prikazuje napomena. `?za={slug}` bira organizaciju za koju se prikuplja.
+// Postojeći nacrt nudi „Nastavi” ili „Počni ispočetka” (03: modal „The existing process…”, ovdje okvir bez JS-a).
+import OkvirCarobnjaka from "../../components/carobnjak/OkvirCarobnjaka.astro";
+import { VRSTE_KAMPANJE, prazan } from "../../lib/db/nacrti";
+import { url } from "../../lib/rute";
+import { CAROBNJAK } from "../sadrzaj/carobnjak";
+import type { PodaciKoraka } from "../../components/carobnjak/ucitavanje";
+import type { PropsStranice } from "../tipovi";
+
+type Props = PropsStranice<PodaciKoraka>;
+const { lang, podaci } = Astro.props;
+const T = CAROBNJAK[lang];
+const V = T.vrsta;
+const { nacrt, greske, polja, za } = podaci;
+const vrsta = polja?.vrsta ?? (za ? "for_organization" : nacrt.vrsta ?? "");
+const kategorija = polja?.kategorija ?? nacrt.kategorija ?? "";
+const zaId = za?.id ?? (nacrt.organizacija?.nacin === "za" ? nacrt.organizacija.orgId : "");
+const zaNaziv = za?.naziv ?? podaci.primatelji.find((p) => p.id === zaId)?.naziv ?? null;
+const akcija = url(lang, "new-campaign.type") + (za ? `?za=${encodeURIComponent(za.slug)}` : "");
+const kartica = "flex min-h-11 cursor-pointer gap-3 rounded-md border border-ink-muted/40 bg-paper p-4 has-[:checked]:border-action has-[:checked]:ring-2 has-[:checked]:ring-action";
+---
+<OkvirCarobnjaka lang={lang} podaci={podaci} naslov={V.naslov}>
+  {
+    !prazan(nacrt) && !polja && (
+      <section aria-labelledby="postoji" class="mt-4 rounded-md bg-mist p-4">
+        <h2 id="postoji" class="font-semibold text-ink">{T.postojiNaslov}</h2>
+        <p class="mt-1 text-sm text-ink-soft">{T.postojiTekst}</p>
+        <div class="mt-3 flex flex-wrap gap-3">
+          <a href={url(lang, `new-campaign.${podaci.prvi}`)} class="inline-flex min-h-11 items-center rounded-md bg-action px-4 font-semibold text-paper hover:bg-action-strong">{T.nastavi}</a>
+          <form method="post" action={url(lang, "new-campaign.type")}>
+            <input type="hidden" name="akcija" value="ispocetka" />
+            <button type="submit" class="inline-flex min-h-11 items-center rounded-md border border-ink-muted/60 px-4 font-medium text-ink hover:bg-paper">{T.ispocetka}</button>
+          </form>
+        </div>
+      </section>
+    )
+  }
+
+  <form method="post" action={akcija} class="mt-6 space-y-8" novalidate>
+    {zaId && <input type="hidden" name="za" value={zaId} />}
+    <fieldset aria-describedby={greske.vrsta ? "vrsta-greska" : undefined}>
+      <legend class="text-lg font-semibold text-ink">{V.legenda}</legend>
+      <div class="mt-3 grid gap-3 sm:grid-cols-3">
+        {
+          VRSTE_KAMPANJE.map((v) => (
+            <label class={kartica}>
+              <input type="radio" name="vrsta" value={v} checked={vrsta === v} required class="mt-1 size-5 shrink-0 accent-action" />
+              <span>
+                <span class="block font-semibold text-ink">{V[v].naslov}</span>
+                <span class="mt-1 block text-sm text-ink-soft">{V[v].opis}</span>
+              </span>
+            </label>
+          ))
+        }
+      </div>
+      {greske.vrsta && <p id="vrsta-greska" class="mt-2 text-sm font-medium text-danger">{T.greske.vrsta.obavezno}</p>}
+      <p class="mt-3 text-sm text-ink-soft">
+        {V.zaNapomena}{" "}
+        <a href={url(lang, "how-it-works.for-others")} class="text-action underline underline-offset-2">{V.razlikeLink}</a>
+      </p>
+      {zaNaziv && <p class="mt-2 text-sm font-medium text-ink">{V.zaOdabrana.replace("{naziv}", zaNaziv)}</p>}
+    </fieldset>
+
+    <fieldset aria-describedby={greske.kategorija ? "kategorija-greska" : undefined}>
+      <legend class="text-lg font-semibold text-ink">{V.kategorija}</legend>
+      <div class="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {
+          podaci.kategorije.map((k) => (
+            <label class="flex min-h-11 cursor-pointer items-center gap-2 rounded-md border border-ink-muted/40 px-3 py-2 has-[:checked]:border-action has-[:checked]:ring-2 has-[:checked]:ring-action">
+              <input type="radio" name="kategorija" value={k.key} checked={kategorija === k.key} class="size-5 shrink-0 accent-action" />
+              <span>{k[lang]}</span>
+            </label>
+          ))
+        }
+      </div>
+      {greske.kategorija && <p id="kategorija-greska" class="mt-2 text-sm font-medium text-danger">{T.greske.kategorija.obavezno}</p>}
+    </fieldset>
+
+    <div class="flex justify-end">
+      <button type="submit" class="inline-flex min-h-11 items-center rounded-md bg-action px-5 font-semibold text-paper hover:bg-action-strong">{T.dalje}</button>
+    </div>
+  </form>
+</OkvirCarobnjaka>

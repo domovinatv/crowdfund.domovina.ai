@@ -1,0 +1,43 @@
+---
+// Čarobnjak, korak 4 (ekran 06): opis ≥ 50 znakova, provjera zabranjenih riječi na poslužitelju
+// (`nacrti.ts` `zabranjeneRijeci`), savjeti. Obično tekstualno polje (bez uređivača, radi bez JS-a).
+import OkvirCarobnjaka from "../../components/carobnjak/OkvirCarobnjaka.astro";
+import { POLJE, porukaPolja, rubPolja } from "../../components/carobnjak/poruke";
+import { OPIS_MAX, OPIS_MIN, duljinaOpisa } from "../../lib/db/nacrti";
+import { url } from "../../lib/rute";
+import { CAROBNJAK } from "../sadrzaj/carobnjak";
+import type { PodaciKoraka } from "../../components/carobnjak/ucitavanje";
+import type { PropsStranice } from "../tipovi";
+
+type Props = PropsStranice<PodaciKoraka>;
+const { lang, podaci } = Astro.props;
+const T = CAROBNJAK[lang];
+const O = T.opis;
+const opis = podaci.polja?.opis ?? podaci.nacrt.opis ?? "";
+const g = porukaPolja(lang, podaci.greske, "opis", opis);
+---
+<OkvirCarobnjaka lang={lang} podaci={podaci} naslov={O.naslov}>
+  <form method="post" action={url(lang, "new-campaign.description")} class="mt-6 space-y-6" novalidate>
+    <div>
+      <label for="opis" class="font-semibold text-ink">{O.polje}</label>
+      <textarea id="opis" name="opis" rows="12" required minlength={OPIS_MIN} maxlength={OPIS_MAX}
+        aria-invalid={g ? "true" : undefined} aria-describedby={g ? "opis-pomoc opis-napomena opis-greska" : "opis-pomoc opis-napomena"}
+        class:list={[POLJE, rubPolja(g)]}>{opis}</textarea>
+      <p id="opis-pomoc" class="mt-1.5 text-sm text-ink-muted">{O.pomoc.replace("{min}", String(OPIS_MIN)).replace("{n}", String(duljinaOpisa(opis)))}</p>
+      <p id="opis-napomena" class="mt-1 text-sm text-ink-soft">{O.zabranjenoNapomena}</p>
+      {g && <p id="opis-greska" class="mt-1 text-sm font-medium text-danger">{g}</p>}
+    </div>
+
+    <details class="rounded-md bg-mist p-4">
+      <summary class="cursor-pointer font-semibold text-ink">{O.savjetiNaslov}</summary>
+      <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-ink-soft">
+        {O.savjeti.map((s) => <li>{s}</li>)}
+      </ul>
+    </details>
+
+    <div class="flex flex-wrap justify-between gap-3">
+      <a href={url(lang, "new-campaign.media")} class="inline-flex min-h-11 items-center rounded-md border border-ink-muted/60 px-4 font-medium text-ink hover:bg-mist">{T.natrag}</a>
+      <button type="submit" class="inline-flex min-h-11 items-center rounded-md bg-action px-5 font-semibold text-paper hover:bg-action-strong">{T.dalje}</button>
+    </div>
+  </form>
+</OkvirCarobnjaka>

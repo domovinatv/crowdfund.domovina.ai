@@ -1,0 +1,130 @@
+---
+// Čarobnjak, korak 2 (ekran 04, docs/08 §5.6): naslov ≤ 60 s brojačem, cilj, rok, tko prikuplja.
+// Prijavljeni bira svoju organizaciju (uloga ≥ admin) ili osobno („nije u fazi 1”, traži verificiranu osobu);
+// neprijavljeni bira nakon prijave. Kampanja za organizaciju bira Fixed Beneficiary s popisa.
+import PhaseBadge from "../../components/PhaseBadge.astro";
+import OkvirCarobnjaka from "../../components/carobnjak/OkvirCarobnjaka.astro";
+import { POLJE, porukaPolja, rubPolja } from "../../components/carobnjak/poruke";
+import { NASLOV_MAX } from "../../lib/db/nacrti";
+import { url } from "../../lib/rute";
+import { CAROBNJAK } from "../sadrzaj/carobnjak";
+import type { PodaciKoraka } from "../../components/carobnjak/ucitavanje";
+import type { PropsStranice } from "../tipovi";
+
+type Props = PropsStranice<PodaciKoraka>;
+const { lang, podaci } = Astro.props;
+const T = CAROBNJAK[lang];
+const C = T.cilj;
+const { nacrt, greske, polja, moje, primatelji, prijavljen } = podaci;
+const iznos = (c: number | null | undefined) => (c == null ? "" : c % 100 === 0 ? String(c / 100) : (c / 100).toFixed(2).replace(".", lang === "hr" ? "," : "."));
+const naslov = polja?.naslov ?? nacrt.naslov ?? "";
+const cilj = polja?.cilj ?? iznos(nacrt.ciljCenti);
+const rok = polja?.rok ?? nacrt.rok ?? "";
+const o = nacrt.organizacija;
+const izbor = polja?.organizacija ?? (o ? (o.nacin === "osobno" ? "osobno" : `${o.nacin}:${o.orgId}`) : "");
+const zaOrg = nacrt.vrsta === "for_organization";
+const mjesecna = nacrt.vrsta === "recurring";
+const g = {
+  naslov: porukaPolja(lang, greske, "naslov", naslov),
+  cilj: porukaPolja(lang, greske, "cilj"),
+  rok: porukaPolja(lang, greske, "rok"),
+  organizacija: porukaPolja(lang, greske, "organizacija"),
+};
+const sutra = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
+const radio = "flex min-h-11 cursor-pointer items-start gap-3 rounded-md border border-ink-muted/40 p-3 has-[:checked]:border-action has-[:checked]:ring-2 has-[:checked]:ring-action";
+---
+<OkvirCarobnjaka lang={lang} podaci={podaci} naslov={C.naslov}>
+  <form method="post" action={url(lang, "new-campaign.goal")} class="mt-6 space-y-6" novalidate>
+    <div>
+      <div class="flex items-baseline justify-between gap-3">
+        <label for="naslov" class="font-semibold text-ink">{C.naslovPolje}</label>
+        <span class="text-sm text-ink-muted tabular-nums" aria-hidden="true">{C.brojac.replace("{n}", String(naslov.length)).replace("{max}", String(NASLOV_MAX))}</span>
+      </div>
+      <input id="naslov" name="naslov" type="text" required maxlength={NASLOV_MAX} value={naslov}
+        aria-invalid={g.naslov ? "true" : undefined} aria-describedby={g.naslov ? "naslov-pomoc naslov-greska" : "naslov-pomoc"}
+        class:list={[POLJE, rubPolja(g.naslov)]} />
+      <p id="naslov-pomoc" class="mt-1.5 text-sm text-ink-muted">{C.naslovPomoc}</p>
+      {g.naslov && <p id="naslov-greska" class="mt-1 text-sm font-medium text-danger">{g.naslov}</p>}
+    </div>
+
+    <div>
+      <label for="cilj" class="font-semibold text-ink">{mjesecna ? C.iznosMjesecni : C.iznos}</label>
+      <input id="cilj" name="cilj" type="text" inputmode="decimal" autocomplete="off" required={!mjesecna} maxlength="15" value={cilj}
+        aria-invalid={g.cilj ? "true" : undefined} aria-describedby={g.cilj ? "cilj-pomoc cilj-greska" : "cilj-pomoc"}
+        class:list={[POLJE, "max-w-xs", rubPolja(g.cilj)]} />
+      <p id="cilj-pomoc" class="mt-1.5 text-sm text-ink-muted">{C.iznosPomoc} {C.prag}</p>
+      {g.cilj && <p id="cilj-greska" class="mt-1 text-sm font-medium text-danger">{g.cilj}</p>}
+    </div>
+
+    {
+      !mjesecna && (
+        <div>
+          <label for="rok" class="font-semibold text-ink">{C.rok}</label>
+          <input id="rok" name="rok" type="date" min={sutra} value={rok}
+            aria-invalid={g.rok ? "true" : undefined} aria-describedby={g.rok ? "rok-pomoc rok-greska" : "rok-pomoc"}
+            class:list={[POLJE, "max-w-xs", rubPolja(g.rok)]} />
+          <p id="rok-pomoc" class="mt-1.5 text-sm text-ink-muted">{C.rokPomoc}</p>
+          {g.rok && <p id="rok-greska" class="mt-1 text-sm font-medium text-danger">{g.rok}</p>}
+        </div>
+      )
+    }
+
+    {
+      zaOrg ? (
+        <div>
+          <label for="organizacija" class="font-semibold text-ink">{C.primatelj}</label>
+          <select id="organizacija" name="organizacija" required
+            aria-invalid={g.organizacija ? "true" : undefined} aria-describedby={g.organizacija ? "org-pomoc org-greska" : "org-pomoc"}
+            class:list={[POLJE, rubPolja(g.organizacija)]}>
+            <option value="">{C.primateljOdaberi}</option>
+            {primatelji.map((p) => <option value={`za:${p.id}`} selected={izbor === `za:${p.id}`}>{p.naziv}</option>)}
+          </select>
+          <p id="org-pomoc" class="mt-1.5 text-sm text-ink-muted">
+            {C.primateljPomoc} <a href={url(lang, "organisations")} class="text-action underline underline-offset-2">{C.katalog}</a>
+          </p>
+          {g.organizacija && <p id="org-greska" class="mt-1 text-sm font-medium text-danger">{g.organizacija}</p>}
+        </div>
+      ) : (
+        <fieldset aria-describedby={g.organizacija ? "org-greska" : undefined}>
+          <legend class="font-semibold text-ink">{C.tko}</legend>
+          <div class="mt-2 space-y-2">
+            {moje.map((m) => (
+              <label class={radio}>
+                <input type="radio" name="organizacija" value={`moja:${m.id}`} checked={izbor === `moja:${m.id}`} disabled={m.status !== "active"} class="mt-1 size-5 shrink-0 accent-action" />
+                <span>
+                  <span class="block font-medium text-ink">{C.mojaOrg.replace("{naziv}", m.naziv)}</span>
+                  {m.status !== "active" && <span class="block text-sm text-warning">{C.mojaNeaktivna}</span>}
+                </span>
+              </label>
+            ))}
+            {!prijavljen && (
+              <label class={radio}>
+                <input type="radio" name="organizacija" value="" checked={izbor === ""} class="mt-1 size-5 shrink-0 accent-action" />
+                <span>
+                  <span class="block font-medium text-ink">{C.kasnije}</span>
+                  <span class="block text-sm text-ink-soft">{C.kasnijePomoc}</span>
+                </span>
+              </label>
+            )}
+            <label class={radio}>
+              <input type="radio" name="organizacija" value="osobno" checked={izbor === "osobno"} class="mt-1 size-5 shrink-0 accent-action" />
+              <span>
+                <span class="flex flex-wrap items-center gap-2 font-medium text-ink">{C.osobno} <PhaseBadge lang={lang} /></span>
+                <span class="block text-sm text-ink-soft">{C.osobnoPomoc}</span>
+              </span>
+            </label>
+          </div>
+          {g.organizacija && <p id="org-greska" class="mt-2 text-sm font-medium text-danger">{g.organizacija}</p>}
+          {prijavljen && moje.length === 0 && (
+            <p class="mt-3 text-sm"><a href={url(lang, "organisation.new")} class="text-action underline underline-offset-2">{C.novaOrg}</a></p>
+          )}
+        </fieldset>
+      )
+    }
+
+    <div class="flex flex-wrap justify-between gap-3">
+      <a href={url(lang, "new-campaign.type")} class="inline-flex min-h-11 items-center rounded-md border border-ink-muted/60 px-4 font-medium text-ink hover:bg-mist">{T.natrag}</a>
+      <button type="submit" class="inline-flex min-h-11 items-center rounded-md bg-action px-5 font-semibold text-paper hover:bg-action-strong">{T.dalje}</button>
+    </div>
+  </form>
+</OkvirCarobnjaka>

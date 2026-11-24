@@ -1,0 +1,103 @@
+---
+// Čarobnjak, korak 5 (ekran 07, docs/08 `CampaignPreview`): kampanja kako će izgledati, popis što nedostaje i
+// „Objavi”. Neprijavljenog „Objavi” vodi na prijavu (nacrt prelazi na račun, odluka 152). Osobna kampanja nosi
+// oznaku „nije u fazi 1”; kampanja za organizaciju čeka odobrenje (review).
+import CircleAlert from "@lucide/astro/icons/circle-exclamation-point";
+import PhaseBadge from "../../components/PhaseBadge.astro";
+import OkvirCarobnjaka from "../../components/carobnjak/OkvirCarobnjaka.astro";
+import Greska from "../../components/prijava/Greska.astro";
+import TemaNaslovne from "../../components/katalog/TemaNaslovne.astro";
+import { formatDatuma, formatNovca } from "../../components/kampanja/format";
+import { TEMA_KATEGORIJE, krajDana } from "../../lib/db/nacrti";
+import { url } from "../../lib/rute";
+import { CAROBNJAK } from "../sadrzaj/carobnjak";
+import type { PodaciKoraka } from "../../components/carobnjak/ucitavanje";
+import type { PropsStranice } from "../tipovi";
+
+type Props = PropsStranice<PodaciKoraka>;
+const { lang, podaci } = Astro.props;
+const T = CAROBNJAK[lang];
+const P = T.pregled;
+const { nacrt, nedostaje, greskaObjave, prijavljen, verificiran } = podaci;
+const novac = formatNovca(lang);
+const o = nacrt.organizacija;
+const organizator =
+  o?.nacin === "moja" ? podaci.moje.find((m) => m.id === o.orgId)?.naziv
+  : o?.nacin === "za" ? podaci.primatelji.find((p) => p.id === o.orgId)?.naziv
+  : null;
+const kategorija = podaci.kategorije.find((k) => k.key === nacrt.kategorija)?.[lang] ?? null;
+const tema = nacrt.tema ?? TEMA_KATEGORIJE[nacrt.kategorija ?? ""] ?? "general";
+const osobno = o?.nacin === "osobno";
+const korakNedostatka: Record<string, "type" | "goal" | "media" | "description"> = {
+  vrsta: "type", kategorija: "type", naslov: "goal", cilj: "goal", organizacija: "goal", tema: "media", opis: "description", zabranjeno: "description",
+};
+---
+<OkvirCarobnjaka lang={lang} podaci={podaci} naslov={P.naslov}>
+  <p class="mt-2 text-ink-soft">{P.uvod}</p>
+  {greskaObjave && <Greska poruka={P.greske[greskaObjave]} />}
+
+  <article class="mt-6 overflow-hidden rounded-md border border-line bg-paper" aria-labelledby="pregled-naslov">
+    <TemaNaslovne tema={tema} kategorija={nacrt.kategorija ?? null} class="aspect-[16/7]" />
+    <div class="p-4 sm:p-6">
+      <h2 id="pregled-naslov" class="text-2xl font-bold text-ink">{nacrt.naslov || "—"}</h2>
+      <p class="mt-2 flex flex-wrap items-center gap-2 text-sm text-ink-soft">
+        <span>{P.organizator}:</span>
+        {osobno ? (
+          <>
+            <span class="font-medium text-ink">{podaci.ime ?? "—"}</span>
+            <PhaseBadge lang={lang} />
+            {!verificiran && <span class="text-warning">{P.neverificiran}</span>}
+          </>
+        ) : (
+          <span class="font-medium text-ink">{organizator ?? "—"}</span>
+        )}
+      </p>
+      <dl class="mt-4 grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1 text-sm">
+        <dt class="text-ink-muted">{P.vrsta}</dt>
+        <dd class="text-ink">{nacrt.vrsta ? T.vrsteKratko[nacrt.vrsta] : "—"}</dd>
+        {kategorija && (<><dt class="text-ink-muted">{P.kategorija}</dt><dd class="text-ink">{kategorija}</dd></>)}
+        <dt class="text-ink-muted">{P.cilj}</dt>
+        <dd class="text-ink tabular-nums">{nacrt.ciljCenti ? novac(nacrt.ciljCenti) : P.bezCilja}</dd>
+        {nacrt.vrsta !== "recurring" && (<><dt class="text-ink-muted">{P.rok}</dt><dd class="text-ink">{nacrt.rok ? formatDatuma(lang, krajDana(nacrt.rok)) : P.bezRoka}</dd></>)}
+        {nacrt.videoUrl && (<><dt class="text-ink-muted">{P.video}</dt><dd class="break-all text-ink">{nacrt.videoUrl}</dd></>)}
+      </dl>
+      <div class="prose mt-4 max-w-none whitespace-pre-line text-ink">{nacrt.opis || "—"}</div>
+    </div>
+  </article>
+
+  {
+    nedostaje.length > 0 && (
+      <section aria-labelledby="nedostaje" class="mt-6 rounded-md bg-warning-bg p-4 ring-1 ring-warning/25 ring-inset">
+        <h2 id="nedostaje" class="flex items-center gap-2 font-semibold text-warning"><CircleAlert size={18} aria-hidden="true" />{P.nedostajeNaslov}</h2>
+        <ul class="mt-2 space-y-1 text-sm">
+          {nedostaje.map((n) => (
+            <li>
+              <a href={url(lang, `new-campaign.${korakNedostatka[n] ?? "type"}`)} class="text-action underline underline-offset-2">{P.nedostaje[n]}</a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )
+  }
+
+  {o?.nacin === "za" && <p class="mt-4 text-sm text-ink-soft">{P.reviewNapomena}</p>}
+  {osobno && (
+    <p class="mt-4 flex flex-wrap items-center gap-2 text-sm text-ink-soft">
+      <PhaseBadge lang={lang} />{P.osobnoNapomena}
+      {prijavljen && !verificiran && <a href={url(lang, "settings.verification")} class="text-action underline underline-offset-2">{P.verificiraj}</a>}
+    </p>
+  )}
+  <p class="mt-2 text-sm text-ink-muted" data-mock="mpt">{P.mptMock}</p>
+
+  <div class="mt-6 flex flex-wrap items-center justify-between gap-3">
+    <a href={url(lang, "new-campaign.description")} class="inline-flex min-h-11 items-center rounded-md border border-ink-muted/60 px-4 font-medium text-ink hover:bg-mist">{P.uredi}</a>
+    <form method="post" action={url(lang, "new-campaign.preview")}>
+      <input type="hidden" name="akcija" value="objavi" />
+      {!prijavljen && <p class="mb-2 text-sm text-ink-soft">{P.prijavaZaObjavu}</p>}
+      <button type="submit" disabled={prijavljen && nedostaje.length > 0}
+        class="inline-flex min-h-11 items-center rounded-md bg-action px-5 font-semibold text-paper hover:bg-action-strong disabled:cursor-not-allowed disabled:opacity-50">
+        {prijavljen ? P.objavi : P.prijavi}
+      </button>
+    </form>
+  </div>
+</OkvirCarobnjaka>
