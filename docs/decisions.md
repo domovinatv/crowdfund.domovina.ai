@@ -289,3 +289,24 @@ koja se na nju poziva. Blokovi brojeva po sesiji: S1 od 100, S1b od 150, S2 od 2
 613. **En oblici podkoraka** (zatvara 409): `organisation/new/details|representative|project|kyb|review`,
      `settings/verification/type|details|review`, `settings/links/sharing`, `{id}/manage/finances.csv`.
      Provjera ruta: `new-campaign` i `settings` su 302 iznimke, `reminder` izostavljen (S7).
+614. **Stranice samo za organizaciju** (financije, povrati, zatvaranje) ne otvaraju se moderatoru ni autoru koji
+     čeka odobrenje; ostale podstranice prate `zahtijevajKampanju`. Izbornik upravljanja pokazuje samo dopuštene.
+615. **Isključi/uključi kampanju, isključi kasicu i obavijest o novim uplatama** traže barem `editor`; link za
+     praćenje isključuje autor linka ili editor.
+616. **Obavijesti:** „nove uplate” je postavka kampanje (`contribution_notifications`); komentari i kraj kampanje
+     su red praćenja svakog člana. Bez novog stupca.
+617. **Zaključavanje** naslova, opisa i cilja kad je zadnja `campaign_purpose` verifikacija `approved` ili
+     `purpose_verified = 1`; poslužitelj odbija izmjenu. Slug se mijenja samo u `draft`/`review`.
+618. **Rok se sprema kao 21:59:59.999 UTC odabranog dana** (isti datum u UTC i Zagrebu); smije se ukloniti ili
+     pomaknuti, ne u prošlost. (potvrditi)
+619. **Povrat je uvijek puni primljeni iznos;** potvrda je ručna (bez on-chain provjere u prototipu), doprinos →
+     `refunded`, `campaign_stats` se umanjuje, obavijest `refund_confirmed`. (potvrditi djelomične povrate)
+620. **CSV financija:** UTF-8 BOM, CRLF, RFC 4180, apostrof ispred `= + - @` (zaštita od formula), iznos u eurima s točkom.
+621. **Token praćenja gosta** je slučajan, sprema se samo SHA-256; potvrda POST-om na stranici praćenja. Stari
+     potpisani token (508) i dalje vrijedi za prijavljene. Ponovni POST iste e-pošte na potvrđeno praćenje ne mijenja
+     prekidače, samo izdaje novu poveznicu.
+622. **Komentiraju samo prijavljeni;** u načinu „samo podržavatelji” članovi organizacije i osobe s plaćenim
+     doprinosom. Novi komentar i novost obavještavaju potvrđene pratitelje. (potvrditi)
+623. **Upload dokaza namjene je mock** (red `files` s ključem `mock/…`, `purpose_evidence` + `campaign_documents`);
+     „pošalji na pregled” traži barem jedan dokument, bez verifikacije stvara je s `trigger = user`.
+624. **Brisanje kampanje** gasi linkove za praćenje, kasice → `deleted`, traži upis ID-a kampanje i P+e.
