@@ -28,6 +28,12 @@ Snimke ekrana su samo lokalno u `snimke/` (gitignore). Osobni podaci korisnika i
 | 16 | Settings: Tracking links, Shared links | `/settings/{reflinks,auto-reflinks}` | 6 | [16-postavke-linkovi](16-postavke-linkovi.md) |
 | 17 | Settings: Recurring donations | `/settings/recurring-payments` | 6 | [17-postavke-ponavljajuce](17-postavke-ponavljajuce.md) |
 | 18 | Settings: Login history | `/settings/login-history` | 6 | [18-postavke-povijest-prijava](18-postavke-povijest-prijava.md) |
+| 19 | Checkout tuđe kampanje (valute, iznosi, 12 metoda, napojnica 0–30 %, skrivanje, poruka, sažetak) | `/{id}/pay` | 10 | [19-checkout](19-checkout.md) |
+| 20 | Company application (5 koraka), Fixed Beneficiary (nedostupno) | `/company-application/steps` | 11 | [20-organizacija](20-organizacija.md) |
+| 21 | Kontakt obrazac (10 tema) | `/contact` | 12 | [21-kontakt](21-kontakt.md) |
+| 22 | Observe, Report abuse, komentari na tuđoj kampanji | `/{id}` | 9 | [22-observe-prijava-komentari](22-observe-prijava-komentari.md) |
+| 23 | Ponude: odabir kampanje, Founder's Offer traži verifikaciju | `/whip-rounds/add-awards`, `…/award-access-status/public/add-awards` | 8 | [23-ponude-founders-offer](23-ponude-founders-offer.md) |
+| 24 | Kasica: obrazac | `/{id}/add-moneybox` | 9 | [24-kasica-obrazac](24-kasica-obrazac.md) |
 
 **Broj ekrana:** 18 datoteka (`ls docs/research/obilazak/[0-9]*.md | wc -l`). U njima je opisano 21 ruta.
 

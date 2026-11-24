@@ -45,3 +45,16 @@ Oznake: **=** isto · **≈** isto ponašanje, drukčiji mehanizam · **✗** ne
 | Automatski linkovi dijeljenja (S1 [16](research/obilazak/16-postavke-linkovi.md)) | `?ref=` po korisniku + popis | = | da |
 | Povijest prijava (S1 [18](research/obilazak/18-postavke-povijest-prijava.md)) | tek uz pravi login | ≈ | statično |
 | Brisanje računa vraća buduće donacije (S1 [12](research/obilazak/12-postavke-profil.md)) | brisanje gasi kampanje; novac nije kod nas | ≈ | da |
+| Valute: 11 (EUR, USD, GBP, PLN, CHF…) u checkoutu (S1b [19](research/obilazak/19-checkout.md)) | samo EUR (SEPA) | ✗ ostale valute | – |
+| 12 načina plaćanja (kartica, Revolut, N26, ZEN, Wero, Bancontact, MB WAY, Multibanco, eps, Apple/Google Pay, Skrill) (S1b [19](research/obilazak/19-checkout.md)) | jedan: MPT intent (QR EPC/HUB3, IBAN, referenca) | ≈ | da |
+| Napojnica: klizač 0–30 %, korak 5, zadano 20 %, „(change)” na nuli (S1b [19](research/obilazak/19-checkout.md)) | zaseban intent, zadano 0 ili bez zadanog (odluka 7) | ≈ | da |
+| „Donate as a company” (S1b [19](research/obilazak/19-checkout.md)): na 4fundu isključeno u konfiguraciji | R1 podaci (naziv, OIB) za udruge | faza 2 | da, označeno |
+| Observe: obavijesti o komentarima, novostima, kraju (S1b [22](research/obilazak/22-observe-prijava-komentari.md)) | isto, e-poštom | = | mock |
+| Report abuse: opis 50–500, telefon, privitak 20 MB, GDPR pristanak (S1b [22](research/obilazak/22-observe-prijava-komentari.md)) | DSA čl. 16 obrazac + potvrda primitka | = | obrazac |
+| Komentari do 2500 znakova, odgovori, dijeljenje (S1b [23](research/obilazak/23-ponude-founders-offer.md)) | isto | = | da |
+| Streaming widget (S1b [22](research/obilazak/22-observe-prijava-komentari.md)) | prikaz napretka za stream (iframe) | faza 2 | označeno |
+| Strojni prijevod opisa kampanje (S1b [22](research/obilazak/22-observe-prijava-komentari.md)) | hr/en ručno; strojni prijevod kasnije | faza 2 | – |
+| Founder's Offer samo za verificiranog ponuđača i kampanju koja to dopušta (S1b [23](research/obilazak/23-ponude-founders-offer.md)) | isto pravilo | faza 2 | označeno |
+| Obrazac kasice: naslov 60, alias predložen, cilj neobavezan, prihvat pravila, zahvala (S1b [24](research/obilazak/24-kasica-obrazac.md)) | isto | = | da |
+| Company application, 5 koraka, obrazac tek nakon verifikacije osobe (S1b [20](research/obilazak/20-organizacija.md)) | KYB kod EMI-ja + MPT tenant | ≈ | čarobnjak organizacije |
+| Kontakt obrazac, 10 tema, reCAPTCHA (S1b [21](research/obilazak/21-kontakt.md)) | isto, naše teme, Turnstile | = | da |
