@@ -1,0 +1,36 @@
+---
+// Dispečer jezičnih ruta (odluka 500): `/hr/…` i `/en/…` → ruta iz src/lib/rute.ts → pogled
+// `src/views/stranice/<kljuc>.astro` (+ učitavač). Nepoznata ruta ili ruta bez pogleda: 404.
+import { env } from "cloudflare:workers";
+import { isLang } from "../../i18n";
+import { prepoznaj } from "../../lib/rute";
+import { pogled, ucitavac } from "../../views/registar";
+import NijePronadeno from "../../components/NijePronadeno.astro";
+
+const { lang, put } = Astro.params;
+let Pogled: ReturnType<typeof pogled>;
+let params: Record<string, string> = {};
+let podaci: unknown = null;
+let nema = true;
+
+if (isLang(lang)) {
+  const nadjeno = prepoznaj(lang, put ?? "");
+  Pogled = nadjeno ? pogled(nadjeno.ruta.kljuc) : undefined;
+  if (nadjeno && Pogled) {
+    params = nadjeno.params;
+    const ucitaj = ucitavac(nadjeno.ruta.kljuc);
+    const r = ucitaj
+      ? await ucitaj({ lang, params, url: Astro.url, request: Astro.request, cookies: Astro.cookies, db: env.DB })
+      : { podaci: null };
+    if (r instanceof Response) {
+      if (r.status !== 404) return r;
+    } else {
+      podaci = r.podaci;
+      nema = false;
+    }
+  }
+}
+if (nema) Astro.response.status = 404;
+const jezik = isLang(lang) ? lang : "hr";
+---
+{nema || !Pogled ? <NijePronadeno lang={jezik} /> : <Pogled lang={jezik} params={params} podaci={podaci} />}

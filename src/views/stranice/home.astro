@@ -1,0 +1,7 @@
+---
+import Naslovnica from "../../components/Naslovnica.astro";
+import type { PropsStranice } from "../tipovi";
+type Props = PropsStranice;
+const { lang } = Astro.props;
+---
+<Naslovnica lang={lang} />

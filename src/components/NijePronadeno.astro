@@ -1,0 +1,22 @@
+---
+// 404 za jezične rute (dispečer, odluka 500).
+import Base from "../layouts/Base.astro";
+import { type Lang } from "../i18n";
+import { url } from "../lib/rute";
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const T = {
+  hr: { naslov: "Stranica nije pronađena", tekst: "Kampanja ili stranica ne postoji, ili nije javno vidljiva.", natrag: "Na naslovnicu" },
+  en: { naslov: "Page not found", tekst: "The campaign or page does not exist, or is not publicly visible.", natrag: "Back to home" },
+}[lang];
+---
+<Base lang={lang} title={T.naslov} noindex>
+  <section class="py-12">
+    <h1 class="page-title text-ink">{T.naslov}</h1>
+    <p class="mt-3 text-ink-soft">{T.tekst}</p>
+    <a href={url(lang, "home")} class="mt-6 inline-flex min-h-11 items-center rounded-md bg-action px-5 font-semibold text-paper hover:bg-action-strong">{T.natrag}</a>
+  </section>
+</Base>
