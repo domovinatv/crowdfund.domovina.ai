@@ -348,3 +348,11 @@ koja se na nju poziva. Blokovi brojeva po sesiji: S1 od 100, S1b od 150, S2 od 2
      verifikacija namjene blokira kampanju i bilježi odluku (docs/05).
 646. **Seed ne izmišlja OIB** (izmišljeni OIB s valjanom kontrolnom znamenkom mogao bi pripadati stvarnoj osobi).
 647. **Vanjska kampanja:** URL `https://(www.)4fund.com/{6 znakova}`, kod vlasništva `DOMOVINA-XXXXXXXX`; provjera je mock.
+648. **Odobravanje tuđe kampanje:** uz kampanju kratki opis; „Pregled kampanje” vodi na `campaign.manage` (javna
+     stranica `review` kampanje je 404), admin organizacije ima pristup kao organizator.
+649. **Pozivnica:** „Prihvati”/„Odbij” samo prijavljenom s istom e-poštom; neprijavljeni dobiva prijavu s povratkom,
+     drugi račun upozorenje.
+650. **„Prima kampanje drugih”** u postavkama je onemogućen dok organizacija nije `active`, osim kad je već uključen
+     (smije se isključiti).
+651. **Popis kampanja organizacije:** „Javna stranica” samo za vidljive (active/funded/closed, ne blokirane);
+     „Nova kampanja” vidi editor i viši, samo za `active` organizaciju. Uklonjene vanjske kampanje se ne prikazuju.
