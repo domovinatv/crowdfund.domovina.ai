@@ -1,0 +1,52 @@
+---
+// Unos 6-znamenkastog koda (prijava, potvrda e-pošte, dodatna potvrda): POST na istu rutu, bez JS-a.
+// `ponovo` šalje novi kod. Greška stanja koda (istekao, iskorišten, 5 pokušaja) ide uz polje.
+import KeyRound from "@lucide/astro/icons/key-round";
+import RefreshCw from "@lucide/astro/icons/refresh-cw";
+import type { Lang } from "../../i18n";
+import type { RazlogNeuspjeha, StanjeKoda } from "../../lib/sesija";
+import { PRIJAVA } from "../../views/sadrzaj/prijava";
+
+interface Props {
+  lang: Lang;
+  akcija: string;
+  next: string;
+  stanje: StanjeKoda;
+  greska: RazlogNeuspjeha | null;
+  preostalo: number | null;
+  /** Tekst gumba za potvrdu (zadano „Potvrdi”). */
+  potvrdi?: string;
+}
+const { lang, akcija, next, stanje, greska, preostalo, potvrdi } = Astro.props;
+const T = PRIJAVA[lang];
+const razlog: RazlogNeuspjeha | null = greska ?? (stanje === "vrijedi" ? null : stanje);
+const poruka = razlog ? T.greske[razlog].replace("{n}", String(preostalo ?? 0)) : null;
+const moze = stanje === "vrijedi";
+const polje = "mt-1.5 block w-full rounded-sm border bg-paper px-3 py-2.5 font-mono text-xl tracking-[0.4em] text-ink";
+---
+{
+  moze && (
+    <form method="post" action={akcija} class="mt-6 space-y-4" novalidate>
+      <input type="hidden" name="next" value={next} />
+      <div>
+        <label for="kod" class="font-semibold text-ink">{T.kod.kod}</label>
+        <input id="kod" name="kod" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required
+          aria-invalid={poruka ? "true" : undefined} aria-describedby={poruka ? "kod-pomoc kod-greska" : "kod-pomoc"}
+          class:list={[polje, poruka ? "border-danger ring-1 ring-danger" : "border-ink-muted/60"]} />
+        <p id="kod-pomoc" class="mt-1.5 text-sm text-ink-muted">{T.kod.kodPomoc}</p>
+        {poruka && <p id="kod-greska" class="mt-1 text-sm font-medium text-danger">{poruka}</p>}
+      </div>
+      <button type="submit" class="inline-flex min-h-11 items-center gap-2 rounded-md bg-action px-5 font-semibold text-paper hover:bg-action-strong">
+        <KeyRound size={18} aria-hidden="true" />{potvrdi ?? T.kod.potvrdi}
+      </button>
+    </form>
+  )
+}
+{!moze && poruka && <p role="alert" class="mt-6 font-medium text-danger">{poruka}</p>}
+<form method="post" action={akcija} class="mt-4">
+  <input type="hidden" name="next" value={next} />
+  <input type="hidden" name="ponovo" value="1" />
+  <button type="submit" class="inline-flex min-h-11 items-center gap-2 rounded-md px-3 font-medium text-action hover:bg-action/10">
+    <RefreshCw size={16} aria-hidden="true" />{T.kod.ponovo}
+  </button>
+</form>

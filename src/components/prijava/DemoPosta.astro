@@ -1,0 +1,38 @@
+---
+// Mock pretinac (odluka 15): kod i poveznica „poslani e-poštom” prikazani u jasno označenom demo okviru.
+// Bez poruke (drugi preglednik, istekao kolačić) prikazuje uputu da se zatraži novi kod.
+import FlaskConical from "@lucide/astro/icons/flask-conical";
+import Inbox from "@lucide/astro/icons/inbox";
+import type { Lang } from "../../i18n";
+import type { DemoPoruka } from "../../lib/sesija";
+import { PRIJAVA } from "../../views/sadrzaj/prijava";
+
+interface Props {
+  lang: Lang;
+  poruka: DemoPoruka | null;
+}
+const { lang, poruka } = Astro.props;
+const T = PRIJAVA[lang].demo;
+---
+<aside aria-labelledby="demo-posta" class="mt-6 rounded-md border-2 border-dashed border-warning/60 bg-warning-bg p-4 text-ink" data-demo-posta>
+  <p id="demo-posta" class="flex items-center gap-2 font-semibold text-warning">
+    <FlaskConical size={18} aria-hidden="true" />{T.naslov}
+  </p>
+  {
+    poruka ? (
+      <div class="mt-2 space-y-2 text-sm">
+        <p class="flex gap-2"><Inbox size={16} aria-hidden="true" class="mt-0.5 shrink-0" />{T.tekst.replace("{email}", poruka.email)}</p>
+        <p>
+          {T.kod}: <strong class="font-mono text-lg tracking-widest" data-demo-kod>{poruka.kod}</strong>
+        </p>
+        {poruka.link && (
+          <p>
+            <a href={poruka.link} class="font-medium text-action underline underline-offset-2 break-all" data-demo-link>{T.link}</a>
+          </p>
+        )}
+      </div>
+    ) : (
+      <p class="mt-2 text-sm">{T.nema}</p>
+    )
+  }
+</aside>

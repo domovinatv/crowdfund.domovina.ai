@@ -3,9 +3,9 @@ import { brojaciNaslovnice, katalog, kategorije, urednickiIzbor, type FiltriKata
 import { REDOSLIJEDI, type Redoslijed } from "../src/lib/redoslijedi";
 import { DAN, type PunaKartica } from "../src/lib/db/zajednicko";
 import primjeri from "../seed/primjeri.json";
-import { broj, kaoD1, novaBaza, redovi } from "./pomoc/baza";
+import { broj, kaoD1, novaBaza, redovi, SAD_SEEDA } from "./pomoc/baza";
 
-const SAD = new Date(Date.UTC(2026, 10, 20, 9, 0, 0));
+const SAD = SAD_SEEDA;
 const T = SAD.getTime();
 const sqlite = novaBaza({ seed: true });
 const db = kaoD1(sqlite);

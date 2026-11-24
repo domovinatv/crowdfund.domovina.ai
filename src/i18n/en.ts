@@ -15,6 +15,10 @@ export const en: Rjecnik = {
   "nav.organisations": "Organisations",
   "nav.start": "Start a campaign",
   "nav.signIn": "Sign in",
+  "nav.myCampaigns": "My campaigns",
+  "nav.signOut": "Sign out",
+  "nav.account": "Account",
+  "nav.signedInAs": "Signed in as",
   "nav.menu": "Menu",
   "nav.home": "Home",
 

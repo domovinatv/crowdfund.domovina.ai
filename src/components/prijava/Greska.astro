@@ -1,0 +1,12 @@
+---
+// Poruka o grešci obrasca prijave (role=alert), ista kao u kontaktu.
+import CircleExclamationPoint from "@lucide/astro/icons/circle-exclamation-point";
+
+interface Props {
+  poruka: string;
+}
+---
+<div role="alert" class="mt-4 flex gap-3 rounded-md bg-danger-bg p-4 text-danger ring-1 ring-danger/20 ring-inset">
+  <CircleExclamationPoint size={20} aria-hidden="true" class="mt-0.5 shrink-0" />
+  <p class="font-medium">{Astro.props.poruka}</p>
+</div>

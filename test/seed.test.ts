@@ -22,8 +22,8 @@ import {
   type Visibility,
 } from "@domovina/campaign-core";
 import { describe, expect, it } from "vitest";
-import { demoSql } from "../scripts/seed.mjs";
-import { SEED, broj, novaBaza, redovi } from "./pomoc/baza";
+import { demoSql, sadSeeda } from "../scripts/seed.mjs";
+import { DEMO_SAD, SEED, broj, novaBaza, redovi } from "./pomoc/baza";
 
 const db = novaBaza({ seed: true });
 
@@ -61,9 +61,24 @@ const kampanje = redovi<Kampanja>(
 );
 
 describe("seed/demo.sql", () => {
-  it("je ažuran i deterministički: jednak demoSql()", () => {
-    expect(readFileSync(SEED, "utf8")).toBe(demoSql());
-    expect(demoSql()).toBe(demoSql());
+  it("je ažuran i deterministički: jednak demoSql(DEMO_SAD) iz primjeri.json", () => {
+    const sql = readFileSync(SEED, "utf8");
+    expect(sql.split("\n", 1)[0]).toBe(`-- DEMO_SAD=${DEMO_SAD}`);
+    expect(sql).toBe(demoSql(DEMO_SAD));
+    expect(demoSql("2026-11-20")).toBe(demoSql("2026-11-20"));
+  });
+
+  it("„sad” seeda (odluka 532): DEMO_SAD iz okoline ili tekući UTC dan; vremena se pomiču za razliku dana", () => {
+    expect(sadSeeda("2026-11-20")).toBe("2026-11-20");
+    expect(sadSeeda(undefined, new Date(Date.UTC(2026, 11, 3, 23, 59)))).toBe("2026-12-03");
+    expect(() => sadSeeda("20.11.2026.")).toThrow();
+    const max = (dan: string) => {
+      const d = novaBaza();
+      d.exec(demoSql(dan));
+      return broj(d, "SELECT max(ends_at) FROM campaigns");
+    };
+    // rok najkasnije kampanje pomiče se točno za razliku dana
+    expect(max("2026-11-24") - max("2026-11-20")).toBe(4 * 86_400_000);
   });
 
   it("migracije + seed na praznoj bazi: FK provjera prazna", () => {
@@ -84,7 +99,7 @@ describe("seed/demo.sql", () => {
     expect(kampanje.length).toBeGreaterThanOrEqual(20);
     expect(broj(db, "SELECT count(*) FROM organizations")).toBe(5);
     expect(broj(db, "SELECT count(*) FROM organizers")).toBe(5);
-    expect(broj(db, "SELECT count(*) FROM users")).toBe(10);
+    expect(broj(db, "SELECT count(*) FROM users")).toBe(11);
     expect(broj(db, "SELECT count(*) FROM contributions")).toBeGreaterThan(100);
     expect(broj(db, "SELECT count(*) FROM campaign_updates")).toBeGreaterThan(0);
     expect(broj(db, "SELECT count(*) FROM comments")).toBeGreaterThan(0);
@@ -142,7 +157,7 @@ describe("seed/demo.sql", () => {
     const ima = (sql: string) => broj(db, `SELECT count(*) FROM campaigns c JOIN campaign_settings s ON s.campaign_id = c.id WHERE ${sql}`);
     expect(ima("s.comments_mode = 'off'")).toBeGreaterThan(0);
     expect(ima("s.allow_moneyboxes = 0")).toBeGreaterThan(0);
-    expect(ima("json_extract(c.metadata, '$.contributions_list') = 'hidden'")).toBeGreaterThan(0);
+    expect(ima("s.contributions_list = 'hidden'")).toBeGreaterThan(0);
     expect(ima("c.state = 'closed' AND (SELECT raised_cents FROM campaign_stats WHERE campaign_id = c.id) >= c.goal_cents")).toBeGreaterThan(0);
     expect(ima("c.state = 'active' AND c.ends_at BETWEEN 1795165200000 AND 1795165200000 + 7 * 86400000")).toBeGreaterThan(0);
     expect(broj(db, "SELECT count(*) FROM verifications WHERE kind = 'org_kyb' AND status != 'approved'")).toBeGreaterThan(0);

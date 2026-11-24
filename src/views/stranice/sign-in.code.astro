@@ -1,0 +1,32 @@
+---
+// Unos koda prijave (ekran 25): demo pretinac s kodom i poveznicom, obrazac koda, novi kod.
+import DemoPosta from "../../components/prijava/DemoPosta.astro";
+import OkvirPrijave from "../../components/prijava/OkvirPrijave.astro";
+import UnosKoda from "../../components/prijava/UnosKoda.astro";
+import { upitNext, type PodaciUnosaKoda } from "../../components/prijava/ucitavanje";
+import { LOCALE } from "../../i18n";
+import { url } from "../../lib/rute";
+import { PRIJAVA } from "../sadrzaj/prijava";
+import type { PropsStranice } from "../tipovi";
+
+type Props = PropsStranice<PodaciUnosaKoda>;
+const { lang, podaci } = Astro.props;
+const { stanje, email, istjece, demo, next, greska, preostalo } = podaci;
+const T = PRIJAVA[lang].kod;
+const q = upitNext(next);
+const vrijeme = istjece ? new Intl.DateTimeFormat(LOCALE[lang], { timeStyle: "short", timeZone: "Europe/Zagreb" }).format(istjece) : "";
+---
+{
+  stanje === "nema" || !email ? (
+    <OkvirPrijave lang={lang} naslov={T.nemaNaslov} uvod={T.nemaTekst}>
+      <p class="mt-6"><a href={url(lang, "sign-in") + q} class="font-medium text-action underline underline-offset-2">{T.naPrijavu}</a></p>
+    </OkvirPrijave>
+  ) : (
+    <OkvirPrijave lang={lang} naslov={T.naslov} uvod={T.uvod.replace("{email}", email)}>
+      {stanje === "vrijedi" && <p class="mt-1 text-sm text-ink-muted">{T.rok.replace("{vrijeme}", vrijeme)}</p>}
+      <DemoPosta lang={lang} poruka={demo} />
+      <UnosKoda lang={lang} akcija={url(lang, "sign-in.code") + q} next={next} stanje={stanje} greska={greska} preostalo={preostalo} />
+      <p class="mt-2"><a href={url(lang, "sign-in") + q} class="text-sm font-medium text-action underline underline-offset-2">{T.drugaEposta}</a></p>
+    </OkvirPrijave>
+  )
+}

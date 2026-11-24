@@ -1,0 +1,66 @@
+---
+// Poveznica za prijavu `/auth/link/{token}` (T, docs/04 §1): GET pokazuje gumb i ne troši poveznicu
+// (skeneri e-pošte otvaraju poveznice; GET ne mijenja stanje), POST je troši, otvara sesiju i vodi 303 na
+// `?next=` (samo relativni put). Nepoznat token → 404; istekla/iskorištena → 200 s uputom za novi kod.
+// Jezik: iz `next`, pa kolačić `lang` i Accept-Language.
+import { env } from "cloudflare:workers";
+import LogIn from "@lucide/astro/icons/log-in";
+import NijePronadeno from "../../../components/NijePronadeno.astro";
+import OkvirPrijave from "../../../components/prijava/OkvirPrijave.astro";
+import { upitNext } from "../../../components/prijava/ucitavanje";
+import { odaberiJezik } from "../../../i18n";
+import { url } from "../../../lib/rute";
+import { iskoristiPoveznicu, jezikIzPuta, korisnikPoEmailu, postaviSesiju, prijavi, sigurniNext, stanjePoveznice, type RazlogNeuspjeha } from "../../../lib/sesija";
+import { PRIJAVA } from "../../../views/sadrzaj/prijava";
+
+const token = Astro.params.token ?? "";
+const nextSirovo = Astro.url.searchParams.get("next");
+const lang = jezikIzPuta(nextSirovo ?? "", odaberiJezik(Astro.cookies.get("lang")?.value, Astro.request.headers.get("accept-language")));
+const next = nextSirovo ? sigurniNext(nextSirovo, lang) : "";
+const sad = Date.now();
+let greska: RazlogNeuspjeha | null = null;
+
+if (Astro.request.method === "POST") {
+  const ishod = await iskoristiPoveznicu(env.DB, token, sad);
+  if (ishod.ok) {
+    const userId = ishod.userId ?? (await korisnikPoEmailu(env.DB, ishod.email))?.id;
+    if (userId) {
+      const s = await prijavi(env.DB, {
+        userId, email: ishod.email, nacin: "email_link", sad,
+        ip: Astro.request.headers.get("cf-connecting-ip"), userAgent: Astro.request.headers.get("user-agent"),
+      });
+      postaviSesiju(Astro.cookies, Astro.url, s);
+      return new Response(null, { status: 303, headers: { Location: sigurniNext(next, lang), "Cache-Control": "private, no-store" } });
+    }
+  }
+  greska = ishod.ok ? "nema" : ishod.razlog;
+}
+const stanje = await stanjePoveznice(env.DB, token, sad);
+if (!stanje) Astro.response.status = 404;
+Astro.response.headers.set("Cache-Control", "private, no-store");
+const T = PRIJAVA[lang];
+const razlog = greska ?? (stanje && stanje.stanje !== "vrijedi" ? stanje.stanje : null);
+---
+{
+  !stanje ? (
+    <NijePronadeno lang={lang} />
+  ) : (
+    <OkvirPrijave lang={lang} naslov={T.poveznica.naslov}>
+      {razlog ? (
+        <>
+          <p role="alert" class="mt-4 font-medium text-danger">{T.greske[razlog].replace("{n}", "0")}</p>
+          <p class="mt-6"><a href={url(lang, "sign-in") + upitNext(next)} class="font-medium text-action underline underline-offset-2">{T.kod.naPrijavu}</a></p>
+        </>
+      ) : (
+        <>
+          <p class="mt-2 text-ink-soft">{T.poveznica.vrijedi.replace("{email}", stanje.email)}</p>
+          <form method="post" class="mt-6">
+            <button type="submit" class="inline-flex min-h-11 items-center gap-2 rounded-md bg-action px-5 font-semibold text-paper hover:bg-action-strong">
+              <LogIn size={18} aria-hidden="true" />{T.poveznica.gumb}
+            </button>
+          </form>
+        </>
+      )}
+    </OkvirPrijave>
+  )
+}

@@ -6,5 +6,7 @@ declare namespace App {
   interface Locals {
     /** Jezik stranice, iz prvog segmenta (src/middleware.ts). */
     lang?: import("./i18n").Lang;
+    /** Prijavljeni korisnik iz kolačića `sesija` (src/middleware.ts, S6); null = neprijavljen. */
+    korisnik: import("./lib/sesija").Korisnik | null;
   }
 }

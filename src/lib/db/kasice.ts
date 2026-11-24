@@ -49,7 +49,7 @@ interface RedakKasice {
 
 const SELECT_KASICE = `
 SELECT m.alias, m.title, m.description, m.goal_cents, m.created_at,
-       u.display_name AS owner_name, u.id AS owner_id, ${PROFIL_JAVAN} AS profil_javan,
+       u.display_name AS owner_name, COALESCE(u.slug, u.id) AS owner_id, ${PROFIL_JAVAN} AS profil_javan,
        s.hide_raised, s.hide_contributor_count,
        (SELECT COALESCE(SUM(d.amount_received_cents), 0) FROM contribution_attributions a
           JOIN contributions d ON d.id = a.contribution_id

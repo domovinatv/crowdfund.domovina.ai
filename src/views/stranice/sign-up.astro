@@ -1,0 +1,73 @@
+---
+// Registracija (ekran 01): ime, prezime, e-pošta, privole; greške uz polje; bez lozinke (odluka 208).
+import UserPlus from "@lucide/astro/icons/user-plus";
+import Greska from "../../components/prijava/Greska.astro";
+import OkvirPrijave from "../../components/prijava/OkvirPrijave.astro";
+import { upitNext } from "../../components/prijava/ucitavanje";
+import { url } from "../../lib/rute";
+import { PRIJAVA } from "../sadrzaj/prijava";
+import type { PodaciRegistracije, PoljeRegistracije } from "./sign-up.ucitaj";
+import type { PropsStranice } from "../tipovi";
+
+type Props = PropsStranice<PodaciRegistracije>;
+const { lang, podaci } = Astro.props;
+const { vrijednosti, greske, next, organizacija, korisnik } = podaci;
+const T = PRIJAVA[lang];
+const R = T.registracija;
+const poruka = (p: PoljeRegistracije) => (greske[p] ? T.greske[greske[p]!] : null);
+const polje = "mt-1.5 block w-full rounded-sm border bg-paper px-3 py-2.5 text-base text-ink";
+const rub = (p: PoljeRegistracije) => (greske[p] ? "border-danger ring-1 ring-danger" : "border-ink-muted/60");
+const akcija = url(lang, "sign-up") + (organizacija ? "?organizacija=1" : upitNext(next));
+const tekstPolja: { id: "ime" | "prezime" | "email"; oznaka: string; tip: "text" | "email"; auto: string }[] = [
+  { id: "ime", oznaka: R.ime, tip: "text", auto: "given-name" },
+  { id: "prezime", oznaka: R.prezime, tip: "text", auto: "family-name" },
+  { id: "email", oznaka: R.eposta, tip: "email", auto: "email" },
+];
+const imaGresaka = Object.keys(greske).length > 0;
+---
+<OkvirPrijave lang={lang} naslov={R.naslov} uvod={R.uvod}>
+  {organizacija && <p class="mt-2 text-sm text-ink-muted">{R.organizacija}</p>}
+  {korisnik && <p role="status" class="mt-4 rounded-md bg-mist p-4 text-sm">{T.prijava.vecPrijavljen.replace("{email}", korisnik.email)}</p>}
+  {imaGresaka && <Greska poruka={T.greske.naslov} />}
+
+  <form method="post" action={akcija} class="mt-6 space-y-5" novalidate>
+    {
+      tekstPolja.map((p) => (
+        <div>
+          <label for={p.id} class="font-semibold text-ink">
+            {p.oznaka} <span class="text-sm font-normal text-ink-muted">({R.obavezno})</span>
+          </label>
+          <input id={p.id} name={p.id} type={p.tip} autocomplete={p.auto} required maxlength={p.id === "email" ? 254 : 255}
+            value={vrijednosti[p.id]} aria-invalid={greske[p.id] ? "true" : undefined} aria-describedby={greske[p.id] ? `${p.id}-greska` : undefined}
+            class:list={[polje, rub(p.id)]} />
+          {poruka(p.id) && <p id={`${p.id}-greska`} class="mt-1 text-sm font-medium text-danger">{poruka(p.id)}</p>}
+          {greske.email === "email_postoji" && p.id === "email" && (
+            <p class="mt-1 text-sm"><a href={`${url(lang, "sign-in")}?email=${encodeURIComponent(vrijednosti.email)}`} class="font-medium text-action underline underline-offset-2">{R.prijava}</a></p>
+          )}
+        </div>
+      ))
+    }
+
+    <fieldset class="space-y-3">
+      <label class="flex items-start gap-3">
+        <input type="checkbox" name="uvjeti" value="1" required class="mt-1 size-5 shrink-0 accent-action"
+          aria-invalid={greske.uvjeti ? "true" : undefined} aria-describedby={greske.uvjeti ? "uvjeti-greska" : undefined} />
+        <span>
+          {T.prijava.uvjetiPrije} <a href={url(lang, "terms")} class="text-action underline underline-offset-2">{T.prijava.uvjeti}</a> {T.prijava.uvjetiI}{" "}
+          <a href={url(lang, "privacy")} class="text-action underline underline-offset-2">{T.prijava.privatnost}</a>
+          <span class="text-sm text-ink-muted"> ({R.obavezno})</span>
+        </span>
+      </label>
+      {poruka("uvjeti") && <p id="uvjeti-greska" class="text-sm font-medium text-danger">{poruka("uvjeti")}</p>}
+      <label class="flex items-start gap-3">
+        <input type="checkbox" name="newsletter" value="1" checked={vrijednosti.newsletter} class="mt-1 size-5 shrink-0 accent-action" />
+        <span class="text-ink-soft">{R.newsletter}</span>
+      </label>
+    </fieldset>
+
+    <button type="submit" class="inline-flex min-h-11 items-center gap-2 rounded-md bg-action px-5 font-semibold text-paper hover:bg-action-strong">
+      <UserPlus size={18} aria-hidden="true" />{R.posalji}
+    </button>
+  </form>
+  <p class="mt-6 text-sm">{R.imaRacun} <a href={url(lang, "sign-in") + upitNext(next)} class="font-medium text-action underline underline-offset-2">{R.prijava}</a></p>
+</OkvirPrijave>

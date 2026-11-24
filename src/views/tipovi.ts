@@ -5,9 +5,12 @@
  *
  * Učitavač radi prije crtanja: vrati `Response` (404, 302, …) ili `{ podaci }` koji pogled
  * dobije kao prop. Pogled sam ne mijenja status; zato upiti i provjere idu u učitavač.
+ * Ruta smije imati samo učitavač bez pogleda (npr. CSV ili samo POST): njegov `Response` se vraća,
+ * a `{ podaci }` bez pogleda je 404 (S6).
  */
 import type { AstroCookies } from "astro";
 import type { Lang } from "../i18n";
+import type { Korisnik } from "../lib/sesija";
 
 export interface KontekstStranice {
   lang: Lang;
@@ -17,6 +20,8 @@ export interface KontekstStranice {
   request: Request;
   cookies: AstroCookies;
   db: D1Database;
+  /** Prijavljeni korisnik (middleware, kolačić `sesija`) ili null. Pristup: src/lib/pristup.ts. */
+  korisnik: Korisnik | null;
 }
 
 export type RezultatUcitavanja<T = unknown> = Response | { podaci: T };

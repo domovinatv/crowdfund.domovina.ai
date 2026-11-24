@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import { kampanjaPoJavnomId, komentariKampanje, novostiKampanje, uplateKampanje } from "../src/lib/db/kampanja";
 import { katalog } from "../src/lib/db/katalog";
 import primjeri from "../seed/primjeri.json";
-import { broj, kaoD1, novaBaza, redovi } from "./pomoc/baza";
+import { broj, kaoD1, novaBaza, redovi, SAD_SEEDA } from "./pomoc/baza";
 
-const SAD = new Date(Date.UTC(2026, 10, 20, 9, 0, 0));
+const SAD = SAD_SEEDA;
 const sqlite = novaBaza({ seed: true });
 const db = kaoD1(sqlite);
 const K = primjeri.kampanja;
@@ -186,7 +186,7 @@ describe("uplateKampanje()", () => {
       broj(sqlite, `SELECT count(*) FROM contributions d JOIN contribution_attributions a ON a.contribution_id = d.id
         JOIN campaign_settings s ON s.campaign_id = d.campaign_id JOIN campaigns c ON c.id = d.campaign_id
         WHERE d.state = 'paid' AND a.amount_hidden = 1 AND s.hide_raised = 0 AND c.state IN ('active','closed')
-          AND c.deleted_at IS NULL AND s.blocked_at IS NULL AND ${"json_extract(c.metadata, '$.contributions_list') IS NOT 'hidden'"}`),
+          AND c.deleted_at IS NULL AND s.blocked_at IS NULL AND s.contributions_list = 'visible'`),
     );
     expect(skriveni.length).toBeGreaterThan(0);
   });

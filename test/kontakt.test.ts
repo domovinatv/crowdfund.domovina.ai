@@ -70,7 +70,7 @@ describe("spremiPorukuKontakta() nad sqlite", () => {
 describe("učitavač kontakta", () => {
   const ctx = (db: ReturnType<typeof novaBaza>, put: string, init?: RequestInit): KontekstStranice => {
     const url = new URL(put, "http://x");
-    return { lang: "hr", params: {}, url, request: new Request(url, init), cookies: undefined as never, db: kaoD1(db) };
+    return { lang: "hr", params: {}, url, request: new Request(url, init), cookies: undefined as never, db: kaoD1(db), korisnik: null };
   };
 
   it("GET: ?tema= predodabire poznatu temu, nepoznatu ignorira", async () => {

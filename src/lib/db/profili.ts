@@ -2,7 +2,8 @@
  * Javni profili: osoba `/hr/u/{slug}`, organizacija `/hr/o/{slug}`, katalog organizacija i vanjska 4fund
  * kampanja `/hr/vanjska/{id}` (S5).
  *
- * Shema nema `users.slug`, pa je slug profila osobe njezin `users.id` (UUIDv7, ne da se nabrojati).
+ * Profil osobe se otvara po `users.slug` (migracija 0004, S6) ili po `users.id` (UUIDv7, ne da se nabrojati);
+ * slug ne smije izgledati kao UUID (CHECK u 0004), pa se dva oblika ne sudaraju.
  * Profil osobe je javan dok je uključen barem jedan od 9 prekidača vidljivosti (ekran 12, `PROFIL_JAVAN`).
  */
 import {
@@ -50,6 +51,7 @@ export interface ProfilKorisnika {
 
 interface RedakProfila {
   id: string;
+  slug: string | null;
   display_name: string | null;
   about: string | null;
   website: string | null;
@@ -72,12 +74,12 @@ interface RedakProfila {
 
 /** Javni profil osobe; null = 404 (nema je, obrisana ili su svi prekidači vidljivosti isključeni). */
 export async function profilKorisnika(db: D1Database, slug: string, sad: Date = new Date()): Promise<ProfilKorisnika | null> {
-  const id = slug.trim().toLowerCase();
-  if (!UUID.test(id)) return null;
+  const kljuc = slug.trim().toLowerCase();
+  if (!UUID.test(kljuc) && !/^[a-z0-9-]{3,40}$/.test(kljuc)) return null;
   // Bez reda u user_settings vrijede zadane vrijednosti sheme.
   const r = await db
     .prepare(
-      `SELECT u.id, u.display_name, u.about, u.website, u.avatar_file_id, u.email, u.phone, u.created_at,
+      `SELECT u.id, u.slug, u.display_name, u.about, u.website, u.avatar_file_id, u.email, u.phone, u.created_at,
               ${PROFIL_JAVAN} AS javan,
               COALESCE(us.show_email, 0) AS show_email, COALESCE(us.show_avatar, 1) AS show_avatar,
               COALESCE(us.show_phone, 0) AS show_phone, COALESCE(us.show_total_raised, 0) AS show_total_raised,
@@ -86,9 +88,9 @@ export async function profilKorisnika(db: D1Database, slug: string, sad: Date = 
               COALESCE(us.show_donated, 1) AS show_donated, COALESCE(us.show_for_organization, 1) AS show_for_organization,
               COALESCE(us.indexable, 1) AS indexable
          FROM users u LEFT JOIN user_settings us ON us.user_id = u.id
-        WHERE u.id = ?`,
+        WHERE ${UUID.test(kljuc) ? "u.id" : "u.slug"} = ?`,
     )
-    .bind(id)
+    .bind(kljuc)
     .first<RedakProfila>();
   if (!r || r.javan !== 1) return null;
 
@@ -125,7 +127,7 @@ export async function profilKorisnika(db: D1Database, slug: string, sad: Date = 
   }
 
   return {
-    slug: r.id,
+    slug: r.slug ?? r.id,
     displayName: r.display_name,
     about: r.about,
     website: r.website,

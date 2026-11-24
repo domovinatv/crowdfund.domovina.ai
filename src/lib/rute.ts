@@ -7,8 +7,9 @@
  * Implementirane su samo `/`, `/hr`, `/en` (S4); ostalo dolazi u S5/S6.
  *
  * Retci su prepisani iz 07 (sve rute s izričitim hr i en oblikom). S5 je dodao en oblik za
- * `pracenje/{token}/odjava` i `cesta-pitanja/{category}` (odluka 502); podkoraci S6
- * (`organizacija/nova/…`, `postavke/verifikacija/…`) dolaze sa S6.
+ * `pracenje/{token}/odjava` i `cesta-pitanja/{category}` (odluka 502). S6 je dodao podkorake bez en
+ * oblika u 07 (`organizacija/nova/…`, `postavke/verifikacija/…`, `postavke/linkovi/dijeljenje`,
+ * `{id}/upravljanje/financije.csv`) s en oblikom upisanim u 07.
  */
 import type { Lang } from "../i18n";
 
@@ -79,6 +80,7 @@ export const RUTE = [
   { kljuc: "campaign.edit", hr: "{id}/uredi", en: "{id}/edit", pristup: "K (U:editor)", faza: "S6" },
   { kljuc: "campaign.manage", hr: "{id}/upravljanje", en: "{id}/manage", pristup: "K", faza: "S6" },
   { kljuc: "campaign.manage.finances", hr: "{id}/upravljanje/financije", en: "{id}/manage/finances", pristup: "U:viewer", faza: "S6" },
+  { kljuc: "campaign.manage.finances.csv", hr: "{id}/upravljanje/financije.csv", en: "{id}/manage/finances.csv", pristup: "U:viewer", faza: "S6" },
   { kljuc: "campaign.manage.refunds", hr: "{id}/upravljanje/povrati", en: "{id}/manage/refunds", pristup: "U:admin, P+e", faza: "S6" },
   { kljuc: "campaign.manage.updates", hr: "{id}/upravljanje/novosti", en: "{id}/manage/updates", pristup: "K (U:editor)", faza: "S6" },
   { kljuc: "campaign.manage.comments", hr: "{id}/upravljanje/komentari", en: "{id}/manage/comments", pristup: "K (U:editor)", faza: "S6" },
@@ -100,11 +102,20 @@ export const RUTE = [
   { kljuc: "settings.sign-in", hr: "postavke/prijava", en: "settings/sign-in", pristup: "P", faza: "S6" },
   { kljuc: "settings.security", hr: "postavke/sigurnost", en: "settings/security", pristup: "P", faza: "S6" },
   { kljuc: "settings.verification", hr: "postavke/verifikacija", en: "settings/verification", pristup: "P", faza: "S6" },
+  { kljuc: "settings.verification.type", hr: "postavke/verifikacija/vrsta", en: "settings/verification/type", pristup: "P", faza: "S6" },
+  { kljuc: "settings.verification.details", hr: "postavke/verifikacija/podaci", en: "settings/verification/details", pristup: "P", faza: "S6" },
+  { kljuc: "settings.verification.review", hr: "postavke/verifikacija/pregled", en: "settings/verification/review", pristup: "P", faza: "S6" },
   { kljuc: "settings.campaign-verification", hr: "postavke/verifikacija-kampanja", en: "settings/campaign-verification", pristup: "P", faza: "S6" },
   { kljuc: "settings.links", hr: "postavke/linkovi", en: "settings/links", pristup: "P", faza: "S6" },
+  { kljuc: "settings.links.sharing", hr: "postavke/linkovi/dijeljenje", en: "settings/links/sharing", pristup: "P", faza: "S6" },
   { kljuc: "settings.recurring", hr: "postavke/ponavljajuce", en: "settings/recurring", pristup: "P", faza: "S6" },
   { kljuc: "settings.sign-in-history", hr: "postavke/povijest-prijava", en: "settings/sign-in-history", pristup: "P", faza: "S6" },
   { kljuc: "organisation.new", hr: "organizacija/nova", en: "organisation/new", pristup: "P", faza: "S6" },
+  { kljuc: "organisation.new.details", hr: "organizacija/nova/podaci", en: "organisation/new/details", pristup: "P", faza: "S6" },
+  { kljuc: "organisation.new.representative", hr: "organizacija/nova/zastupnik", en: "organisation/new/representative", pristup: "P", faza: "S6" },
+  { kljuc: "organisation.new.project", hr: "organizacija/nova/projekt", en: "organisation/new/project", pristup: "P", faza: "S6" },
+  { kljuc: "organisation.new.kyb", hr: "organizacija/nova/kyb", en: "organisation/new/kyb", pristup: "P", faza: "S6" },
+  { kljuc: "organisation.new.review", hr: "organizacija/nova/pregled", en: "organisation/new/review", pristup: "P", faza: "S6" },
   { kljuc: "org.application", hr: "o/{slug}/zahtjev", en: "o/{slug}/application", pristup: "U:owner", faza: "S6" },
   { kljuc: "org.settings", hr: "o/{slug}/postavke", en: "o/{slug}/settings", pristup: "U:admin", faza: "S6" },
   { kljuc: "org.members", hr: "o/{slug}/clanovi", en: "o/{slug}/members", pristup: "U:owner (popis U:viewer)", faza: "S6" },

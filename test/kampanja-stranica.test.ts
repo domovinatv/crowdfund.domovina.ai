@@ -127,7 +127,7 @@ describe("učitavači nad seedom", () => {
   const db = kaoD1(sqlite);
   const ctx = (put: string, params: Record<string, string>, init?: RequestInit): KontekstStranice => {
     const u = new URL(put, "http://localhost:8802");
-    return { lang: put.startsWith("/en") ? "en" : "hr", params, url: u, request: new Request(u, init), cookies: undefined as never, db };
+    return { lang: put.startsWith("/en") ? "en" : "hr", params, url: u, request: new Request(u, init), cookies: undefined as never, db, korisnik: null };
   };
   const status = (r: unknown) => (r instanceof Response ? r.status : 200);
 

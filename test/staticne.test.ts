@@ -59,7 +59,7 @@ function oblik(x: unknown): unknown {
 
 const ctx = (put: string, params: Record<string, string> = {}): KontekstStranice => {
   const u = new URL(put, "http://x");
-  return { lang: put.startsWith("/en") ? "en" : "hr", params, url: u, request: new Request(u), cookies: undefined as never, db: undefined as never };
+  return { lang: put.startsWith("/en") ? "en" : "hr", params, url: u, request: new Request(u), cookies: undefined as never, db: undefined as never, korisnik: null };
 };
 
 describe("pogledi S5", () => {

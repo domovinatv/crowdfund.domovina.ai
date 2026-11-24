@@ -37,8 +37,8 @@ export const PROFIL_JAVAN = `(u.deleted_at IS NULL AND (us.user_id IS NULL OR
    us.show_email + us.show_avatar + us.show_phone + us.show_total_raised + us.show_registered_date +
    us.show_promoted + us.show_owned + us.show_donated + us.show_for_organization > 0))`;
 
-/** Popis uplata skriven: shema nema stupac, platformska postavka je u `campaigns.metadata` (vidi seed). */
-export const POPIS_SKRIVEN = `COALESCE(json_extract(c.metadata, '$.contributions_list') = 'hidden', 0)`;
+/** Popis uplata skriven: `campaign_settings.contributions_list` (migracija 0004, prije `metadata`, odluka 509). */
+export const POPIS_SKRIVEN = `(s.contributions_list = 'hidden')`;
 
 export type StanjeKampanje = "active" | "paused" | "closed";
 

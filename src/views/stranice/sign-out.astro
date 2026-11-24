@@ -1,0 +1,20 @@
+---
+// Odjava: potvrda gumbom (POST), jer GET ne mijenja stanje (docs/07 konvencija 5).
+import LogOut from "@lucide/astro/icons/log-out";
+import OkvirPrijave from "../../components/prijava/OkvirPrijave.astro";
+import { url } from "../../lib/rute";
+import type { Korisnik } from "../../lib/sesija";
+import { PRIJAVA } from "../sadrzaj/prijava";
+import type { PropsStranice } from "../tipovi";
+
+type Props = PropsStranice<{ korisnik: Korisnik }>;
+const { lang, podaci } = Astro.props;
+const T = PRIJAVA[lang].odjava;
+---
+<OkvirPrijave lang={lang} naslov={T.naslov} uvod={T.tekst.replace("{email}", podaci.korisnik.email)}>
+  <form method="post" action={url(lang, "sign-out")} class="mt-6">
+    <button type="submit" class="inline-flex min-h-11 items-center gap-2 rounded-md bg-action px-5 font-semibold text-paper hover:bg-action-strong">
+      <LogOut size={18} aria-hidden="true" />{T.gumb}
+    </button>
+  </form>
+</OkvirPrijave>

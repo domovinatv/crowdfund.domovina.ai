@@ -1,6 +1,7 @@
 ---
 // Dispečer jezičnih ruta (odluka 500): `/hr/…` i `/en/…` → ruta iz src/lib/rute.ts → pogled
 // `src/views/stranice/<kljuc>.astro` (+ učitavač). Nepoznata ruta ili ruta bez pogleda: 404.
+// Učitavač bez pogleda (CSV, samo POST) smije vratiti vlastiti `Response` (S6).
 import { env } from "cloudflare:workers";
 import { isLang } from "../../i18n";
 import { prepoznaj } from "../../lib/rute";
@@ -16,15 +17,15 @@ let nema = true;
 if (isLang(lang)) {
   const nadjeno = prepoznaj(lang, put ?? "");
   Pogled = nadjeno ? pogled(nadjeno.ruta.kljuc) : undefined;
-  if (nadjeno && Pogled) {
+  const ucitaj = nadjeno ? ucitavac(nadjeno.ruta.kljuc) : undefined;
+  if (nadjeno && (Pogled || ucitaj)) {
     params = nadjeno.params;
-    const ucitaj = ucitavac(nadjeno.ruta.kljuc);
     const r = ucitaj
-      ? await ucitaj({ lang, params, url: Astro.url, request: Astro.request, cookies: Astro.cookies, db: env.DB })
+      ? await ucitaj({ lang, params, url: Astro.url, request: Astro.request, cookies: Astro.cookies, db: env.DB, korisnik: Astro.locals.korisnik })
       : { podaci: null };
     if (r instanceof Response) {
       if (r.status !== 404) return r;
-    } else {
+    } else if (Pogled) {
       podaci = r.podaci;
       nema = false;
     }

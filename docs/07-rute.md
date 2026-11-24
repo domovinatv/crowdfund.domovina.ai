@@ -41,6 +41,12 @@ inventar obilaska ([obilazak/README](research/obilazak/README.md)), javni pregle
 Kampanja koja nije javno vidljiva (`draft`, `review`, `cancelled`, `blocked_at`) vraća 404 svima osim K i A;
 neindeksirana (`visibility = unlisted`) vraća 200 s `noindex` i ne ulazi u katalog.
 
+Provjera u kodu (S6): `src/lib/pristup.ts`. Neprijavljeni na P/P+e/K/U/A ruti dobiva 302 na
+`/{lang}/prijava?next=<put+upit>`; prijavljeni bez prava 404 (i za A: postojanje moderacije se ne otkriva).
+Moderator prolazi K, ali ne U:uloga. P+e: bez potvrde u zadnjih 10 min 302 na `/{lang}/potvrda-radnje/{token}`,
+gdje je token id retka `one_time_codes(step_up)` tog korisnika. Provjera ruta (`npm run routes`) računa očekivani
+status iz stupca „Pristup” i P/K/U/A rute zove i s demo sesijom iz `seed/primjeri.json`.
+
 ## Sitemap
 
 ```mermaid
@@ -141,7 +147,7 @@ flowchart LR
 | `/hr/nova-kampanja/pregled` | `/en/new-campaign/preview` | J (objava P + U:admin ili K) | pregled; „Objavi” traži prijavu, nacrt prelazi na poslužitelj (odluka 152, 211) | 07, 25 |
 | `/hr/{id}/uredi` | `/en/{id}/edit` | K (U:editor) | sve postavke iz pregleda §4.2: naslov, cilj, rok, opis, galerija, lokacija, min. iznos, vidljivost, popis uplata, komentari, kasice, ponude, zahvala | pregled §4.2 |
 | `/hr/{id}/upravljanje` | `/en/{id}/manage` | K | nadzorna ploča: brojke, statistika po danu, izvori (kasice, linkovi, dijeljenje), Isključi/Uključi | pregled §4 („More”, „Statistics”) |
-| `/hr/{id}/upravljanje/financije` | `/en/{id}/manage/finances` | U:viewer | popis uplata (i anonimnih), stanje intenta, CSV `…/financije.csv` | pregled §6, 08 |
+| `/hr/{id}/upravljanje/financije` | `/en/{id}/manage/finances` | U:viewer | popis uplata (i anonimnih), stanje intenta, CSV `…/financije.csv` (`…/finances.csv`) | pregled §6, 08 |
 | `/hr/{id}/upravljanje/povrati` | `/en/{id}/manage/refunds` | U:admin, P+e | zapis povrata (Safe tx ili bankovna referenca), odluka 210 | tok 11 |
 | `/hr/{id}/upravljanje/novosti` | `/en/{id}/manage/updates` | K (U:editor) | ažuriranja: popis, nova, uredi | 22 |
 | `/hr/{id}/upravljanje/komentari` | `/en/{id}/manage/comments` | K (U:editor) | moderacija: sakrij, odgovori | 22 |
@@ -167,9 +173,9 @@ flowchart LR
 | `/hr/postavke/profil` | `/en/settings/profile` | P (brisanje P+e) | 9 prekidača vidljivosti, indeksiranje, brisanje računa | 12 |
 | `/hr/postavke/prijava` | `/en/settings/sign-in` | P | načini prijave (kod, poveznica, Google), bez lozinke | 13, odluka 208 |
 | `/hr/postavke/sigurnost` | `/en/settings/security` | P | dodatna potvrda e-poštom za osjetljive radnje; bez limita isplate | 14 |
-| `/hr/postavke/verifikacija` | `/en/settings/verification` | P | verifikacija osobe (EMI), koraci `…/vrsta`, `…/podaci`, `…/pregled` | 02 |
+| `/hr/postavke/verifikacija` | `/en/settings/verification` | P | verifikacija osobe (EMI), koraci `…/vrsta` (`…/type`), `…/podaci` (`…/details`), `…/pregled` (`…/review`) | 02 |
 | `/hr/postavke/verifikacija-kampanja` | `/en/settings/campaign-verification` | P | popis kampanja s pragom i stanjem dokaza | 15 |
-| `/hr/postavke/linkovi` | `/en/settings/links` | P | moji linkovi za praćenje; `…/linkovi/dijeljenje` automatski linkovi dijeljenja | 16 |
+| `/hr/postavke/linkovi` | `/en/settings/links` | P | moji linkovi za praćenje; `…/linkovi/dijeljenje` (`…/links/sharing`) automatski linkovi dijeljenja | 16 |
 | `/hr/postavke/ponavljajuce` | `/en/settings/recurring` | P | obećanja ponavljanja: pauza, otkaz, dan u mjesecu | 17 |
 | `/hr/postavke/povijest-prijava` | `/en/settings/sign-in-history` | P | povijest prijava | 18 |
 
@@ -177,7 +183,7 @@ flowchart LR
 
 | hr | en | Pristup | Sadržaj | Ekran / izvor |
 |---|---|---|---|---|
-| `/hr/organizacija/nova` | `/en/organisation/new` | P | zahtjev organizacije, koraci `…/podaci`, `…/zastupnik`, `…/projekt`, `…/kyb`, `…/pregled` | 20, 26 |
+| `/hr/organizacija/nova` | `/en/organisation/new` | P | zahtjev organizacije, koraci `…/podaci` (`…/details`), `…/zastupnik` (`…/representative`), `…/projekt` (`…/project`), `…/kyb` (`…/kyb`), `…/pregled` (`…/review`) | 20, 26 |
 | `/hr/o/{slug}/zahtjev` | `/en/o/{slug}/application` | U:owner | stanje zahtjeva („3 / 5”) i KYB-a | 26 |
 | `/hr/o/{slug}/postavke` | `/en/o/{slug}/settings` | U:admin | javni profil, logo, kategorija, mreže, „prima kampanje drugih” | 20 |
 | `/hr/o/{slug}/clanovi` | `/en/o/{slug}/members` | U:owner (popis U:viewer) | članovi, uloge, pozivnice; promjena uloge P+e | odluka 150, 202 |

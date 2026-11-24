@@ -1,0 +1,31 @@
+---
+// „Provjeri e-poštu” (ekran 01): demo pretinac, unos koda za potvrdu adrese, ponovno slanje.
+import DemoPosta from "../../components/prijava/DemoPosta.astro";
+import OkvirPrijave from "../../components/prijava/OkvirPrijave.astro";
+import UnosKoda from "../../components/prijava/UnosKoda.astro";
+import { upitNext, type PodaciUnosaKoda } from "../../components/prijava/ucitavanje";
+import { url } from "../../lib/rute";
+import { PRIJAVA } from "../sadrzaj/prijava";
+import type { PropsStranice } from "../tipovi";
+
+type Props = PropsStranice<PodaciUnosaKoda>;
+const { lang, podaci } = Astro.props;
+const { stanje, email, demo, next, greska, preostalo } = podaci;
+const T = PRIJAVA[lang];
+const q = upitNext(next);
+---
+{
+  stanje === "nema" || !email ? (
+    <OkvirPrijave lang={lang} naslov={T.potvrda.naslov} uvod={T.kod.nemaTekst}>
+      <p class="mt-6 flex flex-wrap gap-4">
+        <a href={url(lang, "sign-up") + q} class="font-medium text-action underline underline-offset-2">{T.registracija.naslov}</a>
+        <a href={url(lang, "sign-in") + q} class="font-medium text-action underline underline-offset-2">{T.kod.naPrijavu}</a>
+      </p>
+    </OkvirPrijave>
+  ) : (
+    <OkvirPrijave lang={lang} naslov={T.potvrda.naslov} uvod={T.potvrda.uvod.replace("{email}", email)}>
+      <DemoPosta lang={lang} poruka={demo} />
+      <UnosKoda lang={lang} akcija={url(lang, "sign-up.confirm") + q} next={next} stanje={stanje} greska={greska} preostalo={preostalo} />
+    </OkvirPrijave>
+  )
+}

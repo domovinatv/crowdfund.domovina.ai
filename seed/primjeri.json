@@ -19,9 +19,9 @@
     "obrisana404": "necdy4"
   },
   "korisnik": {
-    "javni": "019df237-3e80-72fa-bdb3-a8c1e48e8d77",
-    "javniNeindeksiran": "019e8269-4e80-7065-83f5-438082d23899",
-    "privatni404": "019e5e5c-ca80-7ec2-8c33-33302c6d606e"
+    "javni": "019e04e2-4c00-72fa-bdb3-a8c1e48e8d77",
+    "javniNeindeksiran": "019e9514-5c00-7065-83f5-438082d23899",
+    "privatni404": "019e7107-d800-7ec2-8c33-33302c6d606e"
   },
   "organizacija": "demo-sapica",
   "organizacijaNeverificirana": "demo-suncani-krov",
@@ -29,8 +29,23 @@
   "kasicaNeaktivna404": "demo-kalendar-stara",
   "linkZaPracenje": "demo-obroci-fb",
   "linkZaPracenjeNeaktivan404": "demo-oprema-stari",
-  "vanjska": "019ec035-9e80-755f-ba1f-d2648d7250bf",
-  "vanjskaNeaktivna404": "019efe01-ee80-733a-ae33-6596bf583905",
-  "pracenjeToken": "019e1643-c280-757b-a8f1-690dce1d00c9.01a00c28-de00-795d-a1cc-4538bacfd1e4.nRPuqHpXVfsOAerftCTeRl2oXdi1J1pHus-0oBLj-Y0",
-  "kategorija": "animals"
+  "vanjska": "019ed2e0-ac00-755f-ba1f-d2648d7250bf",
+  "vanjskaNeaktivna404": "019f10ac-fc00-733a-ae33-6596bf583905",
+  "pracenjeToken": "019e28ee-d000-757b-a8f1-690dce1d00c9.01a01ed3-eb80-795d-a1cc-4538bacfd1e4.bfUORyB-vdSmDPrS_phYPReUPROeiuEjaodPZLXTnT8",
+  "kategorija": "animals",
+  "demoSad": "2026-11-24",
+  "demoRacuni": {
+    "organizator": "ivana.testic@demo.invalid",
+    "moderator": "filip.moderovic@demo.invalid",
+    "novi": "novi@demo.invalid"
+  },
+  "demoSesija": "demo-sesija-organizator",
+  "demoSesijaModerator": "demo-sesija-moderator",
+  "demoSesijaNovi": "demo-sesija-novi",
+  "organizacijaOrganizatora": "demo-svjetionik",
+  "poveznicaPrijave": "demo-poveznica-novi",
+  "potvrdaRadnje": "01a20ac7-dc80-7606-b7ae-985a68f99966",
+  "pozivnica": "demo-pozivnica-novi",
+  "prijavaModeracije": "01a1f640-bc00-7203-bfe2-a81784a17cfd",
+  "korisnikSlug": "demo-marko"
 }

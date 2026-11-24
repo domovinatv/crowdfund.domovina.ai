@@ -11,6 +11,7 @@ vrijeme unix ms, skup = `CHECK (x IN (…))`, boolean `CHECK (x IN (0,1))`, JSON
 | `migrations/0001_core.sql` | 15 tablica jezgre (`CORE_TABLES`), bez vertikala | **generira se** iz `@domovina/campaign-core` (`contract.ts`, skupovi iz `sets.ts`) skriptom u S4; J2 u campaign-coreu još ne postoji |
 | `migrations/0002_platform.sql` | platformske tablice ispod | ovaj dokument |
 | `migrations/0003_seed_reference.sql` | kategorije | ovaj dokument |
+| `migrations/0004_s6.sql` | `users.slug`, `campaign_settings.contributions_list`, `campaign_follows` s e-poštom i tokenom, indeksi prijave | §0004 ispod (S6) |
 
 S4 ima test koji uspoređuje `0001_core.sql` s opisom iz paketa (kao planirani J2 test u campaign-coreu), pa
 nova verzija paketa ruši build dok se migracija ne obnovi. Vertikale (`campaign_energy`,
@@ -562,6 +563,55 @@ INSERT INTO categories (key, sort, name_hr, name_en) VALUES
   ('travel',   7, 'Putovanja',   'Travel'),
   ('other',    8, 'Ostalo',      'Other');
 ```
+
+## 0004_s6.sql
+
+S6 (prijedlozi S5, odluke 507–509). Datoteka je izvor istine; ovdje su promjene sheme za provjeru nacrta.
+
+- **`users.slug`** (nullable, UNIQUE djelomičnim indeksom): isti uzorak kao `organizations.slug` i ne smije
+  izgledati kao UUID, jer `/hr/u/{slug}` prihvaća i `users.id`.
+- **`campaign_settings.contributions_list`** (`visible` | `hidden`, zadano `visible`) umjesto
+  `campaigns.metadata.contributions_list`; migracija prepisuje postojeće `hidden` i briše ključ iz `metadata`.
+- **`campaign_follows`** se gradi iznova: `user_id` postaje nullable, dodani su `email` (neprijavljeni pratitelj),
+  `token_hash` (SHA-256 tokena iz poveznice) i `confirmed_at` (potvrda poveznicom; prijavljeni = `created_at`).
+  Primarni ključ `(user_id, campaign_id)` zamjenjuju djelomični UNIQUE indeksi.
+
+```sql
+ALTER TABLE users ADD COLUMN slug TEXT
+  CHECK (slug IS NULL OR (slug NOT GLOB '*[^a-z0-9-]*' AND length(slug) BETWEEN 3 AND 40
+                          AND slug NOT GLOB '????????-????-????-????-????????????'));
+CREATE UNIQUE INDEX users_slug ON users (slug) WHERE slug IS NOT NULL;
+
+ALTER TABLE campaign_settings ADD COLUMN contributions_list TEXT NOT NULL DEFAULT 'visible'
+  CHECK (contributions_list IN ('visible','hidden'));
+
+CREATE TABLE campaign_follows_s6 (
+  user_id          TEXT REFERENCES users(id),
+  email            TEXT COLLATE NOCASE,
+  campaign_id      TEXT NOT NULL REFERENCES campaigns(id),
+  notify_comments  INTEGER NOT NULL DEFAULT 0 CHECK (notify_comments IN (0,1)),
+  notify_updates   INTEGER NOT NULL DEFAULT 0 CHECK (notify_updates IN (0,1)),
+  notify_end       INTEGER NOT NULL DEFAULT 0 CHECK (notify_end IN (0,1)),
+  token_hash       TEXT,
+  confirmed_at     INTEGER,
+  created_at       INTEGER NOT NULL,
+  CHECK (user_id IS NOT NULL OR email IS NOT NULL)
+);
+DROP TABLE campaign_follows;
+ALTER TABLE campaign_follows_s6 RENAME TO campaign_follows;
+CREATE UNIQUE INDEX campaign_follows_user ON campaign_follows (user_id, campaign_id) WHERE user_id IS NOT NULL;
+CREATE UNIQUE INDEX campaign_follows_email ON campaign_follows (email, campaign_id) WHERE user_id IS NULL;
+CREATE UNIQUE INDEX campaign_follows_token ON campaign_follows (token_hash) WHERE token_hash IS NOT NULL;
+
+CREATE INDEX one_time_codes_step_up ON one_time_codes (user_id, purpose, action, used_at);
+CREATE INDEX sessions_user ON sessions (user_id, revoked_at);
+```
+
+Prijava (S6, `src/lib/sesija.ts`) koristi postojeće tablice: `one_time_codes` (kod: `code_hash = SHA-256("{id}:{kod}")`;
+poveznica: zaseban red iste svrhe s `action = 'link'` i `code_hash = SHA-256(token)`; dodatna potvrda: `step_up` s
+radnjom u `action`), `sessions.id = SHA-256(token iz kolačića)`, `login_events` s `/24` ili `/48` prefiksom,
+`auth_identities` (`email_code`, `email_link`, `google` sa subjectom `mock-google:{e-pošta}`), `consents`
+(`terms_privacy`, `newsletter`, verzija `uvjeti-2026-11`). Token pozivnice: `membership_invites.token_hash = SHA-256(token)`.
 
 ## Napomene za S4
 

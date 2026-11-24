@@ -17,6 +17,10 @@ export const hr = {
   "nav.organisations": "Organizacije",
   "nav.start": "Pokreni kampanju",
   "nav.signIn": "Prijava",
+  "nav.myCampaigns": "Moje kampanje",
+  "nav.signOut": "Odjava",
+  "nav.account": "Račun",
+  "nav.signedInAs": "Prijavljeni ste kao",
   "nav.menu": "Izbornik",
   "nav.home": "Naslovnica",
 

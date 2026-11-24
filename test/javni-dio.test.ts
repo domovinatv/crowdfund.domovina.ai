@@ -6,9 +6,9 @@ import { katalogOrganizacija, organizacijaPoSlugu, profilKorisnika, vanjskaKampa
 import { MIN } from "../src/lib/db/zajednicko";
 import primjeri from "../seed/primjeri.json";
 import { demoPrimjeri, tokenPracenja as tokenIzSeeda } from "../scripts/seed.mjs";
-import { broj, kaoD1, novaBaza, redovi } from "./pomoc/baza";
+import { broj, kaoD1, novaBaza, redovi, DEMO_SAD, SAD_SEEDA } from "./pomoc/baza";
 
-const SAD = new Date(Date.UTC(2026, 10, 20, 9, 0, 0));
+const SAD = SAD_SEEDA;
 const sqlite = novaBaza({ seed: true });
 const db = kaoD1(sqlite);
 const K = primjeri.kampanja;
@@ -18,7 +18,7 @@ const bezEposte = (x: unknown) => expect(JSON.stringify(x)).not.toContain("@demo
 
 describe("seed/primjeri.json", () => {
   it("jednak generatoru i svaki primjer postoji", () => {
-    expect(primjeri).toEqual(demoPrimjeri());
+    expect(primjeri).toEqual(demoPrimjeri(DEMO_SAD));
     expect(Object.values(primjeri.kampanja).every((id) => /^[0-9a-z]{6}$/.test(id))).toBe(true);
   });
 });

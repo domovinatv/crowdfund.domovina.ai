@@ -1,0 +1,22 @@
+---
+// Dodatna potvrda osjetljive radnje (ekran 27, P+e): demo pretinac s kodom, unos koda, novi kod.
+import DemoPosta from "../../components/prijava/DemoPosta.astro";
+import OkvirPrijave from "../../components/prijava/OkvirPrijave.astro";
+import UnosKoda from "../../components/prijava/UnosKoda.astro";
+import { upitNext } from "../../components/prijava/ucitavanje";
+import { url } from "../../lib/rute";
+import { PRIJAVA } from "../sadrzaj/prijava";
+import type { PodaciPotvrdeRadnje } from "./confirm-action.ucitaj";
+import type { PropsStranice } from "../tipovi";
+
+type Props = PropsStranice<PodaciPotvrdeRadnje>;
+const { lang, podaci } = Astro.props;
+const { token, action, email, stanje, demo, next, greska, preostalo } = podaci;
+const T = PRIJAVA[lang].potvrdaRadnje;
+const radnja = (action && T.radnje[action]) || T.nepoznata;
+---
+<OkvirPrijave lang={lang} naslov={T.naslov} uvod={T.uvod.replace("{radnja}", radnja).replace("{email}", email)}>
+  <DemoPosta lang={lang} poruka={demo} />
+  <UnosKoda lang={lang} akcija={url(lang, "confirm-action", { token }) + upitNext(next)} next={next} stanje={stanje} greska={greska} preostalo={preostalo} potvrdi={T.potvrdi} />
+  {next && <p class="mt-2"><a href={next} class="text-sm font-medium text-action underline underline-offset-2">{T.natrag}</a></p>}
+</OkvirPrijave>

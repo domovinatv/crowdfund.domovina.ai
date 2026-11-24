@@ -23,7 +23,7 @@ if (isLang(id)) {
   if (Pogled) {
     const ucitaj = ucitavac("home");
     const r = ucitaj
-      ? await ucitaj({ lang: id, params: {}, url: Astro.url, request: Astro.request, cookies: Astro.cookies, db: env.DB })
+      ? await ucitaj({ lang: id, params: {}, url: Astro.url, request: Astro.request, cookies: Astro.cookies, db: env.DB, korisnik: Astro.locals.korisnik })
       : { podaci: null };
     if (r instanceof Response) {
       if (r.status !== 404) return r;

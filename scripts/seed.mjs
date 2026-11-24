@@ -2,9 +2,12 @@
 // Generira seed/demo.sql: izmišljene demo kampanje za lokalni razvoj i testove (S4).
 //
 // Odluke ove skripte:
-//  - DETERMINIZAM: fiksni PRNG (mulberry32, sjeme SJEME), fiksni „sad” (SAD) i UUIDv7 čiji je
-//    vremenski dio vrijeme zapisa, a slučajni dio iz istog PRNG-a. Isti ulaz = isti bajtovi, pa
-//    je diff stabilan; test uspoređuje datoteku s demoSql().
+//  - DETERMINIZAM: fiksni PRNG (mulberry32, sjeme SJEME), „sad” (SAD) i UUIDv7 čiji je vremenski
+//    dio vrijeme zapisa, a slučajni dio iz istog PRNG-a. Isti DEMO_SAD = isti bajtovi; test
+//    uspoređuje datoteku s demoSql(<DEMO_SAD iz primjeri.json>).
+//  - SAD (S6, odluka 532): početak tekućeg UTC dana pri generiranju, ili `DEMO_SAD=YYYY-MM-DD` iz
+//    okoline. Sva vremena su relativna na SAD, pa demo kampanje nakon novog seeda ne pokazuju
+//    „rok je prošao”. Datum stoji u prvom retku demo.sql i u primjeri.json (`demoSad`).
 //  - DEMO OZNAKA: `campaigns.demo = 1` i `metadata = {"demo":true}`; sve ostalo je demo preko
 //    veze na demo kampanju ili po e-pošti `@demo.invalid` (users, organizers, checkouts),
 //    slugu organizacije `demo-…`, sidu intenta `demo…` i referencama `DEMO-…`. Sirovih IBAN-ova
@@ -19,10 +22,14 @@
 //    slučajevi javnog dijela. Nove kampanje su na kraju popisa, a checkouti/atribucije se upisuju
 //    nakon kasica, pa ranije kampanje i doprinosi ostaju isti. Uz SQL nastaje seed/primjeri.json.
 //    Galerija (campaign_media) se ne seeda: slika traži datoteku u R2, pa kartice koriste temu naslovnice.
+//  - S6: demo računi za prijavu (organizator = vlasnica Zaklade Svjetionik nade, moderator, novi
+//    korisnik bez ičega), demo sesije s POZNATIM tokenom (samo za lokalnu provjeru ruta; token u
+//    primjeri.json, red u login_events s `device = 'demo seed'`), poveznica za prijavu, dodatna
+//    potvrda i pozivnica s poznatim tokenom (`demo-…`), slug jedne osobe, popis uplata kao stupac.
 //
 // Upotreba: npm run db:gen-seed   (piše seed/demo.sql i seed/primjeri.json)
 //           node scripts/seed.mjs --stdout
-import { createHmac } from "node:crypto";
+import { createHash, createHmac } from "node:crypto";
 import { mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -32,11 +39,33 @@ export const SEED_PATH = join(ROOT, "seed", "demo.sql");
 export const PRIMJERI_PATH = join(ROOT, "seed", "primjeri.json");
 
 const SJEME = 20261124;
-const SAD = Date.UTC(2026, 10, 20, 9, 0, 0); // 2026-11-20 09:00 UTC
 const SAT = 3_600_000;
 const DAN = 24 * SAT;
 const TENANT = "sbx-crowdfund-demo";
 const LANAC = 10200;
+
+/** „Sad” seeda kao `YYYY-MM-DD`: `DEMO_SAD` iz okoline ili tekući UTC dan (odluka 532). */
+export function sadSeeda(okolina = process.env.DEMO_SAD, sat = new Date()) {
+  if (okolina) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(okolina) || Number.isNaN(Date.parse(`${okolina}T00:00:00Z`))) {
+      throw new Error(`DEMO_SAD mora biti YYYY-MM-DD, a ne ${okolina}`);
+    }
+    return okolina;
+  }
+  return sat.toISOString().slice(0, 10);
+}
+
+/** SHA-256 hex, isto kao `hashTokena` u src/lib/sesija.ts. */
+const sha256 = (/** @type {string} */ s) => createHash("sha256").update(s).digest("hex");
+
+/** Poznati demo tokeni (S6): vrijede samo nad lokalnim seedom. */
+export const DEMO_TOKENI = {
+  sesijaOrganizator: "demo-sesija-organizator",
+  sesijaModerator: "demo-sesija-moderator",
+  sesijaNovi: "demo-sesija-novi",
+  poveznicaPrijave: "demo-poveznica-novi",
+  pozivnica: "demo-pozivnica-novi",
+};
 
 // --- PRNG i ID-evi -----------------------------------------------------------------------------
 
@@ -58,10 +87,19 @@ export function tabliceRedomOvisnosti(dir = join(ROOT, "migrations")) {
     .join("\n");
   /** @type {Map<string, Set<string>>} */
   const ovisi = new Map();
-  for (const m of sql.matchAll(/CREATE TABLE (\w+) \(([\s\S]*?)\n\);/g)) {
-    const refs = new Set([...m[2].matchAll(/REFERENCES (\w+)\(/g)].map((r) => r[1]));
-    refs.delete(m[1]);
-    ovisi.set(m[1], refs);
+  // Naredbe redom migracija: CREATE dodaje tablicu, DROP je briše, RENAME je preimenuje (0004 gradi
+  // campaign_follows iznova), pa popis odgovara konačnoj shemi.
+  for (const m of sql.matchAll(/CREATE TABLE (\w+) \(([\s\S]*?)\n\);|DROP TABLE (\w+);|ALTER TABLE (\w+) RENAME TO (\w+);/g)) {
+    if (m[3]) ovisi.delete(m[3]);
+    else if (m[4]) {
+      const refs = ovisi.get(m[4]) ?? new Set();
+      ovisi.delete(m[4]);
+      ovisi.set(m[5], refs);
+    } else {
+      const refs = new Set([...m[2].matchAll(/REFERENCES (\w+)\(/g)].map((r) => r[1]));
+      refs.delete(m[1]);
+      ovisi.set(m[1], refs);
+    }
   }
   /** @type {string[]} */
   const red = [];
@@ -221,14 +259,14 @@ function lit(v) {
   return `'${String(v).replaceAll("'", "''")}'`;
 }
 
-/** Cijeli sadržaj seed/demo.sql (deterministički). */
-export function demoSql() {
-  return generiraj().sql;
+/** Cijeli sadržaj seed/demo.sql (deterministički za isti `sad`, `YYYY-MM-DD`). */
+export function demoSql(sad = sadSeeda()) {
+  return generiraj(sad).sql;
 }
 
-/** Sadržaj seed/primjeri.json: po jedan primjer za svaki dinamički parametar javnih ruta (S5). */
-export function demoPrimjeri() {
-  return generiraj().primjeri;
+/** Sadržaj seed/primjeri.json: po jedan primjer za svaki dinamički parametar ruta (S5, S6). */
+export function demoPrimjeri(sad = sadSeeda()) {
+  return generiraj(sad).primjeri;
 }
 
 /**
@@ -242,7 +280,8 @@ export function tokenPracenja(/** @type {string} */ userId, /** @type {string} *
   return `${p}.${createHmac("sha256", tajna).update(p).digest("base64url")}`;
 }
 
-function generiraj() {
+function generiraj(/** @type {string} */ demoSad) {
+  const SAD = Date.parse(`${demoSad}T00:00:00Z`);
   const rnd = mulberry32(SJEME);
   const int = (/** @type {number} */ a, /** @type {number} */ b) => a + Math.floor(rnd() * (b - a + 1));
   const sansa = (/** @type {number} */ p) => rnd() < p;
@@ -283,6 +322,8 @@ function generiraj() {
     const u = { id: uuid7(t), email, display_name: `${ime} ${prezime}`, t };
     upisi("users", {
       id: u.id, email, display_name: u.display_name, first_name: ime, last_name: prezime,
+      // S6: jedna osoba ima slug profila (`/hr/u/demo-marko`), ostale se otvaraju po id-u.
+      slug: i === 1 ? "demo-marko" : null,
       about: i % 3 === 0 ? "Izmišljeni demo korisnik." : null, website: null, phone: null,
       country_code: "HR", avatar_file_id: null, locale: i === 8 ? "en" : "hr",
       platform_role: i === 9 ? "moderator" : "user", email_verified_at: t + SAT,
@@ -357,6 +398,8 @@ function generiraj() {
   const doprinosMeta = new Map();
   /** @type {{id: string, publicId: string, t: number, autor: typeof users[number], org: typeof orgs[number], kraj: number}[]} */
   const kInfo = [];
+  /** @type {string[]} */
+  const prijaveModeracije = [];
   KAMPANJE.forEach((k, idx) => {
     const org = orgs[k.org];
     const autor = users[k.by];
@@ -385,8 +428,7 @@ function generiraj() {
       recurrence: k.recurrence ?? "none", cover_image_url: null, lat: null, lng: null,
       location_name: ORGANIZACIJE[k.org][5],
       surplus_intent: k.goal ? "Višak prikupljenog ide u redovni rad organizacije." : null,
-      // Popis uplata skriven: shema nema stupac, pa platformska postavka ide u metadata (S5).
-      demo: 1, metadata: k.popisSkriven ? { demo: true, contributions_list: "hidden" } : { demo: true }, created_by: autor.id, created_at: t, updated_at: azurirana,
+      demo: 1, metadata: { demo: true }, created_by: autor.id, created_at: t, updated_at: azurirana,
       deleted_at: k.obrisana ? krajAktivnosti : null,
     });
     upisi("campaign_safes", {
@@ -409,6 +451,7 @@ function generiraj() {
       allow_moneyboxes: k.bezKasica ? 0 : 1, allow_external_offers: PONUDE.some((p) => p[0] === idx) ? 1 : 0,
       contribution_notifications: 1, thank_you_message: "Hvala na podršci! (demo)",
       purpose_verified: k.purpose ? 1 : 0,
+      contributions_list: k.popisSkriven ? "hidden" : "visible",
       paused_at: k.pauzirana ? krajAktivnosti : null,
       blocked_at: k.blokirana ? krajAktivnosti : null,
       blocked_reason: k.blokirana ? "Privremena blokada do provjere prijave (demo)." : null,
@@ -576,6 +619,7 @@ function generiraj() {
     if (k.blokirana) {
       const tr = krajAktivnosti - DAN;
       const rid = uuid7(tr);
+      prijaveModeracije.push(rid);
       upisi("reports", {
         id: rid, target_type: "campaign", target_id: id, reason: "fraud",
         description: "Demo prijava: sumnjam da parcela nije u vlasništvu organizatora i da vrt neće biti napravljen.",
@@ -693,7 +737,7 @@ function generiraj() {
   for (const [ui, ki, kom, nov, kraj] of PRACENJA) {
     upisi("campaign_follows", {
       user_id: users[ui].id, campaign_id: kInfo[ki].id, notify_comments: kom, notify_updates: nov, notify_end: kraj,
-      created_at: kInfo[ki].t + (ui + 1) * DAN,
+      confirmed_at: kInfo[ki].t + (ui + 1) * DAN, created_at: kInfo[ki].t + (ui + 1) * DAN,
     });
   }
 
@@ -757,12 +801,70 @@ function generiraj() {
     campaign_id: null, created_at: tn, updated_at: tn + SAT,
   });
 
+  // --- S6: demo računi, sesije i tokeni (na kraju, da PRNG ne pomakne ništa iznad) ---------------
+  // Organizator: Ivana (vlasnica Zaklade Svjetionik nade: active, KYB approved, is_fixed_beneficiary = 1,
+  // organizator kampanje `kampanja.aktivna`). Moderator: Filip. Novi: račun bez organizacije i kampanja.
+  const organizator = users[2];
+  const orgOrganizatora = orgs[2];
+  const tNovi = SAD - 3 * DAN;
+  const novi = { id: uuid7(tNovi), email: "novi@demo.invalid" };
+  upisi("users", {
+    id: novi.id, email: novi.email, display_name: "Nova Korisnica", first_name: "Nova", last_name: "Korisnica",
+    slug: null, about: null, website: null, phone: null, country_code: "HR", avatar_file_id: null, locale: "hr",
+    platform_role: "user", email_verified_at: tNovi + 10 * 60_000, created_at: tNovi, updated_at: tNovi, deleted_at: null,
+  });
+  upisi("consents", {
+    id: uuid7(tNovi), user_id: novi.id, email: null, kind: "terms_privacy", text_version: "uvjeti-2026-11", granted: 1, created_at: tNovi,
+  });
+  // Demo sesije: id = SHA-256(token), token je u primjeri.json. Rok 30 dana od SAD (kao kolačić).
+  const tSes = SAD - 2 * SAT;
+  for (const [u, token] of [[organizator, DEMO_TOKENI.sesijaOrganizator], [moderator, DEMO_TOKENI.sesijaModerator], [novi, DEMO_TOKENI.sesijaNovi]]) {
+    const sesijaId = sha256(token);
+    upisi("sessions", { id: sesijaId, user_id: u.id, created_at: tSes, expires_at: tSes + 30 * DAN, revoked_at: null });
+    upisi("login_events", {
+      id: uuid7(tSes), user_id: u.id, session_id: sesijaId, logged_in_at: tSes, last_activity_at: null,
+      ip_prefix: "192.0.2.0/24", device: "demo seed",
+    });
+  }
+  // Poveznica za prijavu (magic link) novog korisnika: red `login` s `action = 'link'`; istekla je, pa
+  // stranica `/auth/link/{token}` pokazuje „istekla” (provjera ruta traži samo 200).
+  upisi("one_time_codes", {
+    id: uuid7(SAD - 30 * 60_000), user_id: novi.id, email: novi.email, purpose: "login", action: "link",
+    code_hash: sha256(DEMO_TOKENI.poveznicaPrijave), attempts: 0, created_at: SAD - 30 * 60_000, expires_at: SAD - 25 * 60_000, used_at: null,
+  });
+  // Dodatna potvrda (P+e) organizatora: token rute `potvrda-radnje/{token}` je id reda.
+  const potvrdaId = uuid7(SAD - 20 * 60_000);
+  upisi("one_time_codes", {
+    id: potvrdaId, user_id: organizator.id, email: organizator.email, purpose: "step_up", action: "close_campaign",
+    code_hash: sha256(`${potvrdaId}:000000`), attempts: 0, created_at: SAD - 20 * 60_000, expires_at: SAD - 15 * 60_000, used_at: null,
+  });
+  // Pozivnica novoga u organizaciju organizatora (ruta `pozivnica/{token}`, token_hash = SHA-256 tokena).
+  upisi("membership_invites", {
+    id: uuid7(SAD - DAN), organization_id: orgOrganizatora.orgId, email: novi.email, role: "editor",
+    token_hash: sha256(DEMO_TOKENI.pozivnica), status: "pending", invited_by: organizator.id,
+    created_at: SAD - DAN, expires_at: SAD + 6 * DAN,
+  });
+  Object.assign(primjeri, {
+    demoSad,
+    demoRacuni: { organizator: organizator.email, moderator: moderator.email, novi: novi.email },
+    demoSesija: DEMO_TOKENI.sesijaOrganizator,
+    demoSesijaModerator: DEMO_TOKENI.sesijaModerator,
+    demoSesijaNovi: DEMO_TOKENI.sesijaNovi,
+    organizacijaOrganizatora: ORGANIZACIJE[2][1],
+    poveznicaPrijave: DEMO_TOKENI.poveznicaPrijave,
+    potvrdaRadnje: potvrdaId,
+    pozivnica: DEMO_TOKENI.pozivnica,
+    prijavaModeracije: prijaveModeracije[0],
+    korisnikSlug: "demo-marko",
+  });
+
   // --- Ispis ------------------------------------------------------------------------------------
   const red = tabliceRedomOvisnosti();
   const nepoznate = [...redovi.keys()].filter((t) => !red.includes(t));
   if (nepoznate.length) throw new Error(`tablice nisu u migracijama: ${nepoznate.join(", ")}`);
   const brisanje = [...red].reverse().filter((t) => t !== "categories");
   const out = [
+    `-- DEMO_SAD=${demoSad}`,
     "-- GENERIRANO: ne uređivati ručno. Izvor: scripts/seed.mjs (npm run db:gen-seed).",
     "-- Izmišljeni demo podaci (campaigns.demo = 1, e-pošta @demo.invalid). Nikakvi stvarni ljudi ni tvrtke.",
     "-- Reset: briše SVE tablice osim categories (referentni podaci iz 0003), pa upisuje seed.",
@@ -779,12 +881,12 @@ function generiraj() {
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
-  const { sql, primjeri } = generiraj();
+  const { sql, primjeri } = generiraj(sadSeeda());
   if (process.argv.includes("--stdout")) process.stdout.write(sql);
   else {
     mkdirSync(dirname(SEED_PATH), { recursive: true });
     writeFileSync(SEED_PATH, sql);
     writeFileSync(PRIMJERI_PATH, `${JSON.stringify(primjeri, null, 2)}\n`);
-    console.log(`Zapisano ${SEED_PATH} (${sql.split("\n").filter((l) => l.startsWith("INSERT")).length} redaka) i ${PRIMJERI_PATH}`);
+    console.log(`Zapisano ${SEED_PATH} (${sql.split("\n").filter((l) => l.startsWith("INSERT")).length} redaka, DEMO_SAD=${primjeri.demoSad}) i ${PRIMJERI_PATH}`);
   }
 }

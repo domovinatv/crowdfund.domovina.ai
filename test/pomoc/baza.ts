@@ -10,6 +10,11 @@ import { fileURLToPath } from "node:url";
 export const ROOT = fileURLToPath(new URL("../..", import.meta.url));
 export const MIGRACIJE = join(ROOT, "migrations");
 export const SEED = join(ROOT, "seed", "demo.sql");
+export const PRIMJERI = join(ROOT, "seed", "primjeri.json");
+
+/** „Sad” s kojim je generiran seed/demo.sql (`DEMO_SAD`, odluka 532): početak tog UTC dana. */
+export const DEMO_SAD: string = (JSON.parse(readFileSync(PRIMJERI, "utf8")) as { demoSad: string }).demoSad;
+export const SAD_SEEDA = new Date(`${DEMO_SAD}T00:00:00Z`);
 
 export function migracije(): { datoteka: string; sql: string }[] {
   return readdirSync(MIGRACIJE)

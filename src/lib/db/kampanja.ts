@@ -160,7 +160,7 @@ export async function kampanjaPoJavnomId(db: D1Database, publicId: string, sad: 
               COALESCE(o.display_name, g.legal_name) AS organizer_name, o.slug AS organization_slug,
               ${ORG_VERIFICIRANA} AS verified, o.legal_form, g.city,
               CASE WHEN s.kind = 'for_organization' THEN u.display_name END AS autor_ime,
-              CASE WHEN s.kind = 'for_organization' AND ${PROFIL_JAVAN} THEN u.id END AS autor_slug,
+              CASE WHEN s.kind = 'for_organization' AND ${PROFIL_JAVAN} THEN COALESCE(u.slug, u.id) END AS autor_slug,
               f.address, f.chain_id, f.threshold, f.owners, f.platform_signer_count, f.verified_at,
               s.comments_mode, s.allow_moneyboxes, ${POPIS_SKRIVEN} AS popis_skriven, s.contributions_sort,
               s.allow_external_offers, s.hide_raised, s.hide_contributor_count,
@@ -365,6 +365,7 @@ interface RedakKomentara {
   body: string;
   created_at: number;
   author_id: string | null;
+  autor_slug: string | null;
   autor_ime: string | null;
   profil_javan: number;
   contribution_id: string | null;
@@ -385,7 +386,7 @@ export async function komentariKampanje(db: D1Database, campaignId: string): Pro
   if (p.comments_mode === "off") return { nacin: "off", iskljuceni: true, komentari: [] };
   const { results } = await db
     .prepare(
-      `SELECT x.id, x.parent_id, x.update_id, x.body, x.created_at, x.author_id,
+      `SELECT x.id, x.parent_id, x.update_id, x.body, x.created_at, x.author_id, COALESCE(u.slug, u.id) AS autor_slug,
               u.display_name AS autor_ime, COALESCE(${PROFIL_JAVAN}, 0) AS profil_javan,
               x.contribution_id, cp.anonymous, cp.display_name AS cp_ime,
               d.amount_received_cents AS amount_cents, a.amount_hidden,
@@ -417,7 +418,7 @@ export async function komentariKampanje(db: D1Database, campaignId: string): Pro
       autor: {
         name: anon ? null : (izDoprinosa ? (r.cp_ime ?? r.autor_ime) : r.autor_ime),
         anonymous: anon,
-        profileSlug: !anon && r.author_id && r.profil_javan === 1 ? r.author_id : null,
+        profileSlug: !anon && r.author_id && r.profil_javan === 1 ? r.autor_slug : null,
         organizator: !anon && r.organizator === 1,
       },
       amountCents: iznosVidljiv ? r.amount_cents : null,
