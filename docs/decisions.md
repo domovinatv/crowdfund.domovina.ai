@@ -677,3 +677,16 @@ koja se na nju poziva. Blokovi brojeva po sesiji: S1 od 100, S1b od 150, S2 od 2
       https://crowdfund-staging.domovina.ai` daje 335/335 i SSE proxy vraća `200 text/event-stream` s `event: stanje`,
       a u SSE testu stream i „bez pulla” prolaze; svaka simulacija na stagingu vraća `rate_limited` (kvota tenanta
       `sbx-73b4d4042e`, 1104). Staging ostaje na tom tenantu (odgovor S11); ponovna provjera u S12.
+
+## S12 — 25. 11. 2026.
+
+1200. **Strop simulacija MPT sandboxa dignut na 200 po tenantu / 24 h** (pay.domovina.ai PR #174, 1418f3d, deploy na
+      api.mpt.hr 25. 11. 2026. 18:12; odgovor korisnika na vrhu S12). Klizni prozor ostaje 24 h. Pravilo 1104 (ne vrtjeti
+      e2e s plaćanjem u petlji) vrijedi i dalje; lokalni i staging tenant ostaju odvojeni.
+1201. **e2e checkouta nad stagingom zelen** (zatvara 1110): provjera kvote `POST .../Tw0lYOTpoRmp3LlCwo9Daw/simulate`
+      vratila je `already_settled` (slobodno); `BASE_URL=https://crowdfund-staging.domovina.ai npx playwright test
+      e2e/uplata.spec.ts` 6 passed (uklj. SSE na 375 i 1280), `e2e/mjesecno.spec.ts` 2 passed. Bez promjena koda, pa
+      bez redeploya; staging ostaje na verziji 23dd2f3d.
+1202. **Ime i brend ostaju radno ime** (1004): korisnik nije dao ime („ime i dalje otvoreno”). Lanac S1–S12 je gotov;
+      S13 je handoff čekanja koji se pokreće tek kad korisnik odluči o jednoj od otvorenih stavki (ime, 4fund API token,
+      prijedlozi za campaign-core, ITalk/4fund obilazak).

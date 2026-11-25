@@ -1,4 +1,4 @@
-# Handoffi za sesije S1–S12 (i S1b)
+# Handoffi za sesije S1–S13 (i S1b)
 
 Plan je u [`docs/plan.md`](../plan.md). Svaka sesija ima svoj handoff `SN.md`. Korisnik nakon
 `/clear` kaže „nastavi crowdfund” ili zalijepi prompt iz clipboarda.
@@ -34,7 +34,8 @@ Plan je u [`docs/plan.md`](../plan.md). Svaka sesija ima svoj handoff `SN.md`. K
 | S9 | Paritet i pregled | gotovo, vrata deploy i ime/brend otvorena | 3f4e967 | `npm run check`: astro check 0 errors (391 datoteka), vitest 32 datoteke / 645 testova / 0 skipped, build complete; `npm run routes` 335 / 335 / 0 bez pogleda / 0 izostavljenih; `BASE_URL=http://localhost:8798 npx playwright test` 678 passed (uklj. 240 axe na 375 i 1280 px) | `docs/10` paritet (87 redova, 11 djelomično), `docs/11` pravnik i produkcija + priprema deploya, Brave pregled 213 ruta × 2 širine bez preljeva, popravci (postotak, aktivnost sesije, a11y); odluke 900–910 |
 | S10 | Vrata i dorade | gotovo, ime/brend otvoreno | 65a8fbd | `npm run check`: astro check 0 errors, vitest 34 datoteke / 678 testova / 0 skipped, build complete; `npm run routes` 335 / 335 (lokalno i nad stagingom); `BASE_URL=http://localhost:8798 npx playwright test` 686 passed; nad stagingom `uplata` + `mjesecno` 6 passed | staging `crowdfund-staging.domovina.ai` (D.O.M., javno, noindex), webhook izvana 2 × 200, javni GitHub repo, 11 „djelomično” zatvoreno (R2 ✗ auto, potvrditi), e2e mjesečnog toka; odluke 1000–1020 |
 | S11 | Ostatak | gotovo, ime/brend otvoreno | 515360a | `npm run check`: astro check 0 errors, vitest 36 datoteka / 694 testa / 0 skipped, build complete; `npm run routes` 335 / 335 (lokalno i nad stagingom); `BASE_URL=http://localhost:8798 npx playwright test` 694 passed | SSE statusa kroz Worker proxy (radi nad stagingom), video kampanje (klik za učitavanje), opis kasice kroz renderer, e2e pošte organizatoru, lokalni sandbox tenant; e2e checkouta nad stagingom čeka kvotu simulacija; odluke 1100–1110 |
-| S12 | Provjera i čekanje | otvoreno | | | |
+| S12 | Provjera i čekanje | gotovo, ime/brend otvoreno | COMMIT | `npm run check`: astro check 0 errors, vitest 36 datoteka / 694 testa, build complete; `BASE_URL=https://crowdfund-staging.domovina.ai npx playwright test e2e/uplata.spec.ts` 6 passed, `e2e/mjesecno.spec.ts` 2 passed | kvota sandboxa 200/24 h, e2e checkouta (uklj. SSE) zelen nad stagingom, bez promjena koda; odluke 1200–1202 |
+| S13 | Čekanje odluka korisnika | čeka korisnika | | | |
 
 ## Zajednička pravila (svaka sesija)
 

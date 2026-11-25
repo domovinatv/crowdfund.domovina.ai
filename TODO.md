@@ -55,7 +55,7 @@ Legenda: `[x]` gotovo · `[ ]` otvoreno · `[~]` u radu · `(!)` traži korisnik
 - [x] Vanjska 4fund kampanja (e2e), recurring (podsjetnik + trajni nalog), faza-2 UI, `02` pokriven (odluke 800–849) → S8
 - [x] e2e mjesečnog toka i komentara pri plaćanju (`mjesecno.spec.ts`); `subscriptions` povezan uz poznati IBAN (odluke 1019, 1020) → S10
 - [x] e2e mock e-pošte organizatoru o novom doprinosu (`posta-organizatoru.spec.ts`, odluka 1108) → S11
-- [ ] e2e checkouta nad stagingom: stream dio prolazi, simulacija čeka kvotu sandbox tenanta `sbx-73b4d4042e` (100/24 h, odluka 1104) → S12
+- [x] e2e checkouta nad stagingom: `uplata.spec.ts` 6 passed (uklj. SSE), `mjesecno.spec.ts` 2 passed; kvota sandboxa 200/24 h (odluke 1200, 1201) → S12
 - [ ] (!) Zahtjev 4fundu za API token radi prikaza iznosa vanjskih kampanja (odluka 800) — korisnikova odluka
 
 ## F4 — Paritet
