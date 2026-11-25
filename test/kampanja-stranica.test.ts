@@ -3,7 +3,7 @@
  * množina), tekstovi oba jezika istog oblika, učitavači nad seedanim SQLiteom (404, 301, 303, stub podrške).
  */
 import { describe, expect, it } from "vitest";
-import { kodWidgeta, poveznice, putUgradnje } from "../src/components/kampanja/dijeljenje";
+import { kodWidgeta, opcijeWidgetaIz, poveznice, putStreama, putUgradnje } from "../src/components/kampanja/dijeljenje";
 import { formatNovca, kanonskiJavniId, skratiAdresu } from "../src/components/kampanja/format";
 import { hashPosjetitelja } from "../src/components/kampanja/posjetitelj";
 import { TIHA_ZONA, qrMatrica, qrSvg } from "../src/components/kampanja/qr";
@@ -11,6 +11,9 @@ import * as kampanjaTekst from "../src/views/sadrzaj/kampanja";
 import * as prijavaTekst from "../src/views/sadrzaj/prijava-sadrzaja";
 import { ucitaj as ucitajKampanju, type PodaciKampanje } from "../src/views/stranice/campaign.ucitaj";
 import { ucitaj as ucitajQr } from "../src/views/stranice/campaign.qr.ucitaj";
+import { popisCestitke, ucitaj as ucitajPlakat, type PodaciPlakata } from "../src/views/stranice/campaign.poster.ucitaj";
+import { ucitaj as ucitajWidget, type PodaciWidgeta } from "../src/views/stranice/campaign.widget.ucitaj";
+import type { Uplata } from "../src/lib/db/kampanja";
 import { ucitaj as ucitajPodrsku, type PodaciPodrske } from "../src/views/stranice/campaign.support.ucitaj";
 import { ucitaj as ucitajKasicu } from "../src/views/stranice/moneybox.ucitaj";
 import { ucitaj as ucitajPrijavu, type PodaciPrijave } from "../src/views/stranice/report.ucitaj";
@@ -220,5 +223,63 @@ describe("učitavači nad seedom", () => {
     expect([r.status, r.headers.get("Location")]).toEqual([303, `/en/follow/${token}/unsubscribe?odjavljeno=1`]);
     const p = (await ucitajPracenje(ctx(`/hr/pracenje/${token}`, { token }))) as { podaci: { p: { aktivno: boolean } } };
     expect(p.podaci.p.aktivno).toBe(false);
+  });
+});
+
+describe("S10: widget (veličina, izgled, stream) i čestitka zahvale", () => {
+  it("opcijeWidgetaIz: whitelist, sve ostalo pada na zadano", () => {
+    expect(opcijeWidgetaIz(new URLSearchParams(""))).toEqual({ target: "campaign", velicina: "medium", izgled: "light" });
+    expect(opcijeWidgetaIz(new URLSearchParams("target=support&size=small&theme=dark"))).toEqual({ target: "support", velicina: "small", izgled: "dark" });
+    expect(opcijeWidgetaIz(new URLSearchParams("target=x&size=<b>&theme=DARK"))).toEqual({ target: "campaign", velicina: "medium", izgled: "light" });
+    expect(opcijeWidgetaIz(new URLSearchParams("size=large&size=small"))).toMatchObject({ velicina: "large" });
+  });
+
+  it("put i kod: zadane vrijednosti se izostavljaju, dimenzije iframea prate veličinu, stream adresa", () => {
+    expect(putUgradnje("1h01zm", "hr", "campaign", { velicina: "medium", izgled: "light" })).toBe("/embed/1h01zm");
+    expect(putUgradnje("1h01zm", "en", "support", { velicina: "large", izgled: "dark" })).toBe("/embed/1h01zm?lang=en&target=support&size=large&theme=dark");
+    const kod = kodWidgeta("https://crowdfund.domovina.ai", "1h01zm", "hr", "campaign", "N", { velicina: "small", izgled: "dark" });
+    expect(kod).toBe(
+      '<iframe src="https://crowdfund.domovina.ai/embed/1h01zm?size=small&amp;theme=dark" title="N" width="300" height="340" style="border:0;max-width:100%" loading="lazy"></iframe>',
+    );
+    expect(kodWidgeta("https://x.hr", "1h01zm", "hr", "campaign", "N", { velicina: "large" })).toContain('width="480" height="480"');
+    expect(putStreama("https://x.hr", "1h01zm", "hr")).toBe("https://x.hr/embed/1h01zm/stream");
+    expect(putStreama("https://x.hr", "1h01zm", "en")).toBe("https://x.hr/embed/1h01zm/stream?lang=en");
+  });
+
+  it("popisCestitke: skriveni popis, anonimni bez imena, iznos kakav je javan, „i još N”, granica imena", () => {
+    const u = (x: Partial<Uplata>): Uplata => ({ paidAt: 1, name: "Ana", anonymous: false, nameVerified: false, amountCents: 1000, message: null, tierTitle: null, quantity: 1, ...x });
+    expect(popisCestitke({ skriveno: true, sort: "latest", ukupno: null, uplate: [] })).toEqual({ skriveno: true, imena: [], anonimnih: 0, jos: null });
+    const p = popisCestitke({
+      skriveno: false,
+      sort: "latest",
+      ukupno: 10,
+      uplate: [u({}), u({ name: null, anonymous: true, amountCents: 5000 }), u({ name: "Ivo", amountCents: null }), u({ name: "Eva" })],
+    }, 2);
+    expect(p).toEqual({ skriveno: false, imena: [{ ime: "Ana", iznosCenti: 1000 }, { ime: "Ivo", iznosCenti: null }], anonimnih: 1, jos: 7 });
+    expect(popisCestitke({ skriveno: false, sort: "latest", ukupno: null, uplate: [u({})] }).jos).toBeNull();
+  });
+
+  it("učitavači: plakat ?varijanta=cestitka (nepoznata → plakat), skriven popis; widget s veličinom i izgledom", async () => {
+    const db = kaoD1(novaBaza({ seed: true }));
+    const ctx = (put: string, id: string): KontekstStranice => {
+      const u = new URL(put, "http://localhost:8802");
+      return { lang: "hr", params: { id }, url: u, request: new Request(u), cookies: undefined as never, db, korisnik: null };
+    };
+    const plakat = async (id: string, upit: string) => ((await ucitajPlakat(ctx(`/hr/${id}/plakat${upit}`, id))) as { podaci: PodaciPlakata }).podaci;
+    expect(await plakat(K.aktivna, "?varijanta=nesto")).toMatchObject({ varijanta: "plakat", cestitka: null });
+    const c = (await plakat(K.aktivna, "?varijanta=cestitka")).cestitka!;
+    expect(c.skriveno).toBe(false);
+    expect(c.imena.length + c.anonimnih).toBeGreaterThan(0);
+    expect((await plakat(K.popisUplataSkriven, "?varijanta=cestitka")).cestitka).toMatchObject({ skriveno: true, imena: [] });
+    // Kampanja skriva prikupljeno → ni jedan iznos na čestitki.
+    expect((await plakat(K.skrivenIznos, "?varijanta=cestitka")).cestitka!.imena.every((x) => x.iznosCenti === null)).toBe(true);
+
+    const w = ((await ucitajWidget(ctx(`/hr/${K.aktivna}/widget?size=small&theme=dark&target=support`, K.aktivna))) as { podaci: PodaciWidgeta }).podaci;
+    expect(w).toMatchObject({ velicina: "small", izgled: "dark", target: "support", dimenzije: { w: 300, h: 340 } });
+    expect(w.pregled).toBe(`/embed/${K.aktivna}?target=support&size=small&theme=dark`);
+    expect(w.stream).toBe(`http://localhost:8802/embed/${K.aktivna}/stream`);
+    const z = ((await ucitajWidget(ctx(`/hr/${K.aktivna}/widget?size=huge&theme=neon`, K.aktivna))) as { podaci: PodaciWidgeta }).podaci;
+    expect(z).toMatchObject({ velicina: "medium", izgled: "light" });
+    expect(z.kod).toContain('width="360" height="420"');
   });
 });

@@ -1,6 +1,7 @@
 ---
 // Mali layout za ugradnju u iframe (`/embed/{id}`, `/embed/{id}/stream`): bez zaglavlja, podnožja i
-// demo trake, `noindex`, bez vanjskih resursa. `prozirno` za overlay streama.
+// demo trake, `noindex`, bez vanjskih resursa. `prozirno` za overlay streama, `tamno` za tamni widget (S10, B09):
+// isti semantički tokeni, preslikani na tamnu podlogu (kontrast teksta ≥ 7:1, gumba ≥ 4.5:1).
 import "../styles/global.css";
 import type { Lang } from "../i18n";
 
@@ -8,11 +9,12 @@ interface Props {
   lang: Lang;
   title: string;
   prozirno?: boolean;
+  tamno?: boolean;
 }
-const { lang, title, prozirno = false } = Astro.props;
+const { lang, title, prozirno = false, tamno = false } = Astro.props;
 ---
 <!doctype html>
-<html lang={lang} class:list={[prozirno && "bg-transparent"]}>
+<html lang={lang} class:list={[prozirno && "bg-transparent", tamno && "widget-tamno"]}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -23,3 +25,20 @@ const { lang, title, prozirno = false } = Astro.props;
     <slot />
   </body>
 </html>
+
+<style is:global>
+  @layer base {
+    .widget-tamno {
+      color-scheme: dark;
+      --paper: 11 27 51; /* #0B1B33, ista vrijednost kao --ink */
+      --mist: 26 43 71; /* #1A2B47 */
+      --ink: 243 245 249; /* #F3F5F9 = --brand-mist */
+      --ink-soft: 211 219 231; /* #D3DBE7 */
+      --ink-muted: 168 181 200; /* #A8B5C8 */
+      --warning: 255 204 112; /* #FFCC70 */
+      --action: 168 204 255; /* #A8CCFF, gumb s tekstom --paper */
+      --action-strong: 205 225 255; /* #CDE1FF */
+      --progress: 168 204 255;
+    }
+  }
+</style>

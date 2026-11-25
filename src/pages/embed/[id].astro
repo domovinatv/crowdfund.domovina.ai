@@ -1,12 +1,13 @@
 ---
-// Ugradiva kartica kampanje (pregled §4.4): `/embed/{id}?lang=en&target=campaign|support`. Poveznice
-// se otvaraju u novoj kartici (izvan iframea). Kampanja koja nije javno vidljiva → 404.
+// Ugradiva kartica kampanje (pregled §4.4): `/embed/{id}?lang=en&target=campaign|support`, S10 (B09) i
+// `size=small|medium|large`, `theme=light|dark` (whitelist, ostalo pada na zadano). Poveznice se otvaraju u novoj
+// kartici (izvan iframea). Kampanja koja nije javno vidljiva → 404.
 import { env } from "cloudflare:workers";
 import Heart from "@lucide/astro/icons/heart";
 import Embed from "../../layouts/Embed.astro";
 import ProgressBar from "../../components/ProgressBar.astro";
 import { formatNovca } from "../../components/kampanja/format";
-import { isCiljWidgeta } from "../../components/kampanja/dijeljenje";
+import { opcijeWidgetaIz } from "../../components/kampanja/dijeljenje";
 import { isLang, prevoditelj, type Lang } from "../../i18n";
 import { kampanjaPoJavnomId } from "../../lib/db/kampanja";
 import { url } from "../../lib/rute";
@@ -14,7 +15,9 @@ import { KAMPANJA, PODRUTE, mnozina } from "../../views/sadrzaj/kampanja";
 
 const q = Astro.url.searchParams;
 const lang: Lang = isLang(q.get("lang")) ? (q.get("lang") as Lang) : "hr";
-const target = isCiljWidgeta(q.get("target")) ? q.get("target") : "campaign";
+const { target, velicina, izgled } = opcijeWidgetaIz(q);
+const mali = velicina === "small";
+const veliki = velicina === "large";
 const k = await kampanjaPoJavnomId(env.DB, Astro.params.id ?? "");
 if (!k) Astro.response.status = 404;
 const T = PODRUTE[lang].ugradnja;
@@ -25,15 +28,15 @@ const kampanjaHref = k ? url(lang, "campaign", { id: k.publicId }) : "";
 const gumbHref = k && target === "support" && k.primaUplate ? url(lang, "campaign.support", { id: k.publicId }) : kampanjaHref;
 const gumbTekst = k && target === "support" && k.primaUplate ? T.podrzi : T.vidi;
 ---
-<Embed lang={lang} title={k ? k.title : "404"}>
+<Embed lang={lang} title={k ? k.title : "404"} tamno={izgled === "dark"}>
   {
     k ? (
-      <article class="flex min-h-dvh flex-col p-4">
+      <article class:list={["flex min-h-dvh flex-col", mali ? "p-3" : veliki ? "p-6" : "p-4"]} data-widget={`${velicina}-${izgled}`}>
         <p class="text-xs text-ink-muted">{t("site.name")}</p>
-        <h1 class="mt-1 text-lg leading-tight font-semibold text-ink break-words">
+        <h1 class:list={["mt-1 leading-tight font-semibold text-ink break-words", mali ? "text-base" : veliki ? "text-2xl" : "text-lg"]}>
           <a href={kampanjaHref} target="_blank" rel="noopener" class="hover:underline">{k.title}</a>
         </h1>
-        <p class="mt-1 text-sm text-ink-soft">{k.organizator.name}</p>
+        {!mali && <p class="mt-1 text-sm text-ink-soft">{k.organizator.name}</p>}
         <div class="mt-auto pt-4">
           <ProgressBar lang={lang} raisedCents={k.statistika.raisedCents} goalCents={k.goalCents} showLabel />
           {k.statistika.raisedCents !== null && (

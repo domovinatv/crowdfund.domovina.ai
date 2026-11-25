@@ -2,7 +2,10 @@
 // Komentari (docs/08 §3.2 CommentThread): obrazac za komentar po pravu (`komentiranje.pravo`: prijavljeni,
 // „samo podržavatelji”), jedna razina odgovora, iznos uz komentar podržavatelja kad je javan, oznaka
 // organizatora, „Prijavi”. Svaki komentar ima sidro `k-{id}` (303 nakon objave vodi na njega).
+// S10 (A22): „Podijeli komentar” je poveznica na to sidro (bez JS-a radi kao trajna poveznica); uz JS otvara Web
+// Share ili kopira adresu u međuspremnik i to javlja u `role="status"`. Bez vanjskih skripti.
 import Flag from "@lucide/astro/icons/flag";
+import Share2 from "@lucide/astro/icons/share-2";
 import Poruka from "../upravljanje/Poruka.astro";
 import { GRESKA, GUMB, POLJE, POMOC, rub } from "../upravljanje/stil";
 import type { Lang } from "../../i18n";
@@ -78,15 +81,49 @@ const prijaviHref = (c: Komentar) => `${url(lang, "report")}?target=comment&id=$
                     <time datetime={new Date(x.createdAt).toISOString()} class="text-ink-muted">· {relativnoVrijeme(lang, x.createdAt, sad)}</time>
                   </p>
                   <p class="mt-1 whitespace-pre-line break-words text-ink-soft">{x.body}</p>
-                  <a href={prijaviHref(x)} class="mt-1 inline-flex min-h-8 items-center gap-1 text-xs text-ink-muted underline-offset-2 hover:underline">
-                    <Flag size={12} aria-hidden="true" />{T.prijavi}
-                  </a>
+                  <p class="mt-1 flex flex-wrap gap-x-4">
+                    <a href={`${akcija}#k-${x.id}`} data-dijeli-komentar class="inline-flex min-h-8 items-center gap-1 text-xs text-ink-muted underline-offset-2 hover:underline">
+                      <Share2 size={12} aria-hidden="true" />{T.podijeli}
+                    </a>
+                    <a href={prijaviHref(x)} class="inline-flex min-h-8 items-center gap-1 text-xs text-ink-muted underline-offset-2 hover:underline">
+                      <Flag size={12} aria-hidden="true" />{T.prijavi}
+                    </a>
+                  </p>
                 </article>
               ))}
             </li>
           ))}
         </ol>
       )}
+      <p role="status" class="mt-2 text-sm text-success empty:hidden" data-status-dijeljenja data-kopirano={T.kopirano}></p>
     </div>
   )
 }
+
+<script>
+  // Poboljšanje uz JS: Web Share (mobitel) ili kopiranje adrese komentara; bez podrške poveznica ostaje sidro.
+  for (const a of document.querySelectorAll<HTMLAnchorElement>("[data-dijeli-komentar]")) {
+    a.addEventListener("click", async (e) => {
+      const adresa = a.href;
+      if (typeof navigator.share === "function") {
+        e.preventDefault();
+        try {
+          await navigator.share({ url: adresa, title: document.title });
+        } catch {
+          // Korisnik je odustao ili dijeljenje nije dopušteno: ništa.
+        }
+        return;
+      }
+      if (!navigator.clipboard) return;
+      e.preventDefault();
+      try {
+        await navigator.clipboard.writeText(adresa);
+        history.replaceState(null, "", adresa);
+        const status = document.querySelector<HTMLElement>("[data-status-dijeljenja]");
+        if (status) status.textContent = status.dataset.kopirano ?? "";
+      } catch {
+        location.href = adresa;
+      }
+    });
+  }
+</script>

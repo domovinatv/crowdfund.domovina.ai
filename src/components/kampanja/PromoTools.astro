@@ -1,9 +1,11 @@
 ---
-// Alati za promociju (docs/08 §3.2 PromoTools): QR, plakat, widget; link za praćenje traži prijavu (S6).
+// Alati za promociju (docs/08 §3.2 PromoTools, obilazak 22): QR, plakat, widget, Streaming widget (S10: `widget#stream`)
+// i link za praćenje (S10: obrazac `postavke/linkovi` predpopunjen kampanjom; bez prijave vodi na prijavu).
 import Code from "@lucide/astro/icons/code";
 import Link from "@lucide/astro/icons/link";
 import Printer from "@lucide/astro/icons/printer";
 import QrCode from "@lucide/astro/icons/qr-code";
+import Radio from "@lucide/astro/icons/radio";
 import type { Lang } from "../../i18n";
 import { url } from "../../lib/rute";
 import { KAMPANJA } from "../../views/sadrzaj/kampanja";
@@ -19,6 +21,8 @@ const alati = [
   { href: url(lang, "campaign.qr", p), Ikona: QrCode, naslov: T.qr, opis: T.qrOpis },
   { href: url(lang, "campaign.poster", p), Ikona: Printer, naslov: T.plakat, opis: T.plakatOpis },
   { href: url(lang, "campaign.widget", p), Ikona: Code, naslov: T.widget, opis: T.widgetOpis },
+  { href: `${url(lang, "campaign.widget", p)}#stream`, Ikona: Radio, naslov: T.stream, opis: T.streamOpis },
+  { href: `${url(lang, "settings.links")}?kampanja=${publicId}#novi`, Ikona: Link, naslov: T.link, opis: T.linkOpis },
 ];
 ---
 <div>
@@ -34,9 +38,5 @@ const alati = [
         </li>
       ))
     }
-    <li class="flex items-start gap-3 rounded-md p-3 ring-1 ring-line ring-dashed">
-      <Link size={20} aria-hidden="true" class="mt-0.5 shrink-0 text-ink-muted" />
-      <span><span class="block font-semibold text-ink-soft">{T.link}</span><span class="block text-sm text-ink-muted">{T.linkOpis}</span></span>
-    </li>
   </ul>
 </div>

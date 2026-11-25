@@ -1,21 +1,31 @@
 ---
 // Plakat za ispis (pregled §4.4): na zaslonu pregled A4 lista s uputom, u ispisu samo list (`@media print`).
+// S10 (B08): tab „Čestitka zahvale” (`?varijanta=cestitka`) s javnim popisom podržavatelja.
 import ArrowLeft from "@lucide/astro/icons/arrow-left";
 import Printer from "@lucide/astro/icons/printer";
 import Base from "../../layouts/Base.astro";
 import QrKod from "../../components/kampanja/QrKod.astro";
 import { url } from "../../lib/rute";
-import { KAMPANJA, PODRUTE } from "../sadrzaj/kampanja";
+import { KAMPANJA, PODRUTE, mnozina } from "../sadrzaj/kampanja";
+import { formatNovca } from "../../components/kampanja/format";
+import { LOCALE } from "../../i18n";
+import { VARIJANTE_PLAKATA } from "./campaign.poster.ucitaj";
 import type { PodaciPlakata } from "./campaign.poster.ucitaj";
 import type { PropsStranice } from "../tipovi";
 
 type Props = PropsStranice<PodaciPlakata>;
 const { lang, podaci } = Astro.props;
-const { k, cilj } = podaci;
+const { k, cilj, varijanta, cestitka } = podaci;
 const T = PODRUTE[lang].plakat;
 const opis = (k.description ?? "").trim();
 const kratki = opis.length > 280 ? `${opis.slice(0, 277).trimEnd()}…` : opis;
 const prikazAdrese = cilj.replace(/^https?:\/\//, "");
+const put = url(lang, "campaign.poster", { id: k.publicId });
+const novac = formatNovca(lang, k.currency);
+const jos = (n: number) => {
+  const oblik = new Intl.PluralRules(LOCALE[lang]).select(n);
+  return (oblik === "one" ? T.jos.one : oblik === "few" ? T.jos.few : T.jos.other).replace("{n}", new Intl.NumberFormat(LOCALE[lang]).format(n));
+};
 ---
 <Base lang={lang} title={`${T.naslov} · ${k.title}`} noindex>
   <div class="ne-ispisuj">
@@ -23,9 +33,54 @@ const prikazAdrese = cilj.replace(/^https?:\/\//, "");
       <ArrowLeft size={16} aria-hidden="true" />{KAMPANJA[lang].natrag}
     </a>
     <h1 class="page-title mt-2 text-ink">{T.naslov}</h1>
-    <p class="mt-2 flex max-w-[70ch] gap-2 text-ink-soft"><Printer size={20} aria-hidden="true" class="mt-0.5 shrink-0" />{T.uputa}</p>
+    <nav aria-label={T.varijanteOznaka} class="mt-4">
+      <ul class="flex flex-wrap gap-2">
+        {VARIJANTE_PLAKATA.map((v) => (
+          <li>
+            <a href={v === "plakat" ? put : `${put}?varijanta=${v}`} aria-current={varijanta === v ? "page" : undefined}
+              class:list={["inline-flex min-h-11 items-center rounded-full px-4 text-sm ring-1 ring-line", varijanta === v ? "bg-ink font-semibold text-paper" : "text-ink-soft hover:bg-mist"]}>
+              {T.varijante[v]}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+    <p class="mt-3 flex max-w-[70ch] gap-2 text-ink-soft"><Printer size={20} aria-hidden="true" class="mt-0.5 shrink-0" />{varijanta === "cestitka" ? T.uputaCestitka : T.uputa}</p>
   </div>
 
+  {cestitka ? (
+  <article class="plakat mx-auto mt-6 flex aspect-[210/297] w-full max-w-[210mm] flex-col items-center bg-paper p-[6%] text-center shadow-raised" data-cestitka>
+    <p class="text-[clamp(2rem,8vw,3.5rem)] leading-tight font-bold text-action">{T.hvala}</p>
+    <h2 class="mt-3 max-w-[50ch] text-lg text-ink-soft break-words">{T.cestitkaTekst.replace("{naslov}", k.title)}</h2>
+    {cestitka.skriveno ? (
+      <p class="mt-8 text-sm text-ink-muted">{T.popisSkriven}</p>
+    ) : cestitka.imena.length === 0 && cestitka.anonimnih === 0 ? (
+      <p class="mt-8 text-sm text-ink-muted">{T.nemaPodrzavatelja}</p>
+    ) : (
+      <section class="mt-6 w-full text-left" aria-labelledby="podrzali">
+        <h3 id="podrzali" class="text-center text-sm font-semibold tracking-wide text-accent-text uppercase">{T.podrzavatelji}</h3>
+        <ul class="mt-3 columns-2 gap-6 text-sm sm:columns-3" data-imena>
+          {cestitka.imena.map((x) => (
+            <li class="break-inside-avoid py-0.5 text-ink break-words">
+              {x.ime}{x.iznosCenti !== null && <span class="text-ink-muted tabular-nums"> · {novac(x.iznosCenti)}</span>}
+            </li>
+          ))}
+        </ul>
+        {(cestitka.anonimnih > 0 || (cestitka.jos ?? 0) > 0) && (
+          <p class="mt-3 text-center text-sm text-ink-soft">
+            {cestitka.anonimnih > 0 && <span data-anonimnih={cestitka.anonimnih}>+ {mnozina(lang, cestitka.anonimnih, T.anonimnih)}</span>}
+            {cestitka.anonimnih > 0 && (cestitka.jos ?? 0) > 0 && " · "}
+            {(cestitka.jos ?? 0) > 0 && <span>{jos(cestitka.jos!)}</span>}
+          </p>
+        )}
+      </section>
+    )}
+    <div class="mt-auto pt-6 text-sm text-ink-muted">
+      <p>{T.organizator}: <strong class="text-ink">{k.organizator.name}</strong></p>
+      <p class="font-mono break-all">{prikazAdrese}</p>
+    </div>
+  </article>
+  ) : (
   <article class="plakat mx-auto mt-6 flex aspect-[210/297] w-full max-w-[210mm] flex-col items-center bg-paper p-[6%] text-center shadow-raised">
     {k.category && <p class="text-sm font-semibold tracking-wide text-accent-text uppercase">{lang === "hr" ? k.category.nameHr : k.category.nameEn}</p>}
     <h2 class="mt-3 text-[clamp(1.5rem,6vw,2.75rem)] leading-tight font-bold text-ink break-words">{k.title}</h2>
@@ -39,6 +94,7 @@ const prikazAdrese = cilj.replace(/^https?:\/\//, "");
       <p class="mt-4 text-sm text-ink-muted">{T.bezProvizije}</p>
     </div>
   </article>
+  )}
 </Base>
 
 <style is:global>

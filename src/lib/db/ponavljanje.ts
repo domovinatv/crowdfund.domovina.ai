@@ -377,6 +377,9 @@ export async function platiPodsjetnik(
     kaoTvrtka: false,
     tvrtka: null,
     oib: null,
+    // Plaćanje s podsjetnika ne nudi kvačice obavijesti (S10, A19): ništa se ne upisuje.
+    pratiNovosti: false,
+    marketing: false,
   };
   const r = await stvoriCheckout(
     db,
