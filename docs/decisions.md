@@ -443,3 +443,23 @@ koja se na nju poziva. Blokovi brojeva po sesiji: S1 od 100, S1b od 150, S2 od 2
      nepoznat sid (`error = 'nepoznat_sid'`) i nepoznatu vrstu. `simulate` traži `sk_test_` i sandbox intent, inače 404.
 719. **`events` ne povlači intente u završnom stanju** (paid, late, underpaid_expired, rejected); greška raila vraća
      stanje iz baze.
+720. **Pad MPT-a pri stvaranju intenta:** doprinos `failed`, checkout `expired` s rokom „sad”; redovi se ne brišu (webhook
+     i dalje nađe sid ako je rail ipak stvorio intent); korisnik vidi grešku na obrascu.
+721. **ID checkouta** je 22 znaka base64url (128 bita); ruta prihvaća `[A-Za-z0-9_-]{16,40}` (i UUID iz seeda), a
+     checkout mora pripadati kampanji iz URL-a, inače 404.
+722. **Metadata intenta samo ID-evi:** checkout, javni ID kampanje, `vrsta`, kasica/link/dijeljenje; nikad e-pošta, ime
+     ni poruka. `label` = naslov kampanje.
+723. **Valuta doprinosa iz `campaigns.currency`** (`EUR`, kao seed).
+724. **Atribucija u checkoutu:** kasica iz `?s=`; `?ref=` dijeljenja ima prednost pred kolačićem (zadnji klik); kolačić
+     prvo kao link za praćenje pa kao dijeljenje; samo aktivni linkovi iste kampanje.
+725. **Prijavljeni:** e-pošta i ime iz sesije, bez „kao tvrtka” i bez kućice uvjeta; neprijavljeni: e-pošta i uvjeti
+     obavezni; OIB tvrtke neobavezan, s provjerom kontrolne znamenke. Prihvat uvjeta se još ne upisuje u `consents`
+     (S8). (potvrditi)
+726. **Iznosi:** doprinos od `max(1 €, min_contribution_cents)` do 10.000 €; napojnica 0 ili 1–1.000 €.
+727. **Napojnica tek nakon plaćenog doprinosa**, jedna po checkoutu (`tips.checkout_id` UNIQUE, drugi zahtjev vraća
+     postojeću); pad MPT-a briše red napojnice; „0” samo upisuje `tip_cents = 0` i vodi na potvrdu.
+728. **Status uživo je pull svake 3 s, ne SSE** (mijenja odluku 705 u dijelu o pregledniku): MPT `status_stream_url`
+     ne šalje `Access-Control-Allow-Origin` za naš origin. Promjena stanja ponovno učita stranicu; bez JS-a gumb
+     „Osvježi stanje”, a svaki GET stranice ionako radi pull. Pravi SSE traži CORS na railu ili proxy kroz Worker (S8/S9).
+729. **`POST /api/checkouts/{id}/tip`** prima samo JSON (415/400/404/409/502); obrasce od CSRF-a štiti Astro
+     `checkOrigin`. Učitavači koraka 2–4 dodatno zovu `dohvatiIntent` za QR i `checkout_url` (bez migracije).

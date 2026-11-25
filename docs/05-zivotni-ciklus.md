@@ -78,8 +78,8 @@ stateDiagram-v2
 | `open` | `pending` | 0 | ne | red doprinosa nastaje s kreiranjem intenta |
 | `open` + `payment.received` | `pending` | 0 | ne | UI smije pokazati „uplata primljena, potvrđuje se”; `received_at` u događaju |
 | `paid` | `paid` | 0 | da, `amount_received_cents` | preplata je i dalje `paid` |
-| `underpaid` | `pending` | 1 | ne | čeka dopunu ili istek |
-| `underpaid_expired` | `paid` | 1 | da, primljeni iznos | novac **jest** na Safeu (`funds_location: recipient`) |
+| `underpaid` | `paid` | 1 | da, primljeni iznos | novac je već na Safeu; dopuna nije obavezna (odluka 707, S7) |
+| `underpaid_expired` | `paid` | 1 | već brojen pri `underpaid` | samo checkout prelazi u završno stanje (odluka 715) |
 | `expired` | `expired` | 0 | ne | nije terminalno: može postati `late` |
 | `late` | `paid` | 0 | da | kasni novac je kod organizatora; platforma ga ne može odbiti |
 | `rejected` (`payment.rejected`) | `failed` | 0 | ne | Monerium vratio novac uplatitelju; `rejected` je platformska vrijednost u `checkouts`, MPT intent ostaje `open` |
