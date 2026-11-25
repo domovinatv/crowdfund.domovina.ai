@@ -43,8 +43,8 @@ tunel ili ručni `simulate` + pull statusa).
 
 ## Gdje smo
 
-S0–S7 gotovi (25. 11. 2026.). S7: MPT sandbox tenant (`sbx-73b4d4042e`), checkout „Podrži” u četiri koraka (obrazac,
-plaćanje s referencom i simulacijom, napojnica kao zaseban intent s jednako istaknutom nulom, potvrda), webhook s
-potpisom i dedupeom te pull istim putem u `contributions` + `campaign_stats`, atribucija kasica/linkova kroz
-metadata i `contribution_attributions`; `npm run check` zelen (588 testova), 320/320 ruta, Playwright 416 passed s
-e2e nad stvarnim sandboxom (odluke 700–729). Ime i brend i dalje čekaju korisnika (odluka 305). Sljedeće: S8, hibrid i ostatak.
+S0–S8 gotovi (25. 11. 2026.). S8: vanjska 4fund kampanja s gumbom na njihov `/pay` bez iznosa (4fundov API traži
+token koji oni dodjeljuju, odluka 800), mjesečno podupiranje kroz podsjetnik i trajni nalog, privola i komentar iz
+poruke u checkoutu, faza-2 UI s oznakom (ponude i aukcije, razine, promocija, osobna kampanja), svaki red `docs/02`
+ima ekran ili ✗; `npm run check` zelen (644 testa), 335/335 ruta, Playwright 438 passed (odluke 800–849). Ime i
+brend i dalje čekaju korisnika (odluka 305). Sljedeće: S9, paritet i pregled (vrata: deploy).

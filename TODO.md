@@ -42,17 +42,19 @@ Legenda: `[x]` gotovo · `[ ]` otvoreno · `[~]` u radu · `(!)` traži korisnik
 - [x] Rute bez en oblika u 07 (odluke 409, 502, 613) → S6
 - [x] Migracije koje predlaže S5: `users.slug`, token praćenja, skriveni popis uplata (0004, odluke 608–610) → S6
 - [x] Seed relativno na datum seedanja (odluka 611) → S6
-- [ ] Seed nedosljednosti: `demo-suncani-krov` `active` uz KYB `in_review`; `prijavaModeracije` `in_review` s odlukom → S8
+- [x] Seed nedosljednosti: Sunčani krov i prijava s odlukom usklađeni (odluka 847) → S8
 - [ ] Login CSRF (POST bez Origin prolazi), `sessions.last_activity_at` se ne osvježava → S9
 
 ## F3 — Plaćanje i hibrid
 
 - [x] MPT sandbox tenant, checkout, webhook, napojnica, potvrda (588 unit, 416 Playwright, e2e nad sandboxom) → S7
-- [ ] Prihvat uvjeta checkouta u `consents`; „prikaži poruku kao komentar”; obavijesti e-poštom (mock) → S8
-- [ ] `potvrdiPovrat` oduzima 1 od `contributor_count` bez obzira na pravilo 717 → S8
+- [x] Prihvat uvjeta checkouta u `consents`; „prikaži poruku kao komentar”; obavijesti e-poštom (mock) (odluke 821–824) → S8
+- [x] `potvrdiPovrat` po pravilu 717 → S8
 - [ ] Pravi SSE statusa (CORS na MPT `/stream` ili proxy kroz Worker), jedan poziv raila po učitavanju → S9
 - [ ] (!) Webhook preko tunela prema `wrangler dev` (traži korisnikov pristanak; sad samo unit testovi) → S9
-- [ ] Vanjska 4fund kampanja, recurring, faza-2 UI → S8
+- [x] Vanjska 4fund kampanja (e2e), recurring (podsjetnik + trajni nalog), faza-2 UI, `02` pokriven (odluke 800–849) → S8
+- [ ] e2e mjesečnog toka i komentara/obavijesti pri plaćanju; povezati `subscriptions` s obećanjem (odluka 828) → S9
+- [ ] (!) Zahtjev 4fundu za API token radi prikaza iznosa vanjskih kampanja (odluka 800) — korisnikova odluka
 
 ## F4 — Paritet
 
