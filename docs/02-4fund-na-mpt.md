@@ -42,16 +42,16 @@ Stupac „Ekran (S8)”: ruta u prototipu koja pokriva red (`src/lib/rute.ts`, `
 | PEP izjava s 3 podvrste i izjavom o kaznenoj odgovornosti (S1 [02](research/obilazak/02-verifikacija-racuna.md)) | dio KYC-a kod EMI-ja; mi samo status | ≈ | obrazac | `/hr/postavke/verifikacija/podaci` |
 | Dodatna autentikacija: 6-znamenkasti kod SMS/e-pošta (S1 [14](research/obilazak/14-postavke-limiti.md)) | kod e-poštom za osjetljive radnje organizatora | ≈ | mock | `/hr/potvrda-radnje/{token}`, `/hr/prijava/kod` |
 | Dnevni limit isplate i SMS obavijest (S1 [14](research/obilazak/14-postavke-limiti.md)) | nema isplate | ✗ | – | ✗ nema isplate (novac je kod organizatora) |
-| Vidljivost profila, 10 prekidača + indeksiranje (S1 [12](research/obilazak/12-postavke-profil.md)) | isto | = | da | `/hr/postavke/profil` |
+| Vidljivost profila, 9 prekidača + indeksiranje (S1 [12](research/obilazak/12-postavke-profil.md); 10. 4fundov prekidač je „završeni vodiči”, ne vidljivost) | isto | = | da | `/hr/postavke/profil` |
 | Automatski linkovi dijeljenja (S1 [16](research/obilazak/16-postavke-linkovi.md)) | `?ref=` po korisniku + popis | = | da | `/hr/postavke/linkovi`, `/hr/postavke/linkovi/dijeljenje` |
 | Povijest prijava (S1 [18](research/obilazak/18-postavke-povijest-prijava.md)) | tek uz pravi login | ≈ | statično | `/hr/postavke/povijest-prijava` |
-| Brisanje računa vraća buduće donacije (S1 [12](research/obilazak/12-postavke-profil.md)) | brisanje gasi kampanje; novac nije kod nas | ≈ | da | `/hr/postavke/sigurnost` |
+| Brisanje računa vraća buduće donacije (S1 [12](research/obilazak/12-postavke-profil.md)) | brisanje gasi kampanje; novac nije kod nas | ≈ | da | `/hr/postavke/profil` (S9: ispravljeno s `sigurnost`) |
 | Valute: 11 (EUR, USD, GBP, PLN, CHF…) u checkoutu (S1b [19](research/obilazak/19-checkout.md)) | samo EUR (SEPA) | ✗ ostale valute | – | ✗ ostale valute: SEPA je samo EUR |
 | 12 načina plaćanja (kartica, Revolut, N26, ZEN, Wero, Bancontact, MB WAY, Multibanco, eps, Apple/Google Pay, Skrill) (S1b [19](research/obilazak/19-checkout.md)) | jedan: MPT intent (QR EPC/HUB3, IBAN, referenca) | ≈ | da | `/hr/{id}/podrzi/{checkout}` (QR, IBAN, referenca) |
 | Napojnica: klizač 0–30 %, korak 5, zadano 20 %, „(change)” na nuli (S1b [19](research/obilazak/19-checkout.md)) | zaseban intent, zadano 0 ili bez zadanog (odluka 7) | ≈ | da | `/hr/{id}/podrzi/{checkout}/napojnica` (0 prvi, ništa predodabrano) |
 | „Donate as a company” (S1b [19](research/obilazak/19-checkout.md)): na 4fundu isključeno u konfiguraciji | R1 podaci (naziv, OIB) za udruge | faza 2 | da, označeno | `/hr/{id}/podrzi` (kućica „kao tvrtka”, naziv, OIB; R1 račun faza 2) |
 | Observe: obavijesti o komentarima, novostima, kraju (S1b [22](research/obilazak/22-observe-prijava-komentari.md)) | isto, e-poštom | = | mock | `/hr/pracenje/{token}`, `/hr/{id}/upravljanje/obavijesti` |
-| Report abuse: opis 50–500, telefon, privitak 20 MB, GDPR pristanak (S1b [22](research/obilazak/22-observe-prijava-komentari.md)) | DSA čl. 16 obrazac + potvrda primitka | = | obrazac | `/hr/prijavi-sadrzaj` |
+| Report abuse: opis 50–500, telefon, privitak 20 MB, GDPR pristanak (S1b [22](research/obilazak/22-observe-prijava-komentari.md)) | DSA čl. 16 obrazac + potvrda primitka; privitak tek s R2 (S9) | ≈ | obrazac bez privitka | `/hr/prijavi-sadrzaj` |
 | Komentari do 2500 znakova, odgovori, dijeljenje (S1b [23](research/obilazak/23-ponude-founders-offer.md)) | isto | = | da | `/hr/{id}#komentari` |
 | Streaming widget (S1b [22](research/obilazak/22-observe-prijava-komentari.md)) | prikaz napretka za stream (iframe) | faza 2 | označeno | `/embed/{id}/stream` |
 | Strojni prijevod opisa kampanje (S1b [22](research/obilazak/22-observe-prijava-komentari.md)) | hr/en ručno; strojni prijevod kasnije | faza 2 | – | ✗ u prototipu: opis hr/en piše organizator; strojni prijevod tek u fazi 2 |

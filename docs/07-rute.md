@@ -339,7 +339,7 @@ Njihove funkcije dobivaju rutu prema javnom pregledu §4:
 | Delete | `/hr/{id}/upravljanje/zatvori` |
 | Observe | `POST /api/campaigns/{id}/follow`, `/hr/pracenje/{token}` |
 | Report abuse | `/hr/prijavi-sadrzaj` |
-| Promote, isticanje, paket | ✗ premium nije u fazi 1 |
+| Promote, isticanje, paket | `/hr/{id}/upravljanje/promocija` (faza 2, bez plaćanja; odluka 845, S8) |
 | Delegirane zahvale | ✗ premium; zahvala organizatora je u `/hr/{id}/uredi` |
 | Reset lozinke (modal) | ✗ bez lozinke |
 
