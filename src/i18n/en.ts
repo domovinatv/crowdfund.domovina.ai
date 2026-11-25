@@ -7,7 +7,7 @@ export const en: Rjecnik = {
   "meta.description":
     "Start a campaign for your organisation or support someone else's. Money goes straight to the organisation; the platform never holds it.",
 
-  "demo.bar": "Demo prototype: no real money, all payments are test payments.",
+  "demo.bar": "Prototype – MPT sandbox only, no real money. All payments are test payments.",
   "demo.badge": "demo",
 
   "nav.main": "Main navigation",

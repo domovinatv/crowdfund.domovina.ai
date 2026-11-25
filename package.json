@@ -16,7 +16,9 @@
     "db:gen-seed": "node scripts/seed.mjs",
     "db:seed:local": "npm run db:migrate:local && wrangler d1 execute crowdfund-dev --local --file seed/demo.sql",
     "routes": "node scripts/provjera-ruta.ts",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "deploy:staging": "CLOUDFLARE_ENV=staging astro build && wrangler deploy",
+    "db:staging": "wrangler d1 migrations apply crowdfund-staging --remote --env staging && wrangler d1 execute crowdfund-staging --remote --env staging --file seed/demo.sql"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.4.9",

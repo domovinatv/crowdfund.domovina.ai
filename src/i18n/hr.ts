@@ -9,7 +9,7 @@ export const hr = {
   "meta.description":
     "Pokrenite kampanju za svoju organizaciju ili podržite tuđu. Novac ide izravno organizaciji, platforma ga nikad ne drži.",
 
-  "demo.bar": "Demo prototip: nema pravog novca, sve uplate su testne.",
+  "demo.bar": "Prototip – samo MPT sandbox, nema pravog novca. Sve uplate su testne.",
   "demo.badge": "demo",
 
   "nav.main": "Glavna navigacija",

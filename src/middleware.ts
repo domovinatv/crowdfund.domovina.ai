@@ -23,5 +23,20 @@ export const onRequest = defineMiddleware(async (ctx, next) => {
   const token = ctx.cookies.get(KOLACIC_SESIJE)?.value;
   ctx.locals.korisnik = token ? await korisnikSesije(env.DB, token, Date.now()) : null;
   if (token && !ctx.locals.korisnik) obrisiSesiju(ctx.cookies);
-  return next();
+  return bezIndeksa(await next());
 });
+
+/**
+ * Prototip se ne indeksira (S10, staging je javan): svaki odgovor nosi `X-Robots-Tag`, statične datoteke
+ * kroz `public/_headers`, a `robots.txt` zabranjuje sve. Preusmjerenja imaju nepromjenjiva zaglavlja.
+ */
+export function bezIndeksa(res: Response): Response {
+  try {
+    res.headers.set("X-Robots-Tag", "noindex, nofollow");
+    return res;
+  } catch {
+    const kopija = new Response(res.body, res);
+    kopija.headers.set("X-Robots-Tag", "noindex, nofollow");
+    return kopija;
+  }
+}
