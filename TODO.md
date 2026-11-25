@@ -43,21 +43,23 @@ Legenda: `[x]` gotovo · `[ ]` otvoreno · `[~]` u radu · `(!)` traži korisnik
 - [x] Migracije koje predlaže S5: `users.slug`, token praćenja, skriveni popis uplata (0004, odluke 608–610) → S6
 - [x] Seed relativno na datum seedanja (odluka 611) → S6
 - [x] Seed nedosljednosti: Sunčani krov i prijava s odlukom usklađeni (odluka 847) → S8
-- [ ] Login CSRF (POST bez Origin prolazi), `sessions.last_activity_at` se ne osvježava → S9
+- [x] Login CSRF zatvoren bez koda (odluka 906), `login_events.last_activity_at` se osvježava (odluka 905) → S9
 
 ## F3 — Plaćanje i hibrid
 
 - [x] MPT sandbox tenant, checkout, webhook, napojnica, potvrda (588 unit, 416 Playwright, e2e nad sandboxom) → S7
 - [x] Prihvat uvjeta checkouta u `consents`; „prikaži poruku kao komentar”; obavijesti e-poštom (mock) (odluke 821–824) → S8
 - [x] `potvrdiPovrat` po pravilu 717 → S8
-- [ ] Pravi SSE statusa (CORS na MPT `/stream` ili proxy kroz Worker), jedan poziv raila po učitavanju → S9
-- [ ] (!) Webhook preko tunela prema `wrangler dev` (traži korisnikov pristanak; sad samo unit testovi) → S9
+- [ ] Pravi SSE statusa (CORS na MPT `/stream` ili proxy kroz Worker), jedan poziv raila po učitavanju → S10
+- [ ] (!) Webhook izvana: s preview URL-om `webhook_url` sandbox tenanta na `/webhooks/mpt` (vrata deploy, `docs/11` §C) → S10
 - [x] Vanjska 4fund kampanja (e2e), recurring (podsjetnik + trajni nalog), faza-2 UI, `02` pokriven (odluke 800–849) → S8
-- [ ] e2e mjesečnog toka i komentara/obavijesti pri plaćanju; povezati `subscriptions` s obećanjem (odluka 828) → S9
+- [ ] e2e mjesečnog toka i komentara/obavijesti pri plaćanju; povezati `subscriptions` s obećanjem (odluka 828) → S10
 - [ ] (!) Zahtjev 4fundu za API token radi prikaza iznosa vanjskih kampanja (odluka 800) — korisnikova odluka
 
 ## F4 — Paritet
 
-- [ ] Tablica pariteta, mobilni pregled, a11y → S9
-- [ ] (!) Preview deploy na workers.dev → S9
+- [x] Tablica pariteta (`docs/10`, 87 redova), pregled 375/1280 u Braveu, axe a11y 240 testova (odluke 900–908) → S9
+- [x] Otvorena pitanja za pravnika i produkciju (`docs/11`) → S9
+- [ ] 11 „djelomično” redova iz `docs/10` §Sažetak (6 sitnih, 5 srednjih: captcha, upload medija/R2, rich text, privitak prijave, uređivanje kategorije/galerije) → S10
+- [ ] (!) Preview deploy na workers.dev: pripremljen (`docs/11` §C), čeka odobrenje → S10
 - [ ] (!) GitHub remote i javnost repoa (odluka 17)

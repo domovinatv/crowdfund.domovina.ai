@@ -538,3 +538,33 @@ koja se na nju poziva. Blokovi brojeva po sesiji: S1 od 100, S1b od 150, S2 od 2
      „Dodaj ponudu”).
 849. **Kupnja, licitiranje, izbor razine i plaćanje promocije onemogućeni** s objašnjenjem (fiskalizacija, DAC7);
      faza-2 ekrani ne zovu MPT.
+
+## S9 — 25. 11. 2026.
+
+900. **A11y = axe u Playwrightu** (`e2e/a11y.spec.ts`, `@axe-core/playwright`), oznake `wcag2a/2aa/21a/21aa`, 0 nalaza na
+     375 i 1280 px. Izbor: jedna ruta po ključu iz `javneRute()` (status 200, hr, s demo sesijom gdje treba) + rubni
+     slučajevi bez ključa + 6 en ruta; 120 po projektu. Bez `disableRules`/`exclude`; kontrast se popravlja, ne isključuje.
+901. **e2e provjerava i dvostruke `id`-ove** (axe 4.x ih više ne prijavljuje). `#sadrzaj` pripada `<main>` (skip link);
+     sekcija moderacije u uvjetima je `#moderacija`.
+902. **Vrijednost u `<dl>` s dodatnom radnjom** (npr. poveznica na explorer) ide unutar `<dd>`, nikad izravno u `<div>`.
+903. **Nalazi koje axe ne može odlučiti** (element iza sloja poveznice ili gradijenta) ne ruše test; 111 ih je pregledano
+     ručno. Interaktivna stanja (otvoren izbornik, greške obrasca) axe još ne pokriva. (potvrditi)
+904. **Postotak cilja svugdje se zaokružuje naniže** (`ProgressBar.astro` je zaokruživao naviše: 44 % na kartici, 43 % u
+     upravljanju za 3.510 / 8.000 €). Napredak se nikad ne precjenjuje.
+905. **`login_events.last_activity_at`** osvježava `korisnikSesije` najviše jednom u 5 min po sesiji (`AKTIVNOST_KORAK`);
+     upis samo za valjanu sesiju. Zatvara TODO F2.
+906. **Login CSRF zatvoren bez koda:** Astro `checkOrigin` vraća 403 za tuđi `Origin` (provjereno `curl`om: tuđi 403,
+     isti 303, bez `Origin` 303). Preglednici šalju `Origin` na svaki cross-site POST, pa POST bez njega dolazi samo
+     izvan preglednika i nije CSRF; kolačić sesije je uz to `SameSite=Lax`. (potvrditi)
+907. **`docs/10-paritet.md`:** tri tablice (27 ekrana obilaska, 24 funkcije bez viđenog ekrana, 36 ruta mape stranice),
+     87 redova bez praznih ćelija; stanje „djelomično” ima popis što nedostaje (11 redova, kandidati za S10).
+908. **Pregled u pregledniku:** 375 px u iframeu te širine (Brave ne ide ispod ~606 px viewporta); sken preljeva, slika
+     i `alt` nad svih 213 jedinstvenih 200-ruta. **Paralelni serveri ne dijele `dist/`:** `astro build` (i `npm run
+     check`) pod pokrenutim `wrangler dev` daje 404 na CSS; ručni pregled ide kroz `astro dev`, a server iz `dist/` se
+     nakon svakog builda ponovno pokreće.
+909. **`docs/11-otvorena-pitanja.md`:** 14 pitanja za pravnika (1–4 blokiraju fazu 1), 14 koraka za produkciju i
+     pripremljen preview deploy. Pretpostavljeni Cloudflare račun je D.O.M. (kao ostali domovinatv repoi); prije
+     javnog URL-a preporuka je Cloudflare Access jer je mock prijava javna. Deploy nije pokrenut (vrata). (potvrditi)
+910. **Ispravci dokumenata:** promocija je faza 2 na `/hr/{id}/upravljanje/promocija` (07 je govorio ✗ premium);
+     brisanje računa je u `/hr/postavke/profil`; prijava sadržaja nema privitak dok nema R2 (02: ≈); profil ima 9
+     prekidača vidljivosti (10. 4fundov je „završeni vodiči”).
