@@ -112,7 +112,7 @@ const hr = {
       refunded: "Vraćeno",
     },
     potvrda: "Potvrda o uplati s ključem uplatitelja dolazi s produkcijskim MPT-om; dotad je potvrda stranica „Potvrda” uz svaku donaciju.",
-    radnje: { otvori: "Otvori kampanju", widget: "Widget", podrzi: "Doniraj ponovno", potvrda: "Potvrda" },
+    radnje: { otvori: "Otvori kampanju", widget: "Widget", podrzi: "Doniraj ponovno", potvrda: "Potvrda", noviLink: "Stvori link za praćenje", mojLink: "Moj link za praćenje" },
   },
   kasice: {
     naslov: "Moje kasice",
@@ -271,7 +271,7 @@ const en: Moje = {
       refunded: "Refunded",
     },
     potvrda: "A payment receipt with the payer's key comes with production MPT; until then the “Confirmation” page next to each donation is the receipt.",
-    radnje: { otvori: "Open campaign", widget: "Widget", podrzi: "Donate again", potvrda: "Confirmation" },
+    radnje: { otvori: "Open campaign", widget: "Widget", podrzi: "Donate again", potvrda: "Confirmation", noviLink: "Create tracking link", mojLink: "My tracking link" },
   },
   kasice: {
     naslov: "My moneyboxes",

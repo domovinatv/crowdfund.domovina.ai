@@ -231,6 +231,27 @@ describe("mojeDonacije", () => {
     if (blokirana) expect(blokirana.kampanja.vidljiva).toBe(false);
     expect(sve.filter((x) => x.kampanja.publicId === primjeri.kampanja.aktivna || x.kampanja.publicId === primjeri.kampanja.zavrsena).every((x) => x.kampanja.vidljiva)).toBe(true);
   });
+
+  it("mojLink: samo moj aktivni link za tu kampanju (najnoviji), isključeni i tuđi ne (S10, A08)", async () => {
+    const { sqlite, db } = svjeza();
+    const ivana = await korisnik(db, primjeri.demoRacuni.organizator);
+    const novi = await korisnik(db, primjeri.demoRacuni.novi);
+    const d = (await mojeDonacije(db, ivana.id, ivana.email)).find((x) => x.kampanja.vidljiva)!;
+    const cid = redovi<{ campaign_id: string }>(sqlite, "SELECT campaign_id FROM campaign_settings WHERE public_id = ?", d.kampanja.publicId)[0]!.campaign_id;
+    sqlite.prepare("DELETE FROM tracking_links WHERE owner_user_id = ? AND campaign_id = ?").run(ivana.id, cid);
+    const link = (id: string, vlasnik: string, slug: string, status: string, t: number) =>
+      sqlite
+        .prepare("INSERT INTO tracking_links (id, campaign_id, owner_user_id, slug, label, status, created_at) VALUES (?, ?, ?, ?, NULL, ?, ?)")
+        .run(id, cid, vlasnik, slug, status, t);
+    const moj = async () => (await mojeDonacije(db, ivana.id, ivana.email)).find((x) => x.checkoutId === d.checkoutId)!.mojLink;
+    expect(await moj()).toBeNull();
+    link("tl-tudi", novi.id, "tudi-link-s10", "active", SAD);
+    link("tl-iskljucen", ivana.id, "iskljucen-s10", "disabled", SAD + 2);
+    expect(await moj()).toBeNull();
+    link("tl-stari", ivana.id, "stari-s10", "active", SAD);
+    link("tl-novi", ivana.id, "novi-s10", "active", SAD + 1);
+    expect(await moj()).toBe("novi-s10");
+  });
 });
 
 describe("mojeKasice i postaviKasicu", () => {

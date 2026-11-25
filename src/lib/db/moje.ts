@@ -208,6 +208,8 @@ export interface MojaDonacija {
   stvorena: number;
   placena: number | null;
   kasica: string | null;
+  /** Slug mog najnovijeg aktivnog linka za praćenje te kampanje (`/z/{slug}`), ili null (obilazak 08 „Tracking link”). */
+  mojLink: string | null;
   kampanja: { publicId: string; naslov: string; organizator: string; organizacijaSlug: string | null; vidljiva: boolean; cilj: number | null; rok: number | null };
 }
 
@@ -222,7 +224,9 @@ export async function mojeDonacije(db: D1Database, userId: string, email: string
               (SELECT d.paid_at FROM contribution_attributions a JOIN contributions d ON d.id = a.contribution_id
                 WHERE a.checkout_id = ch.id ORDER BY d.created_at DESC, d.id LIMIT 1) AS paid_at,
               s.public_id, c.title, COALESCE(o.display_name, g.legal_name) AS organizator, o.slug AS org_slug,
-              (${VIDLJIVA}) AS vidljiva, c.goal_cents, c.ends_at
+              (${VIDLJIVA}) AS vidljiva, c.goal_cents, c.ends_at,
+              (SELECT l.slug FROM tracking_links l WHERE l.owner_user_id = ?1 AND l.campaign_id = c.id AND l.status = 'active'
+                ORDER BY l.created_at DESC, l.id LIMIT 1) AS moj_link
          FROM checkouts ch
          JOIN campaigns c ON c.id = ch.campaign_id
          JOIN campaign_settings s ON s.campaign_id = c.id
@@ -236,7 +240,7 @@ export async function mojeDonacije(db: D1Database, userId: string, email: string
     .all<{
       id: string; referenca: string; amount_cents: number; tip_cents: number; intent_state: StanjeDonacije; created_at: number;
       d_state: string | null; paid_at: number | null; kasica: string | null; public_id: string; title: string; organizator: string;
-      org_slug: string | null; vidljiva: number; goal_cents: number | null; ends_at: number | null;
+      org_slug: string | null; vidljiva: number; goal_cents: number | null; ends_at: number | null; moj_link: string | null;
     }>();
   return results.map((r) => ({
     checkoutId: r.id,
@@ -247,6 +251,7 @@ export async function mojeDonacije(db: D1Database, userId: string, email: string
     stvorena: r.created_at,
     placena: r.paid_at,
     kasica: r.kasica,
+    mojLink: r.moj_link,
     kampanja: {
       publicId: r.public_id,
       naslov: r.title,
