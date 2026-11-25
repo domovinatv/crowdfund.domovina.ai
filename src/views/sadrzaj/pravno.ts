@@ -149,7 +149,7 @@ export const UVJETI: Dvojezicno<SadrzajStranice> = {
         ],
       },
       {
-        id: "sadrzaj",
+        id: "moderacija",
         naslov: "5. Prijave i moderacija",
         tekst: [
           "Svatko može prijaviti sadržaj za koji smatra da je nezakonit ili krši ove uvjete. Platforma potvrđuje primitak, odlučuje s obrazloženjem i o odluci obavještava prijavitelja i autora. Autor može prigovoriti odluci.",
@@ -222,7 +222,7 @@ export const UVJETI: Dvojezicno<SadrzajStranice> = {
         ],
       },
       {
-        id: "sadrzaj",
+        id: "moderacija",
         naslov: "5. Reports and moderation",
         tekst: [
           "Anyone can report content they believe is illegal or breaches these terms. The platform confirms receipt, decides with reasons and informs both the reporter and the author of the decision. The author can object to the decision.",

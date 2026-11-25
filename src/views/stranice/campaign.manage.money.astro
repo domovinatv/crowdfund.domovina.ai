@@ -35,13 +35,15 @@ const DD = "mt-0.5 text-ink";
       <dl class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div class="sm:col-span-2">
           <dt class={DT}>{T.safe}</dt>
-          <dd class={`${DD} break-all font-mono text-sm`} title={adresa}>{adresa}</dd>
-          {explorer && (
-            <a href={`${explorer.adresa}${adresa}`} rel="noopener noreferrer" target="_blank"
-              class="mt-1 inline-flex min-h-9 items-center gap-1 text-sm font-semibold text-action underline-offset-2 hover:underline">
-              {T.explorer}<ExternalLink size={14} aria-hidden="true" />
-            </a>
-          )}
+          <dd class={DD}>
+            <span class="block break-all font-mono text-sm" title={adresa}>{adresa}</span>
+            {explorer && (
+              <a href={`${explorer.adresa}${adresa}`} rel="noopener noreferrer" target="_blank"
+                class="mt-1 inline-flex min-h-9 items-center gap-1 text-sm font-semibold text-action underline-offset-2 hover:underline">
+                {T.explorer}<ExternalLink size={14} aria-hidden="true" />
+              </a>
+            )}
+          </dd>
         </div>
         <div><dt class={DT}>{T.mreza}</dt><dd class={DD}>{explorer?.ime ?? lanac}</dd></div>
         <div><dt class={DT}>{T.nacin}</dt><dd class={DD}>{T.nacini[n.mode] ?? n.mode}</dd></div>
