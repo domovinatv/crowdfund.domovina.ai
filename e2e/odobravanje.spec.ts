@@ -50,7 +50,7 @@ async function objaviZaOrganizaciju(page: Page, naslov: string): Promise<string>
   await page
     .locator("textarea[name=opis]")
     .fill("Prikupljamo doprinose za opremu udruge kako bi volonteri mogli raditi s djecom tijekom cijele godine.");
-  await page.locator("form:has(textarea[name=opis]) button[type=submit]").click();
+  await page.locator("form:has(textarea[name=opis]) button[type=submit]:not([name=akcija])").click();
 
   await expect(page).toHaveURL(/\/hr\/nova-kampanja\/pregled$/);
   await page.locator("form:has(input[name=akcija][value=objavi]) button[type=submit]").click();
