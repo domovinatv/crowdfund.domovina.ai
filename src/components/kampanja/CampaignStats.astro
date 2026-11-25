@@ -27,7 +27,7 @@ else rok = mnozina(lang, k.daysLeft ?? 0, T.dana);
   {
     s.raisedCents !== null && (
       <p class="tabular-nums">
-        <strong class="text-2xl font-bold text-ink">{novac(s.raisedCents)}</strong>
+        <strong class="text-2xl font-bold text-ink" data-prikupljeno-centi={s.raisedCents}>{novac(s.raisedCents)}</strong>
         <span class="text-ink-soft"> {T.prikupljeno}</span>
         {k.goalCents ? <span class="block text-sm text-ink-muted">{T.od} {novac(k.goalCents)}</span> : <span class="block text-sm text-ink-muted">{T.bezCilja}</span>}
       </p>
