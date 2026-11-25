@@ -11,11 +11,16 @@ import { GUMB, KARTICA } from "../../components/upravljanje/stil";
 import { url } from "../../lib/rute";
 import { CHECKOUT, popuni } from "../sadrzaj/checkout";
 import type { PodaciPlacanja } from "./campaign.support.checkout.ucitaj";
+import UputaNaloga from "../../components/ponavljanje/UputaNaloga.astro";
+import Repeat from "@lucide/astro/icons/repeat";
+import { datum } from "../../components/katalog/oblik";
+import { PONAVLJANJE } from "../sadrzaj/ponavljanje";
 import type { PropsStranice } from "../tipovi";
 
 type Props = PropsStranice<PodaciPlacanja>;
 const { lang, podaci } = Astro.props;
-const { k, ch, intent, sandbox, placen, neuspio } = podaci;
+const { k, ch, intent, sandbox, placen, neuspio, obecanje } = podaci;
+const O = PONAVLJANJE[lang].obecanje;
 const C = CHECKOUT[lang];
 const T = C.placanje;
 const novac = formatNovca(lang);
@@ -64,5 +69,24 @@ const odbijena = ch.stanje === "rejected" || intent?.stage === "rejected";
         osvjezi={ovdje}
       />
     )}
+
+    {
+      obecanje && (
+        <section aria-labelledby="obecanje" class={`mt-6 ${KARTICA}`} data-obecanje={obecanje.nacin}>
+          <h2 id="obecanje" class="flex items-center gap-2 text-lg font-semibold text-ink">
+            <Repeat size={20} aria-hidden="true" />{O.naslov}
+          </h2>
+          <p class="mt-1 text-ink">{popuni(O.tekst, { iznos: novac(obecanje.iznosCenti), dan: obecanje.dan })}</p>
+          {obecanje.nacin === "reminder" && obecanje.sljedeci !== null && obecanje.status === "active" && (
+            <p class="mt-1 text-sm text-ink-soft">{popuni(O.sljedeci, { datum: datum(lang, obecanje.sljedeci) })}</p>
+          )}
+          {obecanje.nacin === "standing_order" && (
+            <UputaNaloga lang={lang} class="mt-4" primatelj={intent?.beneficiaryName ?? k.organizator.name} iznosCenti={obecanje.iznosCenti} dan={obecanje.dan}
+              iban={intent?.iban ?? null} sandbox={sandbox} />
+          )}
+          <a href={url(lang, "settings.recurring")} class="mt-3 inline-flex min-h-11 items-center text-sm font-semibold text-action underline underline-offset-2">{O.upravljaj}</a>
+        </section>
+      )
+    }
   </div>
 </Base>

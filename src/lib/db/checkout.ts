@@ -12,6 +12,7 @@
 import { iznosUCente } from "./upravljanje";
 import { kampanjaPoJavnomId } from "./kampanja";
 import { uuid7 } from "./zajednicko";
+import { VERZIJA_UVJETA } from "../sesija";
 import { MptGreska, noviSid, stvoriIntent, type DohvatFn, type MptIntent, type MptKonfig } from "../mpt/klijent";
 
 // --- Granice -------------------------------------------------------------------------------------------
@@ -39,6 +40,8 @@ export interface ObrazacCheckouta {
   izbor: string;
   svojIznos: string;
   poruka: string;
+  /** „Prikaži poruku kao komentar” (komentar nastaje tek kad je doprinos `paid`, `src/lib/db/obavijesti.ts`). */
+  komentar: boolean;
   skrijIme: boolean;
   skrijIznos: boolean;
   email: string;
@@ -51,7 +54,7 @@ export interface ObrazacCheckouta {
 }
 
 export const prazanObrazac = (): ObrazacCheckouta => ({
-  izbor: "", svojIznos: "", poruka: "", skrijIme: false, skrijIznos: false,
+  izbor: "", svojIznos: "", poruka: "", komentar: false, skrijIme: false, skrijIznos: false,
   email: "", ime: "", prezime: "", kaoTvrtka: false, tvrtka: "", oib: "", uvjeti: false,
 });
 
@@ -63,6 +66,8 @@ export type GreskeCheckouta = Partial<Record<PoljeCheckouta, GreskaCheckouta>>;
 export interface CistiCheckout {
   iznosCenti: number;
   poruka: string | null;
+  /** Poruka ide i među komentare kampanje (samo uz poruku). */
+  prikaziKaoKomentar: boolean;
   skrijIme: boolean;
   skrijIznos: boolean;
   email: string;
@@ -141,6 +146,7 @@ export function provjeriObrazac(
     cisto: {
       iznosCenti: iznos as number,
       poruka: poruka || null,
+      prikaziKaoKomentar: o.komentar && poruka.length > 0,
       skrijIme: o.skrijIme,
       skrijIznos: o.skrijIznos,
       email,
@@ -177,6 +183,8 @@ export interface NoviCheckout {
   atribucija?: string | null;
   /** `?ref={code}` dijeljenja; ima prednost pred kolačićem (zadnji klik, tok 7). */
   ref?: string | null;
+  /** Obećanje mjesečne podrške (`checkouts.recurring_pledge_id`): prvi mjesec ili plaćanje s podsjetnika. */
+  ponavljanjeId?: string | null;
   /** Apsolutni URL stranice plaćanja za `return_url` intenta. */
   povratniUrl: (checkoutId: string) => string;
   sad?: number;
@@ -261,14 +269,14 @@ export async function stvoriCheckout(db: D1Database, k: MptKonfig, n: NoviChecko
     db
       .prepare(
         `INSERT INTO checkouts (id, campaign_id, contribution_sid, amount_cents, tip_cents, intent_state, user_id, email,
-                                first_name, last_name, as_company, company_name, company_oib, moneybox_id, tracking_link_id,
-                                share_link_id, short_ref, expires_at, created_at, updated_at)
-         VALUES (?, ?, ?, ?, 0, 'open', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?)`,
+                                first_name, last_name, as_company, company_name, company_oib, recurring_pledge_id, moneybox_id,
+                                tracking_link_id, share_link_id, short_ref, expires_at, created_at, updated_at)
+         VALUES (?, ?, ?, ?, 0, 'open', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?)`,
       )
       .bind(
         checkoutId, kampanja.id, sid, c.iznosCenti, userId, n.korisnik?.email ?? c.email,
-        c.ime, c.prezime, c.kaoTvrtka ? 1 : 0, c.tvrtka, c.oib, a.moneyboxId, a.trackingLinkId, a.shareLinkId,
-        rok, sad, sad,
+        c.ime, c.prezime, c.kaoTvrtka ? 1 : 0, c.tvrtka, c.oib, n.ponavljanjeId ?? null, a.moneyboxId, a.trackingLinkId,
+        a.shareLinkId, rok, sad, sad,
       ),
     db
       .prepare(
@@ -288,9 +296,24 @@ export async function stvoriCheckout(db: D1Database, k: MptKonfig, n: NoviChecko
       .prepare(
         `INSERT INTO contribution_attributions (contribution_id, checkout_id, user_id, moneybox_id, tracking_link_id,
                                                 share_link_id, offer_id, amount_hidden, show_message_as_comment, source)
-         VALUES (?, ?, ?, ?, ?, ?, NULL, ?, 0, 'checkout')`,
+         VALUES (?, ?, ?, ?, ?, ?, NULL, ?, ?, 'checkout')`,
       )
-      .bind(doprinosId, checkoutId, userId, a.moneyboxId, a.trackingLinkId, a.shareLinkId, c.skrijIznos ? 1 : 0),
+      .bind(
+        doprinosId, checkoutId, userId, a.moneyboxId, a.trackingLinkId, a.shareLinkId, c.skrijIznos ? 1 : 0,
+        c.prikaziKaoKomentar && c.poruka ? 1 : 0,
+      ),
+    // Neprijavljeni je na obrascu prihvatio uvjete i privatnost (odluka 725): privola po e-pošti, verzija teksta
+    // kao pri registraciji. Prijavljeni ih je prihvatio pri registraciji, pa se ne upisuje ništa.
+    ...(n.korisnik
+      ? []
+      : [
+          db
+            .prepare(
+              `INSERT INTO consents (id, user_id, email, kind, text_version, granted, created_at)
+               VALUES (?, NULL, ?, 'terms_privacy', ?, 1, ?)`,
+            )
+            .bind(uuid7(sad), c.email, VERZIJA_UVJETA, sad),
+        ]),
   ]);
 
   const metadata: Record<string, string> = { checkout: checkoutId, kampanja: kampanja.publicId, vrsta: "doprinos" };

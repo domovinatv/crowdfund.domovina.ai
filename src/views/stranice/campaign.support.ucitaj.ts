@@ -5,6 +5,9 @@
  * `?s={alias}` kasica i `?ref={code}` dijeljenja putuju skrivenim poljima; atribucija linka iz kolačića.
  * Kampanja koja ne prima uplate vraća 200 s obaviješću i bez obrasca, `noindex` (kao stub S5).
  * CSRF: Astro `security.checkOrigin` (zadano uključen) odbija POST obrasca s tuđeg origina, kao ostale stranice.
+ * S8: „svaki mjesec” (odluka 14, tok 10) za prijavljene na mjesečnim kampanjama stvara `recurring_pledges` i prvi
+ * mjesec kroz isti `stvoriCheckout` (`ponavljanjeId`); kućica „prikaži poruku kao komentar”; neprijavljenom se
+ * prihvat uvjeta upisuje u `consents` (u `stvoriCheckout`).
  */
 import type { StranicaKampanje } from "../../lib/db/kampanja";
 import { kasicaPoAliasu, type KasicaSKampanjom } from "../../lib/db/kasice";
@@ -22,6 +25,15 @@ import { konfigIzKonteksta } from "../../components/checkout/ucitavanje";
 import { KOLACIC_ATRIBUCIJE } from "../../components/kampanja/posjetitelj";
 import { kucica, polje } from "../../components/upravljanje/ucitavanje";
 import { url } from "../../lib/rute";
+import {
+  mjesecnoDopusteno,
+  otkaziObecanje,
+  praznoPonavljanje,
+  provjeriPonavljanje,
+  stvoriObecanje,
+  type GreskePonavljanja,
+  type UlazPonavljanja,
+} from "../../lib/db/ponavljanje";
 import type { Ucitaj } from "../tipovi";
 
 export interface PodaciPodrske {
@@ -32,6 +44,10 @@ export interface PodaciPodrske {
   najmanjeCenti: number;
   vrijednosti: ObrazacCheckouta;
   greske: GreskeCheckouta;
+  /** Kampanja nudi „svaki mjesec” (vrsta `recurring` ili `recurrence = monthly`). */
+  mjesecno: boolean;
+  ponavljanje: UlazPonavljanja;
+  greskePonavljanja: GreskePonavljanja;
   /** Greška pri pripremi uplate (MPT ne odgovara ili nema ključeva). */
   greskaUplate: "mpt" | "konfig" | null;
 }
@@ -42,6 +58,7 @@ export function obrazacIzForme(f: FormData): ObrazacCheckouta {
     izbor: polje(f, "izbor"),
     svojIznos: polje(f, "svojIznos"),
     poruka: polje(f, "poruka"),
+    komentar: kucica(f, "komentar"),
     skrijIme: kucica(f, "skrijIme"),
     skrijIznos: kucica(f, "skrijIznos"),
     email: polje(f, "email"),
@@ -53,6 +70,13 @@ export function obrazacIzForme(f: FormData): ObrazacCheckouta {
     uvjeti: kucica(f, "uvjeti"),
   };
 }
+
+/** Učestalost iz FormData (`ucestalost`, `dan`, `nacin`). */
+export const ponavljanjeIzForme = (f: FormData): UlazPonavljanja => ({
+  ucestalost: polje(f, "ucestalost") || "jednom",
+  dan: polje(f, "dan"),
+  nacin: polje(f, "nacin") || "reminder",
+});
 
 export const ucitaj: Ucitaj<PodaciPodrske> = async (ctx) => {
   const k = await ucitajKampanju(ctx, "campaign.support");
@@ -67,20 +91,32 @@ export const ucitaj: Ucitaj<PodaciPodrske> = async (ctx) => {
   const iznosi = k.amountPresets.length ? k.amountPresets.slice(0, 6) : ZADANI_IZNOSI;
   const najmanjeCenti = Math.max(NAJMANJE_CENTI, k.minContributionCents ?? 0);
 
+  const mjesecno = mjesecnoDopusteno(k);
   let vrijednosti = prazanObrazac();
+  let ponavljanje = praznoPonavljanje();
+  if (!f && mjesecno && ctx.url.searchParams.get("ucestalost") === "mjesecno") ponavljanje.ucestalost = "mjesecno";
   let greske: GreskeCheckouta = {};
+  let greskePonavljanja: GreskePonavljanja = {};
   let greskaUplate: PodaciPodrske["greskaUplate"] = null;
 
   if (f && k.primaUplate) {
     vrijednosti = obrazacIzForme(f);
+    ponavljanje = ponavljanjeIzForme(f);
     const korisnik = ctx.korisnik;
     const r = provjeriObrazac(vrijednosti, { prijavljen: korisnik, najmanjeCenti });
+    const rp = provjeriPonavljanje(ponavljanje, { prijavljen: korisnik !== null, dopusteno: mjesecno });
     if (!r.ok) greske = r.greske;
-    else {
+    if (!rp.ok) greskePonavljanja = rp.greske;
+    if (r.ok && rp.ok) {
       const konfig = konfigIzKonteksta(ctx);
       if (!konfig) greskaUplate = "konfig";
       else {
         const lang = ctx.lang;
+        const sad = Date.now();
+        const obecanje =
+          rp.mjesecno && korisnik
+            ? await stvoriObecanje(ctx.db, { userId: korisnik.id, campaignId: k.id, iznosCenti: r.cisto.iznosCenti, ...rp.mjesecno, sad })
+            : null;
         const rez = await stvoriCheckout(ctx.db, konfig, {
           publicId: k.publicId,
           podaci: r.cisto,
@@ -88,8 +124,11 @@ export const ucitaj: Ucitaj<PodaciPodrske> = async (ctx) => {
           kasica: kasica?.alias ?? null,
           atribucija: ctx.cookies.get(KOLACIC_ATRIBUCIJE)?.value ?? null,
           ref,
+          ponavljanjeId: obecanje,
+          sad,
           povratniUrl: (checkout) => apsolutno(ctx, url(lang, "campaign.support.checkout", { id: k.publicId, checkout })),
         });
+        if (!rez.ok && obecanje) await otkaziObecanje(ctx.db, obecanje, sad);
         if (rez.ok) {
           return new Response(null, {
             status: 303,
@@ -102,5 +141,5 @@ export const ucitaj: Ucitaj<PodaciPodrske> = async (ctx) => {
       }
     }
   }
-  return { podaci: { k, kasica, ref, iznosi, najmanjeCenti, vrijednosti, greske, greskaUplate } };
+  return { podaci: { k, kasica, ref, iznosi, najmanjeCenti, vrijednosti, greske, mjesecno, ponavljanje, greskePonavljanja, greskaUplate } };
 };

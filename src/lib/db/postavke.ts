@@ -7,6 +7,7 @@
 import { hashTokena, zapisiPrivolu } from "../sesija";
 import { stanjePraga, type StanjePraga } from "./pragovi";
 import { VIDLJIVA, uuid7 } from "./zajednicko";
+import { preracunajTermin } from "./ponavljanje";
 
 type Greske = Record<string, string>;
 type Polja = Record<string, string>;
@@ -543,14 +544,22 @@ export async function mojaPonavljanja(db: D1Database, userId: string): Promise<P
 
 export type RadnjaPonavljanja = "pause" | "resume" | "cancel" | "day";
 
-/** Pauza, nastavak, otkaz (konačan) i dan u mjesecu 1–28; samo vlastito obećanje (V). Bez novca (S8). */
+/**
+ * Pauza, nastavak, otkaz (konačan) i dan u mjesecu 1–28; samo vlastito obećanje (V). Nastavak i promjena dana
+ * preračunavaju sljedeći podsjetnik (S8, `src/lib/db/ponavljanje.ts`).
+ */
 export async function promijeniPonavljanje(db: D1Database, userId: string, id: string, radnja: RadnjaPonavljanja, dan: number | null, sad: number): Promise<boolean> {
   if (radnja === "pause")
     return promjena(await db.prepare("UPDATE recurring_pledges SET status = 'paused', updated_at = ? WHERE id = ? AND user_id = ? AND status = 'active'").bind(sad, id, userId).run());
-  if (radnja === "resume")
-    return promjena(await db.prepare("UPDATE recurring_pledges SET status = 'active', missed_count = 0, updated_at = ? WHERE id = ? AND user_id = ? AND status = 'paused'").bind(sad, id, userId).run());
+  if (radnja === "resume") {
+    const ok = promjena(await db.prepare("UPDATE recurring_pledges SET status = 'active', missed_count = 0, updated_at = ? WHERE id = ? AND user_id = ? AND status = 'paused'").bind(sad, id, userId).run());
+    if (ok) await preracunajTermin(db, id, sad);
+    return ok;
+  }
   if (radnja === "cancel")
     return promjena(await db.prepare("UPDATE recurring_pledges SET status = 'cancelled', cancelled_at = ?, updated_at = ? WHERE id = ? AND user_id = ? AND status <> 'cancelled'").bind(sad, sad, id, userId).run());
   if (dan === null || !Number.isInteger(dan) || dan < 1 || dan > 28) return false;
-  return promjena(await db.prepare("UPDATE recurring_pledges SET day_of_month = ?, updated_at = ? WHERE id = ? AND user_id = ? AND status <> 'cancelled'").bind(dan, sad, id, userId).run());
+  const ok = promjena(await db.prepare("UPDATE recurring_pledges SET day_of_month = ?, updated_at = ? WHERE id = ? AND user_id = ? AND status <> 'cancelled'").bind(dan, sad, id, userId).run());
+  if (ok) await preracunajTermin(db, id, sad);
+  return ok;
 }

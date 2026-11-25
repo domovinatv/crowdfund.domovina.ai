@@ -1,11 +1,18 @@
 ---
-// Mjesečne donacije (ekran 17, odluka 215): pauza, nastavak, otkaz i dan u mjesecu. Bez novca (S7–S8).
+// Mjesečne donacije (ekran 17, odluke 14, 215): pauza, nastavak, otkaz i dan u mjesecu; sljedeći podsjetnik,
+// zadnji podsjetnik kao mock e-poruka (poveznica na /hr/podsjetnik/{token}) i simulacija slanja; za trajni nalog
+// uputa (IBAN, primatelj, referenca, iznos, dan).
 import Ban from "@lucide/astro/icons/ban";
 import Pause from "@lucide/astro/icons/pause";
 import Play from "@lucide/astro/icons/play";
 import { iznos } from "../../components/katalog/oblik";
 import OkvirPostavki from "../../components/postavke/OkvirPostavki.astro";
 import { url } from "../../lib/rute";
+import { datum } from "../../components/katalog/oblik";
+import MockOznaka from "../../components/postavke/MockOznaka.astro";
+import UputaNaloga from "../../components/ponavljanje/UputaNaloga.astro";
+import { popuni } from "../sadrzaj/checkout";
+import { PONAVLJANJE } from "../sadrzaj/ponavljanje";
 import { POSTAVKE } from "../sadrzaj/postavke";
 import type { PropsStranice } from "../tipovi";
 import type { PodaciPonavljanja } from "./settings.recurring.ucitaj";
@@ -17,9 +24,15 @@ const P = T.ponavljajuce;
 const S = P.stupci;
 const gumb = "inline-flex min-h-11 items-center gap-1.5 rounded-md border border-ink-muted/60 px-3 font-medium text-ink hover:bg-mist";
 const akcija = url(lang, "settings.recurring");
+const M = PONAVLJANJE[lang].mock;
+const PP = PONAVLJANJE[lang].postavke;
+const mjesec = (period: string) => {
+  const [g, m] = period.split("-").map(Number) as [number, number];
+  return new Intl.DateTimeFormat(lang === "hr" ? "hr-HR" : "en-GB", { month: "long", year: "numeric", timeZone: "UTC" }).format(Date.UTC(g, m - 1, 1));
+};
 ---
 <OkvirPostavki lang={lang} aktivna="settings.recurring" naslov={P.naslov} uvod={P.uvod}
-  uspjeh={podaci.ok ? T.spremljeno : null} greska={podaci.greska ? P.greska : null}>
+  uspjeh={podaci.ok === "podsjetnik" ? M.poslan : podaci.ok ? T.spremljeno : null} greska={podaci.greska ? P.greska : null}>
   {
     podaci.ponavljanja.length === 0 ? (
       <p class="mt-6 text-ink-muted">{P.prazno}</p>
@@ -27,7 +40,7 @@ const akcija = url(lang, "settings.recurring");
       <ul class="mt-6 space-y-4">
         {
           podaci.ponavljanja.map((r) => (
-            <li class="rounded-md border border-line p-4">
+            <li class="rounded-md border border-line p-4" data-obecanje={r.id}>
               <p class="font-semibold text-ink">
                 <a href={url(lang, "campaign", { id: r.publicId })} class="text-action underline underline-offset-2">{r.naslov}</a>
               </p>
@@ -36,7 +49,32 @@ const akcija = url(lang, "settings.recurring");
                 <div><dt class="text-ink-muted">{S.dan}</dt><dd>{r.dayOfMonth}.</dd></div>
                 <div><dt class="text-ink-muted">{S.nacin}</dt><dd>{P.nacini[r.mode]}</dd></div>
                 <div><dt class="text-ink-muted">{S.stanje}</dt><dd>{P.stanja[r.status]}</dd></div>
+                {r.mode === "reminder" && r.status === "active" && r.nextReminderAt !== null && (
+                  <div class="col-span-2"><dt class="text-ink-muted">{PP.sljedeci}</dt><dd>{datum(lang, r.nextReminderAt)}</dd></div>
+                )}
               </dl>
+              {r.mode === "standing_order" && r.status !== "cancelled" && (
+                <UputaNaloga lang={lang} class="mt-3" primatelj={r.naslov} iznosCenti={r.amountCents} dan={r.dayOfMonth} sandbox={podaci.sandbox} uvod={PP.nalogNapomena} />
+              )}
+              {r.mode === "reminder" && r.status !== "cancelled" && (
+                <MockOznaka naslov={M.podsjetnikNaslov} tekst={M.podsjetnikTekst} oznaka={M.oznaka}>
+                  {podaci.podsjetnici[r.id] ? (
+                    <p class="mt-3 text-sm text-ink" data-mock-podsjetnik>
+                      {popuni(M.zadnji, { mjesec: mjesec(podaci.podsjetnici[r.id]!.period), datum: datum(lang, podaci.podsjetnici[r.id]!.poslano) })}{" "}
+                      <a href={url(lang, "reminder", { token: podaci.podsjetnici[r.id]!.token })} class="font-semibold text-action underline underline-offset-2" data-poveznica-podsjetnika>{M.otvori}</a>
+                    </p>
+                  ) : (
+                    r.nextReminderAt !== null && <p class="mt-3 text-sm text-ink-soft">{popuni(M.nema, { datum: datum(lang, r.nextReminderAt) })}</p>
+                  )}
+                  {r.status === "active" && (
+                    <form method="post" action={akcija} class="mt-3">
+                      <input type="hidden" name="id" value={r.id} />
+                      <input type="hidden" name="radnja" value="podsjetnik" />
+                      <button type="submit" class={gumb} data-simuliraj-podsjetnik>{M.posalji}</button>
+                    </form>
+                  )}
+                </MockOznaka>
+              )}
               {
                 r.status !== "cancelled" && (
                   <div class="mt-3 flex flex-wrap items-end gap-2">
@@ -72,5 +110,5 @@ const akcija = url(lang, "settings.recurring");
       </ul>
     )
   }
-  <p class="mt-6 text-sm text-ink-muted">{P.detaljiS8}</p>
+  <p class="mt-6 text-sm"><a href={url(lang, "monthly")} class="font-medium text-action underline underline-offset-2">{PP.detalji}</a></p>
 </OkvirPostavki>

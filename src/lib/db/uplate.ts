@@ -33,6 +33,7 @@
  * Sirovi IBAN uplatitelja se nikad ne sprema: `payer_iban_hash` je HMAC-SHA256 (s tajnom) ili SHA-256 s
  * prefiksom domene (bez tajne), hex.
  */
+import { izjavePriPlacanju } from "./obavijesti";
 import { dohvatiIntent, type DohvatFn, type MptFaza, type MptIntent, type MptKonfig } from "../mpt/klijent";
 
 /** Vrste webhooka raila (CHECK u `webhook_receipts.event_type`). */
@@ -327,6 +328,8 @@ async function primijeniNaDoprinos(
                 AND EXISTS (SELECT 1 FROM contributions WHERE id = ?3 AND state IN (${u(dp.iz)}))`,
           )
           .bind(primljeno, r.campaign_id, r.id, ibanHash, r.email, r.user_id, placeno, sad),
+        // S8: komentar iz poruke i mock e-poruka organizatoru, pod istim uvjetom (doprinos još u polaznom stanju).
+        ...izjavePriPlacanju(db, r.id, dp.iz, primljeno, sad),
       );
       indeksDoprinosa = izjave.length;
       izjave.push(

@@ -246,7 +246,7 @@ const hr = {
   },
   ponavljajuce: {
     naslov: "Mjesečne donacije",
-    uvod: "Obećanja mjesečne podrške: svaki mjesec stiže podsjetnik s novim nalogom. Platforma ništa ne naplaćuje sama.",
+    uvod: "Obećanja mjesečne podrške: svaki mjesec stiže podsjetnik s novom uplatom ili plaćaš trajnim nalogom u banci. Platforma ništa ne naplaćuje sama.",
     prazno: "Nemate mjesečnih donacija.",
     stupci: { kampanja: "Kampanja", iznos: "Iznos", dan: "Dan u mjesecu", nacin: "Način", stanje: "Stanje" },
     nacini: { reminder: "podsjetnik", standing_order: "trajni nalog" },
@@ -255,7 +255,6 @@ const hr = {
     nastavi: "Nastavi",
     otkazi: "Otkaži",
     promijeniDan: "Promijeni dan",
-    detaljiS8: "Uplata kroz podsjetnik dolazi s platnim tokom (S7–S8).",
     greska: "Promjena nije moguća.",
   },
   povijest: {
@@ -507,7 +506,7 @@ const en: typeof hr = {
   },
   ponavljajuce: {
     naslov: "Monthly donations",
-    uvod: "Monthly support pledges: each month you receive a reminder with a new payment order. The platform never charges anything by itself.",
+    uvod: "Monthly support pledges: each month you get a reminder with a new payment, or you pay by standing order in your bank. The platform never charges anything by itself.",
     prazno: "You have no monthly donations.",
     stupci: { kampanja: "Campaign", iznos: "Amount", dan: "Day of month", nacin: "Method", stanje: "Status" },
     nacini: { reminder: "reminder", standing_order: "standing order" },
@@ -516,7 +515,6 @@ const en: typeof hr = {
     nastavi: "Resume",
     otkazi: "Cancel",
     promijeniDan: "Change day",
-    detaljiS8: "Paying through the reminder comes with the payment flow (S7–S8).",
     greska: "The change is not possible.",
   },
   povijest: {

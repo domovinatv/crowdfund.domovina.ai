@@ -6,10 +6,17 @@ import { GUMB, H2, KARTICA, POMOC } from "../../components/upravljanje/stil";
 import { UPRAVLJANJE } from "../sadrzaj/upravljanje";
 import type { PodaciObavijesti } from "./campaign.manage.notifications.ucitaj";
 import type { PropsStranice } from "../tipovi";
+import MockOznaka from "../../components/postavke/MockOznaka.astro";
+import { formatNovca } from "../../components/kampanja/format";
+import { datum } from "../../components/katalog/oblik";
+import { popuni } from "../sadrzaj/checkout";
+import { PONAVLJANJE } from "../sadrzaj/ponavljanje";
 
 type Props = PropsStranice<PodaciObavijesti>;
 const { lang, podaci } = Astro.props;
-const { u, obavijesti: o, smijeKampanju, spremljeno } = podaci;
+const { u, obavijesti: o, smijeKampanju, spremljeno, poruke } = podaci;
+const M = PONAVLJANJE[lang].mock;
+const novac = formatNovca(lang);
 const T = UPRAVLJANJE[lang].obavijesti;
 const O = UPRAVLJANJE[lang].opce;
 const stavke = [
@@ -39,4 +46,21 @@ const stavke = [
     </fieldset>
     <button type="submit" class={GUMB}>{T.spremi}</button>
   </form>
+
+  <div class="max-w-[70ch]">
+    <MockOznaka naslov={M.uplateNaslov} tekst={M.uplateTekst} oznaka={M.oznaka}>
+      {poruke.length === 0 ? (
+        <p class="mt-3 text-sm text-ink-muted">{M.uplateNema}</p>
+      ) : (
+        <ul class="mt-3 divide-y divide-line text-sm" data-mock-uplate>
+          {poruke.map((p) => (
+            <li class="py-2">
+              <p class="text-ink">{popuni(M.uplata, { iznos: novac(p.iznosCenti) })}</p>
+              <p class="text-ink-muted">{datum(lang, p.poslano)} · {popuni(M.za, { email: p.email })}</p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </MockOznaka>
+  </div>
 </OkvirUpravljanja>

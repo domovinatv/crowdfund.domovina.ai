@@ -2,6 +2,8 @@
 // Checkout korak 1 (docs/08 §5.2, obilazak 19 i 25): iznos (brzi izbor + svoj), prikaz na popisu, poruka 300 zn,
 // e-pošta (prijavljenom iz sesije), „kao tvrtka” samo neprijavljenom, prihvat uvjeta. Radi bez JS-a (POST na
 // istu rutu, greške uz polja); skripta samo broji znakove poruke i bira „svoj iznos” kad se u njega upisuje.
+// S8: „svaki mjesec” (dan 1–28, podsjetnik ili trajni nalog) na mjesečnim kampanjama, samo prijavljenima;
+// „prikaži poruku kao komentar”.
 import ArrowLeft from "@lucide/astro/icons/arrow-left";
 import PiggyBank from "@lucide/astro/icons/piggy-bank";
 import ShieldCheck from "@lucide/astro/icons/shield-check";
@@ -15,19 +17,23 @@ import { PORUKA_NAJVISE, type PoljeCheckouta } from "../../lib/db/checkout";
 import { url } from "../../lib/rute";
 import { KAMPANJA } from "../sadrzaj/kampanja";
 import { CHECKOUT, popuni } from "../sadrzaj/checkout";
+import { PONAVLJANJE } from "../sadrzaj/ponavljanje";
+import { NACINI } from "../../lib/db/ponavljanje";
 import type { PodaciPodrske } from "./campaign.support.ucitaj";
 import type { PropsStranice } from "../tipovi";
 
 type Props = PropsStranice<PodaciPodrske>;
 const { lang, podaci } = Astro.props;
-const { k, kasica, ref, iznosi, najmanjeCenti, vrijednosti: v, greske, greskaUplate } = podaci;
+const { k, kasica, ref, iznosi, najmanjeCenti, vrijednosti: v, greske, greskaUplate, mjesecno, ponavljanje: pv, greskePonavljanja: gp } = podaci;
+const R = PONAVLJANJE[lang].checkout;
+const prijavaMjesecno = `${url(lang, "sign-in")}?next=${encodeURIComponent(`${url(lang, "campaign.support", { id: k.publicId })}?ucestalost=mjesecno`)}`;
 const T = CHECKOUT[lang].obrazac;
 const novac = formatNovca(lang);
 const korisnik = Astro.locals.korisnik;
 const min = novac(najmanjeCenti);
 const g = (p: PoljeCheckouta) => (greske[p] ? popuni(T.greske[greske[p]!], { min }) : undefined);
 const opis = (p: PoljeCheckouta, pomoc = false) => [pomoc ? `${p}-pomoc` : "", greske[p] ? `${p}-greska` : ""].filter(Boolean).join(" ") || undefined;
-const brojGresaka = Object.keys(greske).length;
+const brojGresaka = Object.keys(greske).length + Object.keys(gp).length;
 const MALO = "text-sm font-normal text-ink-muted";
 const svojOdabran = v.izbor === "svoj" || (!v.izbor && v.svojIznos !== "");
 const GUMB_IZNOSA = "flex min-h-11 cursor-pointer items-center justify-center rounded-md px-3 font-semibold tabular-nums text-ink ring-1 ring-ink-muted/50 has-[:checked]:bg-action has-[:checked]:text-paper has-[:checked]:ring-action has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-action";
@@ -99,6 +105,59 @@ const GUMB_IZNOSA = "flex min-h-11 cursor-pointer items-center justify-center ro
             {g("iznos") && <p id="iznos-greska" class={GRESKA}>{g("iznos")}</p>}
           </fieldset>
 
+          {mjesecno && (
+            <fieldset class={`space-y-4 ${KARTICA}`} data-ucestalost>
+              <legend class="text-lg font-semibold text-ink">{R.ucestalost}</legend>
+              <div class="grid grid-cols-2 gap-2">
+                <label class={GUMB_IZNOSA}>
+                  <input type="radio" name="ucestalost" value="jednom" checked={pv.ucestalost !== "mjesecno"} class="sr-only" />
+                  {R.jednom}
+                </label>
+                <label class={GUMB_IZNOSA}>
+                  <input type="radio" name="ucestalost" value="mjesecno" checked={pv.ucestalost === "mjesecno"} class="sr-only"
+                    aria-describedby="ucestalost-pomoc" />
+                  {R.mjesecno}
+                </label>
+              </div>
+              <p id="ucestalost-pomoc" class={POMOC}>{R.mjesecnoPomoc}</p>
+              {gp.ucestalost && <p id="ucestalost-greska" role="alert" class={GRESKA}>{R.greske[gp.ucestalost]}</p>}
+              {korisnik ? (
+                <div class="space-y-4" data-mjesecno-polja>
+                  <div>
+                    <label for="dan" class={OZNAKA}>{R.dan}</label>
+                    <select id="dan" name="dan" aria-describedby={["dan-pomoc", gp.dan ? "dan-greska" : ""].filter(Boolean).join(" ")}
+                      aria-invalid={gp.dan ? "true" : undefined} class:list={[POLJE, "max-w-32", rub(gp.dan)]}>
+                      {Array.from({ length: 28 }, (_, i) => i + 1).map((d) => (
+                        <option value={String(d)} selected={pv.dan === String(d) || (!pv.dan && d === Math.min(28, new Date().getUTCDate()))}>{d}.</option>
+                      ))}
+                    </select>
+                    <p id="dan-pomoc" class={POMOC}>{R.danPomoc}</p>
+                    {gp.dan && <p id="dan-greska" class={GRESKA}>{R.greske[gp.dan]}</p>}
+                  </div>
+                  <fieldset>
+                    <legend class={OZNAKA}>{R.nacin}</legend>
+                    <div class="mt-2 space-y-3">
+                      {NACINI.map((n) => (
+                        <label class="flex gap-3">
+                          <input type="radio" name="nacin" value={n} checked={pv.nacin === n} class="mt-1 size-5 shrink-0 accent-action" />
+                          <span>
+                            <span class="block text-ink">{R.nacini[n]}</span>
+                            <span class="block text-sm text-ink-muted">{R.naciniPomoc[n]}</span>
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                    {gp.nacin && <p class={GRESKA}>{R.greske[gp.nacin]}</p>}
+                  </fieldset>
+                </div>
+              ) : (
+                <p class="text-sm text-ink-soft">
+                  {R.prijavaZaMjesecno} <a href={prijavaMjesecno} class="font-semibold text-action underline underline-offset-2">{R.prijava}</a>
+                </p>
+              )}
+            </fieldset>
+          )}
+
           <fieldset class={`space-y-4 ${KARTICA}`}>
             <legend class="text-lg font-semibold text-ink">{T.vidljivost}</legend>
             <label class="flex gap-3">
@@ -117,6 +176,13 @@ const GUMB_IZNOSA = "flex min-h-11 cursor-pointer items-center justify-center ro
               <p id="poruka-brojac" class={`${POMOC} text-right tabular-nums`} data-brojac={T.brojac} aria-live="polite">{popuni(T.brojac, { n: [...v.poruka].length })}</p>
               {g("poruka") && <p id="poruka-greska" class={GRESKA}>{g("poruka")}</p>}
             </div>
+            <label class="flex gap-3">
+              <input name="komentar" type="checkbox" value="1" checked={v.komentar} aria-describedby="komentar-pomoc" class="mt-1 size-5 shrink-0 accent-action" />
+              <span>
+                <span class="block text-ink">{R.komentar}</span>
+                <span id="komentar-pomoc" class="block text-sm text-ink-muted">{R.komentarPomoc}</span>
+              </span>
+            </label>
           </fieldset>
 
           <fieldset class={`space-y-4 ${KARTICA}`}>

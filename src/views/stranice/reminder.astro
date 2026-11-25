@@ -1,0 +1,91 @@
+---
+// Mjesečni podsjetnik (tok 10, odluka 14): kampanja, mjesec, iznos i dan; „Plati ovaj mjesec” (novi intent ili
+// postojeći otvoreni), pauza/nastavak i odjava. Radi bez JS-a (POST obrasci). Pristup T: token iz e-poruke.
+import CircleCheck from "@lucide/astro/icons/circle-check";
+import Pause from "@lucide/astro/icons/pause";
+import Play from "@lucide/astro/icons/play";
+import Ban from "@lucide/astro/icons/ban";
+import Repeat from "@lucide/astro/icons/repeat";
+import Base from "../../layouts/Base.astro";
+import { formatNovca } from "../../components/kampanja/format";
+import { datum } from "../../components/katalog/oblik";
+import { GUMB, GUMB_DRUGI, KARTICA } from "../../components/upravljanje/stil";
+import { url } from "../../lib/rute";
+import { popuni } from "../sadrzaj/checkout";
+import { PONAVLJANJE } from "../sadrzaj/ponavljanje";
+import type { PodaciPodsjetnika } from "./reminder.ucitaj";
+import type { PropsStranice } from "../tipovi";
+
+type Props = PropsStranice<PodaciPodsjetnika>;
+const { lang, podaci } = Astro.props;
+const { p, token, poruka, greska } = podaci;
+const T = PONAVLJANJE[lang].podsjetnik;
+const novac = formatNovca(lang);
+const ovdje = url(lang, "reminder", { token });
+const [god, mj] = p.period.split("-").map(Number) as [number, number];
+const mjesec = new Intl.DateTimeFormat(lang === "hr" ? "hr-HR" : "en-GB", { month: "long", year: "numeric", timeZone: "UTC" }).format(Date.UTC(god, mj - 1, 1));
+const status = p.obecanje.status;
+const moguPlatiti = !p.istekao && status !== "cancelled";
+---
+<Base lang={lang} title={T.naslov} noindex>
+  <div class="mx-auto max-w-2xl">
+    <h1 class="page-title flex items-center gap-2 text-ink"><Repeat size={26} aria-hidden="true" class="shrink-0 text-action" />{T.naslov}</h1>
+    <p class="mt-2 break-words text-ink-soft">{popuni(T.opis, { naslov: p.kampanja.naslov })}</p>
+
+    {
+      poruka && (
+        <div role="status" class="mt-4 flex gap-3 rounded-md bg-success-bg p-4 text-success ring-1 ring-success/20 ring-inset" data-poruka={poruka}>
+          <CircleCheck size={20} aria-hidden="true" class="mt-0.5 shrink-0" />
+          <p>{T.poruke[poruka]}</p>
+        </div>
+      )
+    }
+    {greska && <p role="alert" class="mt-4 rounded-md bg-danger-bg p-3 text-sm font-semibold text-danger">{T.greske[greska]}</p>}
+
+    <dl class={`mt-6 grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4 ${KARTICA}`}>
+      <div><dt class="text-sm text-ink-muted">{T.mjesec}</dt><dd class="font-semibold text-ink">{mjesec}</dd></div>
+      <div><dt class="text-sm text-ink-muted">{T.iznos}</dt><dd class="font-semibold tabular-nums text-ink" data-iznos-podsjetnika>{novac(p.obecanje.iznosCenti)}</dd></div>
+      <div><dt class="text-sm text-ink-muted">{T.dan}</dt><dd class="font-semibold text-ink">{p.obecanje.dan}.</dd></div>
+      <div><dt class="text-sm text-ink-muted">{T.stanje}</dt><dd class="font-semibold text-ink" data-stanje-obecanja={status}>{T.stanja[status]}</dd></div>
+    </dl>
+
+    {
+      p.istekao ? (
+        <p class="mt-6 rounded-md bg-mist p-4 text-ink-soft" data-istekao>{T.istekao}</p>
+      ) : (
+        moguPlatiti && (
+          <form method="post" action={ovdje} class="mt-6">
+            <input type="hidden" name="radnja" value="plati" />
+            <button type="submit" class={GUMB} data-plati-mjesec>{T.plati}</button>
+            <p class="mt-2 text-sm text-ink-muted">{T.platiPomoc}</p>
+            <p class="mt-1 text-sm text-ink-muted">{popuni(T.rok, { datum: datum(lang, p.rok) })}</p>
+          </form>
+        )
+      )
+    }
+
+    {
+      status !== "cancelled" && (
+        <div class="mt-8 flex flex-wrap gap-3 border-t border-line pt-6">
+          <form method="post" action={ovdje}>
+            <input type="hidden" name="radnja" value={status === "active" ? "pauza" : "nastavak"} />
+            <button type="submit" class={GUMB_DRUGI}>
+              {status === "active" ? <Pause size={18} aria-hidden="true" /> : <Play size={18} aria-hidden="true" />}
+              {status === "active" ? T.pauziraj : T.nastavi}
+            </button>
+          </form>
+          <form method="post" action={ovdje}>
+            <input type="hidden" name="radnja" value="odjava" />
+            <button type="submit" class={GUMB_DRUGI} aria-describedby="odjava-pomoc"><Ban size={18} aria-hidden="true" />{T.odjavi}</button>
+          </form>
+          <p id="odjava-pomoc" class="w-full text-sm text-ink-muted">{T.odjaviPomoc}</p>
+        </div>
+      )
+    }
+
+    <p class="mt-6 flex flex-wrap gap-x-6 gap-y-2">
+      <a href={url(lang, "campaign", { id: p.kampanja.publicId })} class="font-medium text-action underline underline-offset-2">{T.kampanja}</a>
+      <a href={url(lang, "settings.recurring")} class="font-medium text-action underline underline-offset-2">{T.postavke}</a>
+    </p>
+  </div>
+</Base>

@@ -1,0 +1,41 @@
+---
+// Uputa za trajni nalog (odluka 14, tok 10): IBAN, primatelj, referenca, iznos i dan. U sandboxu IBAN-a nema
+// (odluka 704), a trajna referenca kampanje dolazi s produkcijskim `campaign-qr` (odluka 710), pa to piše.
+// Iznos nikad ne nosi identitet: uplata se veže na referencu (CLAUDE.md).
+import Landmark from "@lucide/astro/icons/landmark";
+import type { Lang } from "../../i18n";
+import { formatNovca } from "../kampanja/format";
+import { PONAVLJANJE } from "../../views/sadrzaj/ponavljanje";
+import { popuni } from "../../views/sadrzaj/checkout";
+
+interface Props {
+  lang: Lang;
+  primatelj: string;
+  iznosCenti: number;
+  dan: number;
+  /** IBAN s raila (produkcija); null u sandboxu. */
+  iban?: string | null;
+  sandbox: boolean;
+  /** Uvodna rečenica (zadano: uz stranicu plaćanja prvog mjeseca). */
+  uvod?: string;
+  class?: string;
+}
+const { lang, primatelj, iznosCenti, dan, iban = null, sandbox, uvod, class: klasa } = Astro.props;
+const N = PONAVLJANJE[lang].nalog;
+const novac = formatNovca(lang);
+const RED = "grid grid-cols-[minmax(0,10rem)_minmax(0,1fr)] gap-x-4 py-1.5";
+---
+<section aria-labelledby="uputa-naloga" class:list={["rounded-md border border-line p-4", klasa]} data-uputa-naloga>
+  <h2 id="uputa-naloga" class="flex items-center gap-2 text-lg font-semibold text-ink">
+    <Landmark size={20} aria-hidden="true" />{N.naslov}
+  </h2>
+  <p class="mt-1 text-sm text-ink-soft">{uvod ?? N.uvod}</p>
+  <dl class="mt-3 divide-y divide-line text-sm">
+    <div class={RED}><dt class="text-ink-muted">{N.iban}</dt><dd class="break-all font-mono text-ink">{iban ?? N.ibanSandbox}</dd></div>
+    <div class={RED}><dt class="text-ink-muted">{N.primatelj}</dt><dd class="break-words text-ink">{primatelj}</dd></div>
+    <div class={RED}><dt class="text-ink-muted">{N.referenca}</dt><dd class="text-ink">{N.referencaSandbox}</dd></div>
+    <div class={RED}><dt class="text-ink-muted">{N.iznos}</dt><dd class="tabular-nums text-ink">{novac(iznosCenti)}</dd></div>
+    <div class={RED}><dt class="text-ink-muted">{N.dan}</dt><dd class="text-ink">{popuni(N.danVrijednost, { dan })}</dd></div>
+  </dl>
+  {sandbox && <p class="mt-3 rounded-sm bg-warning-bg p-2 text-sm font-semibold text-warning">{N.sandbox}</p>}
+</section>
