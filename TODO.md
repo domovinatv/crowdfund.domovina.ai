@@ -47,7 +47,11 @@ Legenda: `[x]` gotovo · `[ ]` otvoreno · `[~]` u radu · `(!)` traži korisnik
 
 ## F3 — Plaćanje i hibrid
 
-- [ ] MPT sandbox tenant, checkout, webhook, napojnica → S7
+- [x] MPT sandbox tenant, checkout, webhook, napojnica, potvrda (588 unit, 416 Playwright, e2e nad sandboxom) → S7
+- [ ] Prihvat uvjeta checkouta u `consents`; „prikaži poruku kao komentar”; obavijesti e-poštom (mock) → S8
+- [ ] `potvrdiPovrat` oduzima 1 od `contributor_count` bez obzira na pravilo 717 → S8
+- [ ] Pravi SSE statusa (CORS na MPT `/stream` ili proxy kroz Worker), jedan poziv raila po učitavanju → S9
+- [ ] (!) Webhook preko tunela prema `wrangler dev` (traži korisnikov pristanak; sad samo unit testovi) → S9
 - [ ] Vanjska 4fund kampanja, recurring, faza-2 UI → S8
 
 ## F4 — Paritet

@@ -43,4 +43,8 @@ tunel ili ručni `simulate` + pull statusa).
 
 ## Gdje smo
 
-S0–S6 gotovi (25. 11. 2026.). S6: mock prijava bez lozinke, razine pristupa (P, P+e, K, U:uloga, A), čarobnjak kampanje s nacrtom bez JS-a, objava s pragovima 5.000/12.500 €, upravljanje kampanjom (financije + CSV, povrati, novosti, komentari, kasice, linkovi, obavijesti, verifikacija namjene, „Kamo ide novac”, zatvaranje), organizacija (zahtjev u 5 koraka, KYB mock, članovi, pozivnice, odobravanje tuđih kampanja, vanjske), postavke i KYC mock, „moje”, moderacija `/admin`; `npm run check` zelen (542 testa), 314/314 ruta, Playwright 400 passed (odluke 600–673). Ime i brend i dalje čekaju korisnika (odluka 305). Sljedeće: S7, uplata kroz MPT sandbox.
+S0–S7 gotovi (25. 11. 2026.). S7: MPT sandbox tenant (`sbx-73b4d4042e`), checkout „Podrži” u četiri koraka (obrazac,
+plaćanje s referencom i simulacijom, napojnica kao zaseban intent s jednako istaknutom nulom, potvrda), webhook s
+potpisom i dedupeom te pull istim putem u `contributions` + `campaign_stats`, atribucija kasica/linkova kroz
+metadata i `contribution_attributions`; `npm run check` zelen (588 testova), 320/320 ruta, Playwright 416 passed s
+e2e nad stvarnim sandboxom (odluke 700–729). Ime i brend i dalje čekaju korisnika (odluka 305). Sljedeće: S8, hibrid i ostatak.
