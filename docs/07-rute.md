@@ -208,7 +208,8 @@ flowchart LR
 | Ruta | Pristup | Namjena |
 |---|---|---|
 | `POST /api/checkouts` | J* | kreira checkout i MPT intent doprinosa (`sk_test_`) |
-| `GET /api/checkouts/{id}/events` | T | SSE stanje intenta |
+| `GET /api/checkouts/{id}/events` | T | stanje checkouta (pull s raila) |
+| `GET /api/checkouts/{id}/stream?cilj=` | T | SSE stanje intenta (proxy MPT `status_stream_url`, S11) |
 | `POST /api/checkouts/{id}/tip` | T | drugi intent (napojnica) |
 | `POST /webhooks/mpt` | potpis | MPT webhook: potpis, `webhook-id` deduplikacija, projekcija u `contributions` |
 | `POST /api/campaigns/{id}/follow` | J* | praćenje (neprijavljeni: e-pošta + potvrda tokenom) |

@@ -2,8 +2,9 @@
 // Upute za uplatu jednog intenta (docs/08 §3.3 `QrPanel` + `PaymentStatus`), za doprinos i za napojnicu.
 // Produkcija (odluka 704): QR iz `epc_qr_data`, IBAN, primatelj, referenca. Sandbox: oznaka „ne šalji novac”,
 // QR na MPT `checkout_url` i gumbi simulacije (form POST na `api/checkouts/{id}/simulate`, agent A).
-// Stanje uživo: skripta svake 3 s zove `GET /api/checkouts/{id}/events` (pull, odluka 705); MPT SSE nema CORS za
-// naš origin, pa se ne koristi. Kad se stanje promijeni, stranicu crta poslužitelj iznova. Bez JS-a: „Osvježi stanje”.
+// Stanje uživo (S11): `EventSource` na `GET /api/checkouts/{id}/stream` (Worker proxyja MPT SSE, jer rail nema
+// CORS za naš origin); dok stream ne javi prvi događaj ili kad padne, pull `GET …/events` svake 3 s (odluka 705).
+// Promjena stanja: pull (upisuje u bazu) pa poslužitelj crta stranicu iznova. Bez JS-a: „Osvježi stanje”.
 import ExternalLink from "@lucide/astro/icons/external-link";
 import FlaskConical from "@lucide/astro/icons/flask-conical";
 import Loader from "@lucide/astro/icons/loader-circle";
@@ -87,6 +88,7 @@ const DD = "font-mono break-all text-ink";
       data-cilj={cilj}
       data-stanje={stanje}
       data-events={`/api/checkouts/${encodeURIComponent(checkoutId)}/events`}
+      data-stream={`/api/checkouts/${encodeURIComponent(checkoutId)}/stream?cilj=${cilj}`}
       data-faze={JSON.stringify(T.faze)}
     >
       <Loader size={18} aria-hidden="true" class="mt-0.5 shrink-0 animate-spin motion-reduce:animate-none" />
@@ -112,9 +114,12 @@ const DD = "font-mono break-all text-ink";
 </section>
 
 <script>
-  // Stanje uživo (odluka 705): svake 3 s `GET /api/checkouts/{id}/events` (pull s raila). Javni MPT
-  // `status_stream_url` (SSE) preglednik ne smije otvoriti: rail ne šalje `Access-Control-Allow-Origin` (S7).
-  type Dio = { state?: string; faza?: string | null } | null;
+  // Stanje uživo (S11, TODO F3). Učitavanje stranice je već povuklo stanje s raila; nakon toga jedini poziv
+  // raila je SSE kroz naš Worker (`…/stream`, payload `{ state, faza }`). Pull `…/events` svake 3 s je rezerva:
+  // radi dok stream ne javi prvi događaj, i opet kad stream padne ili ga rail zatvori (završna faza, 30 min).
+  // Stream je samo signal: na promjenu stanja ili završnu fazu klijent zove pull, koji upisuje u bazu, pa reload.
+  type Dio = { state?: string | null; faza?: string | null } | null;
+  const ZAVRSNE = ["settled", "rejected", "expired"];
   for (const el of document.querySelectorAll<HTMLElement>("[data-status-uzivo]")) {
     const cilj = el.dataset.cilj === "napojnica" ? "napojnica" : "doprinos";
     const pocetno = el.dataset.stanje ?? "";
@@ -122,8 +127,13 @@ const DD = "font-mono break-all text-ink";
     const tekst = el.querySelector<HTMLElement>("[data-faza]");
     let gotovo = false;
     let radi = false;
-    const provjeri = async () => {
-      if (gotovo || radi || document.hidden) return;
+    let sat: ReturnType<typeof setInterval> | null = null;
+    let izvor: EventSource | null = null;
+    const prikazi = (faza: string | null | undefined) => {
+      if (faza && faze[faza] && tekst) tekst.textContent = faze[faza]!;
+    };
+    const provjeri = async (uvijek = false) => {
+      if (gotovo || radi || (!uvijek && document.hidden)) return;
       radi = true;
       try {
         const r = await fetch(el.dataset.events!, { headers: { accept: "application/json" }, cache: "no-store" });
@@ -131,9 +141,10 @@ const DD = "font-mono break-all text-ink";
         const j = (await r.json()) as Record<string, Dio>;
         const dio = j[cilj];
         if (!dio) return;
-        if (dio.faza && faze[dio.faza] && tekst) tekst.textContent = faze[dio.faza]!;
+        prikazi(dio.faza);
         if (dio.state && dio.state !== pocetno) {
           gotovo = true;
+          izvor?.close();
           location.reload();
         }
       } catch {
@@ -142,6 +153,34 @@ const DD = "font-mono break-all text-ink";
         radi = false;
       }
     };
-    setInterval(provjeri, 3000);
+    const pull = () => {
+      if (!sat && !gotovo) sat = setInterval(() => void provjeri(), 3000);
+    };
+    const bezPulla = () => {
+      if (sat) clearInterval(sat);
+      sat = null;
+    };
+    pull();
+    if (typeof EventSource === "function" && el.dataset.stream) {
+      izvor = new EventSource(el.dataset.stream);
+      izvor.addEventListener("stanje", (e) => {
+        bezPulla();
+        let d: Dio = null;
+        try {
+          d = JSON.parse((e as MessageEvent<string>).data) as Dio;
+        } catch {
+          return;
+        }
+        prikazi(d?.faza);
+        const zavrsna = !!d?.faza && ZAVRSNE.includes(d.faza);
+        if (zavrsna) izvor?.close();
+        if ((d?.state && d.state !== pocetno) || zavrsna) void provjeri(true);
+      });
+      // Pad, 404 (rail bez SSE-a) ili zatvaranje s raila: bez ponovnog spajanja, natrag na pull.
+      izvor.onerror = () => {
+        izvor?.close();
+        pull();
+      };
+    }
   }
 </script>

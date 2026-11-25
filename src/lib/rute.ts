@@ -13,7 +13,7 @@
  */
 import type { Lang } from "../i18n";
 
-export type Faza = "S4" | "S5" | "S6" | "S7" | "S8";
+export type Faza = "S4" | "S5" | "S6" | "S7" | "S8" | "S11";
 
 export interface Ruta {
   readonly kljuc: string;
@@ -155,6 +155,7 @@ export const RUTE_BEZ_JEZIKA = [
   { kljuc: "api.checkout.events", put: "api/checkouts/{id}/events", pristup: "T", faza: "S4" },
   { kljuc: "api.checkout.tip", put: "api/checkouts/{id}/tip", pristup: "T", faza: "S4" },
   { kljuc: "api.checkout.simulate", put: "api/checkouts/{id}/simulate", pristup: "T", faza: "S7" },
+  { kljuc: "api.checkout.stream", put: "api/checkouts/{id}/stream", pristup: "T", faza: "S11" },
   { kljuc: "webhooks.mpt", put: "webhooks/mpt", pristup: "potpis", faza: "S4" },
   { kljuc: "api.campaign.follow", put: "api/campaigns/{id}/follow", pristup: "J*", faza: "S4" },
   { kljuc: "api.drafts", put: "api/drafts", pristup: "P", faza: "S4" },
