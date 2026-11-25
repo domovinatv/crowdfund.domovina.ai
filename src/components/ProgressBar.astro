@@ -16,7 +16,7 @@ const T = {
   hr: { traka: "Napredak prema cilju", premasen: "premašen cilj" },
   en: { traka: "Progress towards the goal", premasen: "goal exceeded" },
 }[lang];
-const postotak = raisedCents !== null && goalCents ? Math.round((raisedCents / goalCents) * 100) : null;
+const postotak = raisedCents !== null && goalCents ? Math.floor((raisedCents * 100) / goalCents) : null;
 const sirina = postotak === null ? 0 : Math.min(100, postotak);
 ---
 {
