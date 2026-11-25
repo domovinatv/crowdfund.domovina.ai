@@ -4,11 +4,13 @@
 import ArrowLeft from "@lucide/astro/icons/arrow-left";
 import Base from "../../layouts/Base.astro";
 import TemaNaslovne from "../../components/katalog/TemaNaslovne.astro";
+import AlatnaTraka from "../../components/opis/AlatnaTraka.astro";
 import { GRESKA, GUMB, KARTICA, OZNAKA, POLJE, POMOC, rub } from "../../components/upravljanje/stil";
 import { TEME } from "../../lib/db/nacrti";
 import { NAJVISE } from "../../lib/db/upravljanje";
 import { url } from "../../lib/rute";
 import { TEME_NASLOVNICE } from "../sadrzaj/kampanja";
+import { OPIS_UREDIVAC } from "../sadrzaj/opis";
 import { UPRAVLJANJE } from "../sadrzaj/upravljanje";
 import type { PodaciNoveKasice } from "./campaign.moneybox.new.ucitaj";
 import type { PropsStranice } from "../tipovi";
@@ -76,8 +78,11 @@ const KARTA = "cursor-pointer overflow-hidden rounded-md border border-ink-muted
         </div>
         <div>
           <label for="description" class={OZNAKA}>{T.description} <span class={MALO}>({O.neobavezno})</span></label>
+          <AlatnaTraka lang={lang} za="description" />
           <textarea id="description" name="description" rows="5" maxlength="5000"
-            aria-invalid={greske.description ? "true" : undefined} aria-describedby={opis("description")} class:list={[POLJE, rub(greske.description)]}>{v.description}</textarea>
+            aria-invalid={greske.description ? "true" : undefined} aria-describedby={["description-oblikovanje", opis("description")].filter(Boolean).join(" ")}
+            class:list={[POLJE, rub(greske.description)]}>{v.description}</textarea>
+          <p id="description-oblikovanje" class={POMOC}>{OPIS_UREDIVAC[lang].uputa}</p>
           {g("description") && <p id="description-greska" class={GRESKA}>{g("description")}</p>}
         </div>
       </fieldset>

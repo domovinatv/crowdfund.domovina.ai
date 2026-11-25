@@ -3,6 +3,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { KLASA_OPISA, REL_POVEZNICE, escapeHtml, obicniTekstOpisa, renderirajOpis } from "../src/lib/opis";
+import { UPRAVLJANJE } from "../src/views/sadrzaj/upravljanje";
 
 describe("renderirajOpis: podskup", () => {
   it("odlomci i prijelomi", () => {
@@ -84,5 +85,18 @@ describe("pomoćne funkcije opisa", () => {
   });
   it("klasa omotača stilizira naše oznake tokenima", () => {
     for (const o of ["[&_a]:text-action", "[&_ul]:list-disc", "[&_h3]:font-semibold"]) expect(KLASA_OPISA).toContain(o);
+  });
+});
+
+describe("opis kasice (S11): isti renderer", () => {
+  it("predložak obrasca ostaje jedan odlomak, u oba jezika", () => {
+    for (const lang of ["hr", "en"] as const) {
+      const t = UPRAVLJANJE[lang].novaKasica.predlozak;
+      expect(renderirajOpis(t)).toBe(`<p>${escapeHtml(t)}</p>`);
+      expect(obicniTekstOpisa(t)).toBe(t);
+    }
+  });
+  it("stari obični tekst s prijelomima: odlomci i <br> umjesto whitespace-pre-line", () => {
+    expect(renderirajOpis("Trčim maraton.\nHvala!\n\nVidimo se na cilju.")).toBe("<p>Trčim maraton.<br>Hvala!</p>\n<p>Vidimo se na cilju.</p>");
   });
 });

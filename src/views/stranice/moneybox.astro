@@ -10,6 +10,7 @@ import TemaNaslovne from "../../components/katalog/TemaNaslovne.astro";
 import PausedNotice from "../../components/kampanja/PausedNotice.astro";
 import ShareSheet from "../../components/kampanja/ShareSheet.astro";
 import { formatNovca } from "../../components/kampanja/format";
+import { KLASA_OPISA, obicniTekstOpisa, renderirajOpis } from "../../lib/opis";
 import { url } from "../../lib/rute";
 import { KAMPANJA, PODRUTE, mnozina } from "../sadrzaj/kampanja";
 import type { PodaciKasice } from "./moneybox.ucitaj";
@@ -24,8 +25,10 @@ const novac = formatNovca(lang, "EUR");
 const kampanjaPut = url(lang, "campaign", { id: kp.publicId });
 const podrzi = `${url(lang, "campaign.support", { id: kp.publicId })}?s=${encodeURIComponent(kasica.alias)}`;
 const adresa = new URL(url(lang, "moneybox", { alias: kasica.alias }), Astro.url.origin).href;
+// Opis kasice ide kroz isti Markdown podskup kao opis kampanje (S11, `lib/opis.ts`).
+const opis = (kasica.description ?? "").trim();
 ---
-<Base lang={lang} title={kasica.title} description={kasica.description?.slice(0, 160)} noindex={kp.noindex}>
+<Base lang={lang} title={kasica.title} description={opis ? obicniTekstOpisa(opis).slice(0, 160) : undefined} noindex={kp.noindex}>
   <div class="mx-auto max-w-3xl">
     <p class="flex items-center gap-2 text-sm text-ink-muted">
       <PiggyBank size={18} aria-hidden="true" class="text-action" />
@@ -71,10 +74,10 @@ const adresa = new URL(url(lang, "moneybox", { alias: kasica.alias }), Astro.url
     </div>
 
     {
-      kasica.description && (
+      opis && (
         <section aria-labelledby="opis-kasice" class="mt-8">
           <h2 id="opis-kasice" class="text-2xl font-semibold text-ink">{T.opis}</h2>
-          <p class="mt-3 whitespace-pre-line break-words text-ink-soft">{kasica.description}</p>
+          <div class={`mt-3 ${KLASA_OPISA}`} data-opis-kasice set:html={renderirajOpis(opis)} />
         </section>
       )
     }
