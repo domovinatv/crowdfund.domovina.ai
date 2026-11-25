@@ -602,3 +602,37 @@ koja se na nju poziva. Blokovi brojeva po sesiji: S1 od 100, S1b od 150, S2 od 2
 1007. **Prijenos medija i privitak ✗ do odluke o R2** (A05 fotografije, B01 galerija, A22 privitak prijave): UI ostaje
       mock s oznakom, bez R2 bucketa. Razlog: za UI prototip upload ne dodaje novi tok, a javni staging s uploadom
       otvara moderaciju i GDPR tuđih fotografija. (auto, potvrditi)
+1008. **Captcha na registraciji = mock kao na kontaktu:** zajednička komponenta `ProvjeraTurnstile.astro` (skriveno polje
+      `cf-turnstile-response`), bez provjere na serveru do produkcijskih Turnstile ključeva. Registracija ima i gumb
+      „Nastavi s Googleom” (isti mock kao prijava) i vidljivu poveznicu „Registriraj račun organizacije”. (potvrditi)
+1009. **Opis kampanje je vlastiti Markdown podskup** (`**`, `*`, http(s) poveznice s `rel="nofollow ugc noopener"`, `- `
+      popisi, `## ` → `<h3>` jer je „Opis” već `<h2>`), renderer `src/lib/opis.ts`: najprije escape svega, pa naše
+      oznake; bez npm ovisnosti. Alatna traka je ARIA toolbar (strelice, Ctrl/⌘+B/I/K), bez JS-a ostaje `textarea`
+      s uputom. Slike, video, poravnanje i emoji ✗.
+1010. **Objava s koraka opisa** zove isti `objavi()` kao pregled (zajednički `objaviNacrt`); prikazuje se prijavljenom
+      kad su prethodni koraci valjani. „Pregledaj prije objave” ostaje zadnji submit (e2e `dalje()` i `odobravanje`).
+1011. **Naslovnica kasice** je `moneyboxes.cover_theme` (jedna od 15 tema ili NULL = tema kampanje), migracija
+      `0010_s10.sql`. Kasica nema rutu za uređivanje, pa se bira samo pri stvaranju.
+1012. **`{id}/uredi` (B01):** `category` (obavezna osim za kampanje za organizaciju), `coverTheme`, `videoUrl`
+      (`campaign_media`), „Dopusti mjesečne doprinose” postavlja `campaigns.recurrence` `monthly`/`none` (odluka 815;
+      vrsta `recurring` uvijek nudi i zadržava svoju). Nakon verifikacije zaključani su samo naslov, opis i cilj.
+      Izostavljeno polje zadržava vrijednost. Video se na stranici kampanje i dalje ne prikazuje (kao i prije).
+1013. **Link za praćenje na kartici donirane kampanje** je moj najnoviji aktivni link te kampanje; bez njega
+      „Stvori link za praćenje” otvara `postavke/linkovi?kampanja={id}#novi`. Filtar kasica
+      (`?status=active|disabled|deleted`) postoji od S6 i smatra se paritetom.
+1014. **Kvačica „novosti” u checkoutu** uključuje samo obavijesti o novostima te kampanje (`pratiNovostiIzCheckouta`),
+      upisuje se pri stvaranju checkouta; gost potvrđuje poveznicom iz demo pošte. Neoznačena, ništa predodabrano.
+1015. **Marketinška privola u checkoutu** je zasebna neoznačena kvačica → `consents(newsletter, 1)` (račun ili
+      e-pošta gosta); neoznačena se ne upisuje; plaćanje s podsjetnika je ne nudi.
+1016. **Dijeljenje komentara:** sidro ostaje `#k-{id}` (koristi ga preusmjeravanje nakon objave), Web Share ili
+      međuspremnik uz `role="status"`, bez JS-a obična poveznica. `PromoTools` ima Streaming widget (`widget#stream`).
+1017. **Čestitka zahvale** je `/hr/{id}/plakat?varijanta=cestitka`: isti filtri kao javni popis uplata (skriven
+      popis se ne prikazuje, anonimni samo kao broj, iznos samo kad je javan), najviše 90 imena, A4 za ispis.
+1018. **Widget** prima `size` (small/medium/large) i `theme` (light/dark) kroz whitelist `opcijeWidgetaIz`; zadane
+      vrijednosti se izostavljaju iz URL-a; tamni izgled preslikava postojeće tokene.
+1019. **`subscriptions` povezan s obećanjem** (djelomično zatvara 828): pri prijelazu mjesečnog doprinosa u plaćeno
+      (`izjavePretplate` u `uplate.ts`, isti batch) nastaje pretplata, ali samo uz poznati IBAN uplatitelja (donosi ga
+      webhook; pull u sandboxu ga nema, pa e2e pretplatu ne stvara). Potvrda checkouta prikazuje obećanje.
+1020. **e2e S10:** `e2e/mjesecno.spec.ts` (podsjetnik na 375, trajni nalog na 1280, plaćanje u sandboxu, obećanje,
+      poruka kao komentar, „pošalji podsjetnik sada”) i `e2e/promocija.spec.ts` (widget, stream, čestitka, dijeljenje
+      komentara, axe novih stanja). Mock e-pošta organizatoru o doprinosu nije u e2e-u (nema demo sesije vlasnika).
