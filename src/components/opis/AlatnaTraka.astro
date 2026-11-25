@@ -1,0 +1,123 @@
+---
+// Alatna traka opisa (S10, paritet A06): podebljano, kurziv, poveznica, popis, podnaslov. Ubacuje Markdown
+// podskup koji renderira `src/lib/opis.ts`. Bez JS-a traka ostaje skrivena (`hidden`), a polje i uputa
+// (`OPIS_UREDIVAC.uputa`, ispod polja, `id="{za}-oblikovanje"`) rade;
+// s JS-om je WAI-ARIA toolbar (strelice, Home/End) i prečaci Ctrl/⌘+B, I, K u polju.
+import Heading2 from "@lucide/astro/icons/heading-2";
+import Italic from "@lucide/astro/icons/italic";
+import Link from "@lucide/astro/icons/link";
+import List from "@lucide/astro/icons/list";
+import type { Lang } from "../../i18n";
+import { OPIS_UREDIVAC } from "../../views/sadrzaj/opis";
+
+interface Props {
+  lang: Lang;
+  /** `id` polja `textarea` koje traka uređuje. */
+  za: string;
+  /** Polje je zaključano (read-only): traka se ne prikazuje. */
+  onemoguceno?: boolean;
+}
+const { lang, za, onemoguceno = false } = Astro.props;
+const T = OPIS_UREDIVAC[lang];
+const gumbi = [
+  { radnja: "podebljano", oznaka: T.podebljano, precac: "Control+B" },
+  { radnja: "kurziv", oznaka: T.kurziv, precac: "Control+I" },
+  { radnja: "poveznica", oznaka: T.poveznica, precac: "Control+K" },
+  { radnja: "popis", oznaka: T.popis, precac: undefined },
+  { radnja: "naslov", oznaka: T.naslov, precac: undefined },
+] as const;
+const GUMB = "inline-flex size-11 items-center justify-center rounded-sm text-ink hover:bg-mist";
+---
+{
+  !onemoguceno && (
+    <div role="toolbar" aria-label={T.traka} aria-controls={za} data-alatna-traka={za}
+      data-primjer={T.primjer} data-primjer-naslova={T.primjerNaslova}
+      hidden class="mt-1.5 flex flex-wrap gap-1 rounded-t-sm border border-b-0 border-ink-muted/60 bg-paper p-1">
+      {gumbi.map((g, i) => (
+        <button type="button" data-radnja={g.radnja} aria-label={g.oznaka} title={g.oznaka} aria-keyshortcuts={g.precac}
+          tabindex={i === 0 ? "0" : "-1"} class={GUMB}>
+          {g.radnja === "podebljano" && <span aria-hidden="true" class="text-lg font-bold leading-none">B</span>}
+          {g.radnja === "kurziv" && <Italic size={18} aria-hidden="true" />}
+          {g.radnja === "poveznica" && <Link size={18} aria-hidden="true" />}
+          {g.radnja === "popis" && <List size={18} aria-hidden="true" />}
+          {g.radnja === "naslov" && <Heading2 size={18} aria-hidden="true" />}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+<script>
+  type Radnja = "podebljano" | "kurziv" | "poveznica" | "popis" | "naslov";
+
+  /** Zamjena označenog teksta s poviješću poništavanja gdje je preglednik ima (`insertText`). */
+  function umetni(polje: HTMLTextAreaElement, od: number, do_: number, tekst: string, oznaciOd: number, oznaciDo: number) {
+    polje.focus();
+    polje.setSelectionRange(od, do_);
+    const ok = typeof document.execCommand === "function" && document.execCommand("insertText", false, tekst);
+    if (!ok) {
+      polje.setRangeText(tekst, od, do_, "end");
+      polje.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+    polje.setSelectionRange(od + oznaciOd, od + oznaciDo);
+  }
+
+  function primijeni(polje: HTMLTextAreaElement, radnja: Radnja, primjer: string, primjerNaslova: string) {
+    const { selectionStart: s, selectionEnd: e, value: v } = polje;
+    const oznaceno = v.slice(s, e);
+    if (radnja === "podebljano" || radnja === "kurziv") {
+      const z = radnja === "podebljano" ? "**" : "*";
+      const t = oznaceno || primjer;
+      umetni(polje, s, e, `${z}${t}${z}`, z.length, z.length + t.length);
+    } else if (radnja === "poveznica") {
+      const t = oznaceno || primjer;
+      const url = "https://";
+      umetni(polje, s, e, `[${t}](${url})`, t.length + 3, t.length + 3 + url.length);
+    } else {
+      // Retci od početka retka u kojem je kursor do kraja oznake.
+      const pocetak = v.lastIndexOf("\n", s - 1) + 1;
+      const kraj = e;
+      const retci = v.slice(pocetak, kraj);
+      const prefiks = radnja === "popis" ? "- " : "## ";
+      const novo = radnja === "popis"
+        ? retci.split("\n").map((r) => (r.startsWith(prefiks) ? r : prefiks + r)).join("\n")
+        : retci.startsWith(prefiks) ? retci : prefiks + (retci || primjerNaslova);
+      umetni(polje, pocetak, kraj, novo, novo.length, novo.length);
+    }
+  }
+
+  for (const traka of document.querySelectorAll<HTMLElement>("[data-alatna-traka]")) {
+    const polje = document.getElementById(traka.dataset.alatnaTraka ?? "");
+    if (!(polje instanceof HTMLTextAreaElement) || polje.readOnly || polje.disabled) continue;
+    const primjer = traka.dataset.primjer ?? "";
+    const primjerNaslova = traka.dataset.primjerNaslova ?? "";
+    const gumbi = [...traka.querySelectorAll<HTMLButtonElement>("button[data-radnja]")];
+    traka.hidden = false;
+    polje.classList.add("rounded-t-none");
+    polje.style.marginTop = "0";
+
+    for (const g of gumbi) g.addEventListener("click", () => primijeni(polje, g.dataset.radnja as Radnja, primjer, primjerNaslova));
+
+    // Roving tabindex (WAI-ARIA toolbar): jedan gumb u Tab redoslijedu, strelice među gumbima.
+    traka.addEventListener("keydown", (ev) => {
+      const i = gumbi.indexOf(document.activeElement as HTMLButtonElement);
+      if (i < 0) return;
+      const n = gumbi.length;
+      const cilj = ev.key === "ArrowRight" ? (i + 1) % n : ev.key === "ArrowLeft" ? (i - 1 + n) % n : ev.key === "Home" ? 0 : ev.key === "End" ? n - 1 : -1;
+      if (cilj < 0) return;
+      ev.preventDefault();
+      gumbi[i]!.tabIndex = -1;
+      gumbi[cilj]!.tabIndex = 0;
+      gumbi[cilj]!.focus();
+    });
+
+    polje.addEventListener("keydown", (ev) => {
+      if (!(ev.ctrlKey || ev.metaKey) || ev.altKey || ev.shiftKey) return;
+      const k = ev.key.toLowerCase();
+      const radnja: Radnja | null = k === "b" ? "podebljano" : k === "i" ? "kurziv" : k === "k" ? "poveznica" : null;
+      if (!radnja) return;
+      ev.preventDefault();
+      primijeni(polje, radnja, primjer, primjerNaslova);
+    });
+  }
+</script>

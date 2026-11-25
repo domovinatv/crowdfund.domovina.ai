@@ -1,6 +1,11 @@
 ---
 // Registracija (ekran 01): ime, prezime, e-pošta, privole; greške uz polje; bez lozinke (odluka 208).
+// S10: mock Turnstile kao na kontaktu, „Nastavi s Googleom” (isti mock `/auth/google` kao prijava) i vidljiva
+// poveznica na račun organizacije (`?organizacija=1`).
+import Building from "@lucide/astro/icons/building";
+import LogIn from "@lucide/astro/icons/log-in";
 import UserPlus from "@lucide/astro/icons/user-plus";
+import ProvjeraTurnstile from "../../components/ProvjeraTurnstile.astro";
 import Greska from "../../components/prijava/Greska.astro";
 import OkvirPrijave from "../../components/prijava/OkvirPrijave.astro";
 import { upitNext } from "../../components/prijava/ucitavanje";
@@ -24,6 +29,10 @@ const tekstPolja: { id: "ime" | "prezime" | "email"; oznaka: string; tip: "text"
   { id: "email", oznaka: R.eposta, tip: "email", auto: "email" },
 ];
 const imaGresaka = Object.keys(greske).length > 0;
+const P = T.prijava;
+// Google: `next` je zahtjev organizacije kad je `?organizacija=1`, inače izvorni `next` (isti mock kao prijava).
+const google = `/auth/google${upitNext(next)}`;
+const osnova = url(lang, "sign-up");
 ---
 <OkvirPrijave lang={lang} naslov={R.naslov} uvod={R.uvod}>
   {organizacija && <p class="mt-2 text-sm text-ink-muted">{R.organizacija}</p>}
@@ -65,9 +74,31 @@ const imaGresaka = Object.keys(greske).length > 0;
       </label>
     </fieldset>
 
+    <ProvjeraTurnstile naslov={R.provjera} tekst={R.provjeraTekst} />
+
     <button type="submit" class="inline-flex min-h-11 items-center gap-2 rounded-md bg-action px-5 font-semibold text-paper hover:bg-action-strong">
       <UserPlus size={18} aria-hidden="true" />{R.posalji}
     </button>
   </form>
+
+  <p class="mt-8 flex items-center gap-3 text-sm text-ink-muted" aria-hidden="true"><span class="h-px flex-1 bg-line"></span>{P.ili}<span class="h-px flex-1 bg-line"></span></p>
+  <div class="mt-4 flex flex-col gap-3">
+    <a href={google} class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-ink-muted/60 px-4 font-medium text-ink hover:bg-mist">
+      <LogIn size={18} aria-hidden="true" />{P.google}
+    </a>
+  </div>
+
+  {
+    organizacija ? (
+      <p class="mt-6 text-sm"><a href={osnova} class="font-medium text-action underline underline-offset-2">{R.racunOsobni}</a></p>
+    ) : (
+      <div class="mt-6 rounded-md border border-line p-4">
+        <a href={`${osnova}?organizacija=1`} class="inline-flex min-h-11 items-center gap-2 font-semibold text-action underline underline-offset-2">
+          <Building size={18} aria-hidden="true" />{R.racunOrganizacije}
+        </a>
+        <p class="text-sm text-ink-soft">{R.racunOrganizacijePomoc}</p>
+      </div>
+    )
+  }
   <p class="mt-6 text-sm">{R.imaRacun} <a href={url(lang, "sign-in") + upitNext(next)} class="font-medium text-action underline underline-offset-2">{R.prijava}</a></p>
 </OkvirPrijave>

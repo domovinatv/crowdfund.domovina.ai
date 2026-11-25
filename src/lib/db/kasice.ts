@@ -18,6 +18,10 @@ export interface Kasica {
   /** Slug javnog profila vlasnika (users.id) ili null. */
   ownerProfileSlug: string | null;
   createdAt: number;
+  /** Tema naslovnice kasice (S10, 0010), inače tema kampanje; null kad nema ni jedne. */
+  coverTheme: string | null;
+  /** Kategorija kampanje (ikona na naslovnici). */
+  kategorija: string | null;
 }
 
 export interface KasicaSKampanjom extends Kasica {
@@ -45,12 +49,14 @@ interface RedakKasice {
   created_at: number;
   hide_raised: number;
   hide_contributor_count: number;
+  cover_theme: string | null;
+  category_key: string | null;
 }
 
 const SELECT_KASICE = `
 SELECT m.alias, m.title, m.description, m.goal_cents, m.created_at,
        u.display_name AS owner_name, COALESCE(u.slug, u.id) AS owner_id, ${PROFIL_JAVAN} AS profil_javan,
-       s.hide_raised, s.hide_contributor_count,
+       s.hide_raised, s.hide_contributor_count, COALESCE(m.cover_theme, s.cover_theme) AS cover_theme, s.category_key,
        (SELECT COALESCE(SUM(d.amount_received_cents), 0) FROM contribution_attributions a
           JOIN contributions d ON d.id = a.contribution_id
          WHERE a.moneybox_id = m.id AND d.state = 'paid') AS raised,
@@ -68,6 +74,8 @@ function uKasicu(r: RedakKasice): Kasica {
     ownerName: r.owner_name,
     ownerProfileSlug: r.profil_javan === 1 ? r.owner_id : null,
     createdAt: r.created_at,
+    coverTheme: r.cover_theme,
+    kategorija: r.category_key,
   };
 }
 

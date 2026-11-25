@@ -139,12 +139,17 @@ export async function ucitajKorak(ctx: KontekstStranice, korak: Korak, sad: numb
     return preusmjeri303(naKorak(ctx, "type"));
   }
 
-  if (korak === "preview") {
-    if (!k) return preusmjeri303(urlPrijave(ctx.lang, new URL(naKorak(ctx, "preview"), ctx.url)));
-    const ishod = await objavi(ctx.db, k, stanje.nacrt, stanje.red?.id ?? null, sad);
-    if (!ishod.ok) return podaci(stanje.nacrt, {}, null, ishod.greska);
+  /** Objava (pregled i, od S10, izravno s koraka opisa): ista pravila `objavi()`, isti 303. */
+  const objaviNacrt = async (korisnik: NonNullable<typeof k>, nacrt: Nacrt, nacrtId: string | null) => {
+    const ishod = await objavi(ctx.db, korisnik, nacrt, nacrtId, sad);
+    if (!ishod.ok) return podaci(nacrt, {}, null, ishod.greska);
     if (ishod.state === "review") return preusmjeri303(`${url(ctx.lang, "my.campaigns")}?objavljeno=${ishod.publicId}`);
     return preusmjeri303(`${url(ctx.lang, "campaign", { id: ishod.publicId })}?objavljeno=1`);
+  };
+
+  if (korak === "preview") {
+    if (!k) return preusmjeri303(urlPrijave(ctx.lang, new URL(naKorak(ctx, "preview"), ctx.url)));
+    return objaviNacrt(k, stanje.nacrt, stanje.red?.id ?? null);
   }
 
   let ishod: IshodKoraka;
@@ -154,12 +159,15 @@ export async function ucitajKorak(ctx: KontekstStranice, korak: Korak, sad: numb
   else ishod = korakOpis(stanje.nacrt, polja);
   if (Object.keys(ishod.greske).length) return podaci(stanje.nacrt, ishod.greske, polja);
 
+  let nacrtId: string | null = stanje.red?.id ?? null;
   if (k) {
-    if (stanje.red) await spremiNacrt(ctx.db, k.id, stanje.red.id, ishod.nacrt, sad);
-    else await stvoriNacrt(ctx.db, k.id, ishod.nacrt, "server", sad);
+    if (nacrtId) await spremiNacrt(ctx.db, k.id, nacrtId, ishod.nacrt, sad);
+    else nacrtId = await stvoriNacrt(ctx.db, k.id, ishod.nacrt, "server", sad);
   } else if (!spremiLokalniNacrt(ctx.cookies, ctx.url, ishod.nacrt)) {
     return podaci(stanje.nacrt, { opis: "prevelik" }, polja);
   }
+  // „Objavi” s koraka opisa (paritet A06): samo prijavljenom; neprijavljeni ide na pregled kao s „Dalje”.
+  if (korak === "description" && polja.akcija === "objavi" && k) return objaviNacrt(k, ishod.nacrt, nacrtId);
   return preusmjeri303(naKorak(ctx, sljedeci[korak]));
 }
 

@@ -1,7 +1,7 @@
 /**
  * Nova kasica `/hr/{id}/kasica/nova` (P, ekran 24, tok 6): naslov ≤ 60, alias predložen iz naslova kampanje,
  * cilj neobavezan, opis s predloškom, prihvat pravila (`consents.moneybox_rules`), obavijesti zadano uključene,
- * zahvala neobavezna. Neprijavljeni → 302 na prijavu (odluka 516). Kampanja koja nije javno vidljiva → 404;
+ * zahvala neobavezna, naslovnica iz 15 tema (S10, prazno = kao kampanja). Neprijavljeni → 302 na prijavu (odluka 516). Kampanja koja nije javno vidljiva → 404;
  * ako ne prima kasice (isključene, zatvorena, ne prima uplate) obrazac se ne prikazuje. Uspjeh → 303 na `/s/{alias}`.
  */
 import { kucica, polje } from "../../components/upravljanje/ucitavanje";
@@ -37,6 +37,7 @@ export const ucitaj: Ucitaj<PodaciNoveKasice> = async (ctx) => {
     notifications: true,
     thankYouOn: false,
     thankYou: "",
+    coverTheme: "",
   };
   let greske: GreskeKasice = {};
   if (ctx.request.method === "POST" && !zatvoreno) {
@@ -44,6 +45,7 @@ export const ucitaj: Ucitaj<PodaciNoveKasice> = async (ctx) => {
     vrijednosti = {
       title: polje(f, "title"), alias: polje(f, "alias"), goal: polje(f, "goal"), description: polje(f, "description"),
       rules: kucica(f, "rules"), notifications: kucica(f, "notifications"), thankYouOn: kucica(f, "thankYouOn"), thankYou: polje(f, "thankYou"),
+      coverTheme: polje(f, "coverTheme"),
     };
     const r = await stvoriKasicu(ctx.db, { campaignId: k.id, ownerId: korisnik.id }, vrijednosti, Date.now());
     if (r.ok) return new Response(null, { status: 303, headers: { Location: `${url(ctx.lang, "moneybox", { alias: r.alias })}?nova=1` } });

@@ -6,6 +6,7 @@ import PiggyBank from "@lucide/astro/icons/piggy-bank";
 import ShieldCheck from "@lucide/astro/icons/shield-check";
 import Base from "../../layouts/Base.astro";
 import ProgressBar from "../../components/ProgressBar.astro";
+import TemaNaslovne from "../../components/katalog/TemaNaslovne.astro";
 import PausedNotice from "../../components/kampanja/PausedNotice.astro";
 import ShareSheet from "../../components/kampanja/ShareSheet.astro";
 import { formatNovca } from "../../components/kampanja/format";
@@ -30,7 +31,8 @@ const adresa = new URL(url(lang, "moneybox", { alias: kasica.alias }), Astro.url
       <PiggyBank size={18} aria-hidden="true" class="text-action" />
       {T.za} <a href={kampanjaPut} class="font-medium text-ink underline underline-offset-2 break-words">{kp.title}</a>
     </p>
-    <h1 class="page-title mt-2 text-ink break-words">{kasica.title}</h1>
+    <TemaNaslovne tema={kasica.coverTheme} kategorija={kasica.kategorija} class="mt-4 aspect-[3/1] rounded-md" />
+    <h1 class="page-title mt-4 text-ink break-words">{kasica.title}</h1>
     {
       kasica.ownerName && (
         <p class="mt-2 text-ink-soft">

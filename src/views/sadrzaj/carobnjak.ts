@@ -59,6 +59,13 @@ const hr = {
     primateljPomoc: "Popis sadrži organizacije koje primaju kampanje drugih. Kampanja čeka njihovo odobrenje.",
     katalog: "Katalog organizacija",
     prag: "Cilj od 5.000 € ili više traži dokaze namjene u roku od 14 dana nakon objave (zastava, ne blokada).",
+    savjetiNaslov: "Kako postaviti naslov i cilj",
+    savjeti: [
+      "U naslovu recite tko prima pomoć i za što, npr. „Nova kolica za Anu” umjesto „Pomozite”.",
+      "Cilj neka bude stvarni iznos troška; ako ga premašite, prikupljanje se nastavlja.",
+      "Ako je cilj velik, u opisu ga razložite na stavke da se vidi kamo ide svaki dio.",
+      "Rok je neobavezan; kratak rok pomaže kad je potreba hitna.",
+    ],
   },
   mediji: {
     naslov: "Naslovnica i video",
@@ -69,6 +76,13 @@ const hr = {
     slikeMock: "Prijenos fotografija još ne radi u prototipu (spremište datoteka dolazi kasnije). Kampanja se objavljuje s temom naslovnice.",
     video: "Video (YouTube ili Vimeo, neobavezno)",
     videoPomoc: "Poveznica počinje s https://",
+    savjetiNaslov: "Kako odabrati naslovnicu",
+    savjeti: [
+      "Odaberite temu koja odgovara namjeni; ona je prvo što ljudi vide na kartici kampanje.",
+      "Kratak video (do dvije minute) u kojem organizator objašnjava potrebu često vrijedi više od teksta.",
+      "Fotografije stvarnih ljudi i mjesta dodat ćete kad prototip dobije spremište datoteka.",
+      "Ne objavljujte tuđe fotografije ni lica djece bez dopuštenja.",
+    ],
   },
   opis: {
     naslov: "Opis kampanje",
@@ -83,6 +97,8 @@ const hr = {
       "Zahvalite onima koji doniraju.",
     ],
     zabranjenoNapomena: "Kampanja je donacija: opis ne smije obećavati povrat novca, kamatu, udio ni zaradu.",
+    pregledaj: "Pregledaj prije objave",
+    objaviNapomena: "Prethodni koraci su potpuni pa kampanju možete objaviti odmah ili je najprije pregledati.",
   },
   pregled: {
     naslov: "Pregled kampanje",
@@ -215,6 +231,14 @@ const en: typeof hr = {
     primateljPomoc: "The list contains organisations that accept campaigns by others. The campaign waits for their approval.",
     katalog: "Organisation catalogue",
     prag: "A goal of €5,000 or more requires proof of purpose within 14 days of publishing (a flag, not a block).",
+
+    savjetiNaslov: "How to set the title and goal",
+    savjeti: [
+      "Say in the title who is being helped and with what, e.g. “A new wheelchair for Ana” rather than “Help”.",
+      "Make the goal the real cost; if you exceed it, fundraising simply continues.",
+      "If the goal is large, break it down into items in the description so people see where each part goes.",
+      "The end date is optional; a short one helps when the need is urgent.",
+    ],
   },
   mediji: {
     naslov: "Cover and video",
@@ -225,6 +249,13 @@ const en: typeof hr = {
     slikeMock: "Photo upload does not work in the prototype yet (file storage comes later). The campaign is published with the cover theme.",
     video: "Video (YouTube or Vimeo, optional)",
     videoPomoc: "The link starts with https://",
+    savjetiNaslov: "How to choose a cover",
+    savjeti: [
+      "Pick the theme that fits the purpose; it is the first thing people see on the campaign card.",
+      "A short video (up to two minutes) of the organiser explaining the need is often worth more than text.",
+      "You will add photos of real people and places once the prototype has file storage.",
+      "Do not publish other people's photos or children's faces without permission.",
+    ],
   },
   opis: {
     naslov: "Campaign description",
@@ -239,6 +270,8 @@ const en: typeof hr = {
       "Thank those who donate.",
     ],
     zabranjenoNapomena: "A campaign is a donation: the description must not promise money back, interest, a stake or earnings.",
+    pregledaj: "Preview before publishing",
+    objaviNapomena: "The earlier steps are complete, so you can publish the campaign now or preview it first.",
   },
   pregled: {
     naslov: "Campaign preview",

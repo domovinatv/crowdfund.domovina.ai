@@ -128,6 +128,13 @@ const radio = "flex min-h-11 cursor-pointer items-start gap-3 rounded-md border 
       )
     }
 
+    <details class="rounded-md bg-mist p-4">
+      <summary class="cursor-pointer font-semibold text-ink">{C.savjetiNaslov}</summary>
+      <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-ink-soft">
+        {C.savjeti.map((s) => <li>{s}</li>)}
+      </ul>
+    </details>
+
     <div class="flex flex-wrap justify-between gap-3">
       <a href={url(lang, "new-campaign.type")} class="inline-flex min-h-11 items-center rounded-md border border-ink-muted/60 px-4 font-medium text-ink hover:bg-mist">{T.natrag}</a>
       <button type="submit" class="inline-flex min-h-11 items-center rounded-md bg-action px-5 font-semibold text-paper hover:bg-action-strong">{T.dalje}</button>

@@ -1,9 +1,9 @@
 ---
 // Kontakt (ekran 21, docs/08 ContactForm): obrazac s 10 tema, greške uz polje, mock Turnstile.
+import ProvjeraTurnstile from "../../components/ProvjeraTurnstile.astro";
 import StaticnaStranica from "../../components/StaticnaStranica.astro";
 import CircleCheck from "@lucide/astro/icons/circle-check";
 import CircleExclamationPoint from "@lucide/astro/icons/circle-exclamation-point";
-import ShieldCheck from "@lucide/astro/icons/shield-check";
 import Send from "@lucide/astro/icons/send";
 import { NAJVISE, TEME_KONTAKTA, type PoljeKontakta } from "../../lib/db/kontakt";
 import { url } from "../../lib/rute";
@@ -101,14 +101,7 @@ const rub = (p: PoljeKontakta) => (greske[p] ? "border-danger ring-1 ring-danger
         {greske.content && <p id="content-greska" class="mt-1 text-sm font-medium text-danger">{poruka("content")}</p>}
       </div>
 
-      <fieldset class="rounded-md border border-dashed border-ink-muted/60 p-4">
-        <legend class="px-1 text-sm font-semibold text-ink">{T.provjera}</legend>
-        <p class="flex gap-2 text-sm text-ink-muted">
-          <ShieldCheck size={18} aria-hidden="true" class="mt-0.5 shrink-0" />
-          <span>{T.provjeraTekst}</span>
-        </p>
-        <input type="hidden" name="cf-turnstile-response" value="mock-prototip" />
-      </fieldset>
+      <ProvjeraTurnstile naslov={T.provjera} tekst={T.provjeraTekst} />
 
       <button type="submit" class="inline-flex min-h-11 items-center gap-2 rounded-md bg-action px-5 font-semibold text-paper hover:bg-action-strong">
         <Send size={18} aria-hidden="true" />

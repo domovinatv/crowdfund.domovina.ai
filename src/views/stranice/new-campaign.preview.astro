@@ -9,6 +9,7 @@ import Greska from "../../components/prijava/Greska.astro";
 import TemaNaslovne from "../../components/katalog/TemaNaslovne.astro";
 import { formatDatuma, formatNovca } from "../../components/kampanja/format";
 import { TEMA_KATEGORIJE, krajDana } from "../../lib/db/nacrti";
+import { KLASA_OPISA, renderirajOpis } from "../../lib/opis";
 import { url } from "../../lib/rute";
 import { CAROBNJAK } from "../sadrzaj/carobnjak";
 import type { PodaciKoraka } from "../../components/carobnjak/ucitavanje";
@@ -61,7 +62,7 @@ const korakNedostatka: Record<string, "type" | "goal" | "media" | "description">
         {nacrt.vrsta !== "recurring" && (<><dt class="text-ink-muted">{P.rok}</dt><dd class="text-ink">{nacrt.rok ? formatDatuma(lang, krajDana(nacrt.rok)) : P.bezRoka}</dd></>)}
         {nacrt.videoUrl && (<><dt class="text-ink-muted">{P.video}</dt><dd class="break-all text-ink">{nacrt.videoUrl}</dd></>)}
       </dl>
-      <div class="prose mt-4 max-w-none whitespace-pre-line text-ink">{nacrt.opis || "—"}</div>
+      {nacrt.opis ? <div class={`mt-4 ${KLASA_OPISA}`} data-opis set:html={renderirajOpis(nacrt.opis)} /> : <p class="mt-4 text-ink">—</p>}
     </div>
   </article>
 

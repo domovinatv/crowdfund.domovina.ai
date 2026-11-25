@@ -3,9 +3,12 @@
 // (obavijesti, zahvala) i prihvat pravila. Bez JS-a: POST na istu rutu, greške uz polja, uspjeh 303 na kasicu.
 import ArrowLeft from "@lucide/astro/icons/arrow-left";
 import Base from "../../layouts/Base.astro";
+import TemaNaslovne from "../../components/katalog/TemaNaslovne.astro";
 import { GRESKA, GUMB, KARTICA, OZNAKA, POLJE, POMOC, rub } from "../../components/upravljanje/stil";
+import { TEME } from "../../lib/db/nacrti";
 import { NAJVISE } from "../../lib/db/upravljanje";
 import { url } from "../../lib/rute";
+import { TEME_NASLOVNICE } from "../sadrzaj/kampanja";
 import { UPRAVLJANJE } from "../sadrzaj/upravljanje";
 import type { PodaciNoveKasice } from "./campaign.moneybox.new.ucitaj";
 import type { PropsStranice } from "../tipovi";
@@ -15,12 +18,20 @@ const { lang, podaci } = Astro.props;
 const { k, zatvoreno, vrijednosti: v, greske } = podaci;
 const T = UPRAVLJANJE[lang].novaKasica;
 const O = UPRAVLJANJE[lang].opce;
-type P = "title" | "alias" | "goal" | "description" | "rules" | "thankYou";
+type P = "title" | "alias" | "goal" | "description" | "rules" | "thankYou" | "coverTheme";
 const g = (p: P) => (greske[p] ? O.greske[greske[p]!] : undefined);
 const opis = (p: P, pomoc?: string) => [pomoc ? `${p}-pomoc` : "", greske[p] ? `${p}-greska` : ""].filter(Boolean).join(" ") || undefined;
 const prefiks = new URL(url(lang, "moneybox", { alias: "x" }), Astro.url.origin).href.slice(0, -1);
 const brojGresaka = Object.keys(greske).length;
 const MALO = "text-sm font-normal text-ink-muted";
+const imenaTema = TEME_NASLOVNICE[lang];
+const kategorija = k.category?.key ?? null;
+// Izbor naslovnice: prazno = kao kampanja (`moneyboxes.cover_theme` NULL), pa 15 tema (S10, migracija 0010).
+const izbori: { vrijednost: string; tema: string | null; oznaka: string }[] = [
+  { vrijednost: "", tema: k.coverTheme, oznaka: T.naslovnicaKampanje },
+  ...TEME.map((t) => ({ vrijednost: t, tema: t, oznaka: imenaTema[t] ?? t })),
+];
+const KARTA = "cursor-pointer overflow-hidden rounded-md border border-ink-muted/40 has-[:checked]:border-action has-[:checked]:ring-2 has-[:checked]:ring-action";
 ---
 <Base lang={lang} title={`${T.naslov} · ${k.title}`} noindex>
   <a href={url(lang, "campaign", { id: k.publicId })} class="inline-flex min-h-9 items-center gap-1 text-sm font-semibold text-action underline-offset-2 hover:underline">
@@ -69,6 +80,23 @@ const MALO = "text-sm font-normal text-ink-muted";
             aria-invalid={greske.description ? "true" : undefined} aria-describedby={opis("description")} class:list={[POLJE, rub(greske.description)]}>{v.description}</textarea>
           {g("description") && <p id="description-greska" class={GRESKA}>{g("description")}</p>}
         </div>
+      </fieldset>
+
+      <fieldset class={KARTICA} aria-describedby={opis("coverTheme", T.naslovnicaPomoc)}>
+        <legend class="text-lg font-semibold text-ink">{T.naslovnica}</legend>
+        <p id="coverTheme-pomoc" class={POMOC}>{T.naslovnicaPomoc}</p>
+        <div class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {izbori.map((x) => (
+            <label class={KARTA}>
+              <TemaNaslovne tema={x.tema} kategorija={kategorija} class="aspect-video" />
+              <span class="flex min-h-11 items-center gap-2 px-3 py-2">
+                <input type="radio" name="coverTheme" value={x.vrijednost} checked={v.coverTheme === x.vrijednost} class="size-5 shrink-0 accent-action" />
+                <span class="text-sm text-ink">{x.oznaka}</span>
+              </span>
+            </label>
+          ))}
+        </div>
+        {g("coverTheme") && <p id="coverTheme-greska" class={GRESKA}>{g("coverTheme")}</p>}
       </fieldset>
 
       <fieldset class={`space-y-4 ${KARTICA}`}>

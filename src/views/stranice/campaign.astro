@@ -25,6 +25,7 @@ import SupportBar from "../../components/kampanja/SupportBar.astro";
 import UpdateList from "../../components/kampanja/UpdateList.astro";
 import KarticaPonude from "../../components/ponude/KarticaPonude.astro";
 import { formatDatuma, formatNovca } from "../../components/kampanja/format";
+import { KLASA_OPISA, obicniTekstOpisa, renderirajOpis } from "../../lib/opis";
 import { url } from "../../lib/rute";
 import { FAZA2 } from "../sadrzaj/faza2";
 import { KAMPANJA } from "../sadrzaj/kampanja";
@@ -59,7 +60,7 @@ const sekcija = "scroll-mt-4 focus:outline-none";
 const h2 = "text-2xl font-semibold text-ink";
 const opis = (k.description ?? "").trim();
 ---
-<Base lang={lang} title={k.title} description={opis ? opis.slice(0, 160) : undefined} noindex={k.noindex}>
+<Base lang={lang} title={k.title} description={opis ? obicniTekstOpisa(opis).slice(0, 160) : undefined} noindex={k.noindex}>
   {upravljanje && (
     <div class="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-md bg-mist px-4 py-2 text-sm" data-traka-upravljanja>
       <span class="text-ink-soft">{J.traka}</span>
@@ -87,7 +88,7 @@ const opis = (k.description ?? "").trim();
 
       <section id="opis" tabindex="-1" aria-labelledby="opis-naslov" class={`mt-10 ${sekcija}`}>
         <h2 id="opis-naslov" class={h2}>{T.sekcije.opis}</h2>
-        {opis ? <p class="mt-4 max-w-[70ch] whitespace-pre-line break-words text-ink-soft">{opis}</p> : <p class="mt-4 text-ink-muted">{T.opis.prazno}</p>}
+        {opis ? <div class={`mt-4 ${KLASA_OPISA}`} data-opis set:html={renderirajOpis(opis)} /> : <p class="mt-4 text-ink-muted">{T.opis.prazno}</p>}
         <div class="mt-6"><MoneyDestination lang={lang} novac={k.novac} /></div>
       </section>
 

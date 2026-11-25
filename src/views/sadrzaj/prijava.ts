@@ -58,6 +58,11 @@ export interface TekstoviPrijave {
     imaRacun: string;
     prijava: string;
     obavezno: string;
+    racunOrganizacije: string;
+    racunOrganizacijePomoc: string;
+    racunOsobni: string;
+    provjera: string;
+    provjeraTekst: string;
   };
   potvrda: {
     naslov: string;
@@ -164,6 +169,11 @@ export const PRIJAVA: Dvojezicno<TekstoviPrijave> = {
       imaRacun: "Već imaš račun?",
       prijava: "Prijavi se",
       obavezno: "obavezno",
+      racunOrganizacije: "Registriraj račun organizacije",
+      racunOrganizacijePomoc: "Za udrugu, zakladu ili ustanovu: nakon potvrde e-pošte šalješ zahtjev za organizaciju.",
+      racunOsobni: "Registriraj samo osobni račun",
+      provjera: "Zaštita od automatskih registracija",
+      provjeraTekst: "Ovdje će biti Cloudflare Turnstile. U prototipu je provjera isključena i uvijek prolazi.",
     },
     potvrda: {
       naslov: "Provjeri e-poštu",
@@ -273,6 +283,11 @@ export const PRIJAVA: Dvojezicno<TekstoviPrijave> = {
       imaRacun: "Already have an account?",
       prijava: "Sign in",
       obavezno: "required",
+      racunOrganizacije: "Sign up an organisation account",
+      racunOrganizacijePomoc: "For an association, foundation or institution: after confirming your email you send an organisation application.",
+      racunOsobni: "Sign up a personal account only",
+      provjera: "Protection against automated sign-ups",
+      provjeraTekst: "Cloudflare Turnstile will go here. In the prototype the check is switched off and always passes.",
     },
     potvrda: {
       naslov: "Check your email",

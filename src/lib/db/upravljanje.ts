@@ -7,6 +7,7 @@
  * Organizator vidi stvarne brojke (i kad ih javno skriva). Sve funkcije primaju `D1Database` i `sad` (ms),
  * pa ih test zove nad sqliteom (test/upravljanje.test.ts).
  */
+import { KATEGORIJE, TEME, valjanVideoUrl } from "./nacrti";
 import { DAN, ORG_VERIFICIRANA, uuid7 } from "./zajednicko";
 
 // --- Pomoćnici unosa ------------------------------------------------------------------------------------
@@ -112,6 +113,12 @@ export interface KampanjaUpravljanja {
   visibility: "private" | "unlisted" | "public";
   kind: "one_time" | "recurring" | "for_organization";
   categoryKey: string | null;
+  /** `campaign_settings.cover_theme` (15 tema, odluka 216). */
+  coverTheme: string | null;
+  /** `campaigns.recurrence`; `monthly` uz `kind` ≠ recurring = „dopusti mjesečne doprinose” (odluka 815). */
+  recurrence: string;
+  /** Prvi video iz `campaign_media` (čarobnjak ga upisuje na poziciju 0). */
+  videoUrl: string | null;
   pausedAt: number | null;
   blockedAt: number | null;
   blockedReason: string | null;
@@ -156,12 +163,13 @@ export async function kampanjaZaUpravljanje(db: D1Database, campaignId: string):
   const r = await db
     .prepare(
       `SELECT c.id, s.public_id, c.slug, c.title, c.description, c.goal_cents, c.min_contribution_cents, c.ends_at,
-              c.location_name, c.currency, c.state, c.visibility, s.kind, s.category_key, s.paused_at, s.blocked_at,
+              c.location_name, c.currency, c.state, c.visibility, s.kind, s.category_key, s.cover_theme, c.recurrence, s.paused_at, s.blocked_at,
               s.blocked_reason, s.contributions_list, s.hide_raised, s.hide_contributor_count, s.comments_mode,
               s.contributions_sort, s.allow_moneyboxes, s.allow_external_offers, s.thank_you_message,
               s.contribution_notifications, s.purpose_verified, o.id AS org_id, o.slug AS org_slug, o.display_name AS org_name,
               (SELECT COALESCE(SUM(d.amount_received_cents), 0) FROM contributions d WHERE d.campaign_id = c.id AND d.state = 'paid') AS prikupljeno,
-              (SELECT count(*) FROM contributions d WHERE d.campaign_id = c.id AND d.state = 'paid') AS n
+              (SELECT count(*) FROM contributions d WHERE d.campaign_id = c.id AND d.state = 'paid') AS n,
+              (SELECT m.video_url FROM campaign_media m WHERE m.campaign_id = c.id AND m.kind = 'video' ORDER BY m.position, m.id LIMIT 1) AS video_url
          FROM campaigns c JOIN campaign_settings s ON s.campaign_id = c.id
          LEFT JOIN organizations o ON o.organizer_id = c.organizer_id AND o.deleted_at IS NULL
         WHERE c.id = ? AND c.deleted_at IS NULL`,
@@ -171,7 +179,8 @@ export async function kampanjaZaUpravljanje(db: D1Database, campaignId: string):
       id: string; public_id: string; slug: string; title: string; description: string | null; goal_cents: number | null;
       min_contribution_cents: number | null; ends_at: number | null; location_name: string | null; currency: string;
       state: KampanjaUpravljanja["state"]; visibility: KampanjaUpravljanja["visibility"]; kind: KampanjaUpravljanja["kind"];
-      category_key: string | null; paused_at: number | null; blocked_at: number | null; blocked_reason: string | null;
+      category_key: string | null; cover_theme: string | null; recurrence: string; video_url: string | null;
+      paused_at: number | null; blocked_at: number | null; blocked_reason: string | null;
       contributions_list: "visible" | "hidden"; hide_raised: number; hide_contributor_count: number; comments_mode: NacinKomentara;
       contributions_sort: "latest" | "highest"; allow_moneyboxes: number; allow_external_offers: number; thank_you_message: string | null;
       contribution_notifications: number; purpose_verified: number; org_id: string | null; org_slug: string | null; org_name: string | null;
@@ -194,6 +203,9 @@ export async function kampanjaZaUpravljanje(db: D1Database, campaignId: string):
     visibility: r.visibility,
     kind: r.kind,
     categoryKey: r.category_key,
+    coverTheme: r.cover_theme,
+    recurrence: r.recurrence,
+    videoUrl: r.video_url,
     pausedAt: r.paused_at,
     blockedAt: r.blocked_at,
     blockedReason: r.blocked_reason,
@@ -243,6 +255,14 @@ export interface UlazPostavki {
   allowOffers: boolean;
   thankYou: string;
   slug: string;
+  /** S10 (paritet B01): kategorija iz `KATEGORIJE`; prazno samo kampanji za organizaciju. */
+  category: string;
+  /** Tema naslovnice iz `TEME`. */
+  coverTheme: string;
+  /** YouTube ili Vimeo (`valjanVideoUrl`); prazno uklanja video. */
+  videoUrl: string;
+  /** `recurrence = monthly` (odluka 815); kampanja vrste `recurring` ga uvijek ima. */
+  allowMonthly: boolean;
 }
 
 export type PoljePostavki = keyof UlazPostavki;
@@ -268,6 +288,10 @@ export function ulazIzKampanje(k: KampanjaUpravljanja, lang: "hr" | "en"): UlazP
     allowOffers: k.postavke.ponudeDopustene,
     thankYou: k.postavke.zahvala ?? "",
     slug: k.slug,
+    category: k.categoryKey ?? "",
+    coverTheme: k.coverTheme ?? "",
+    videoUrl: k.videoUrl ?? "",
+    allowMonthly: k.kind === "recurring" || k.recurrence === "monthly",
   };
 }
 
@@ -310,6 +334,17 @@ export async function spremiPostavke(
   if (!jedanOd(u.contributionsList, ["visible", "hidden"] as const)) g.contributionsList = "nevaljano";
   if (!jedanOd(u.contributionsSort, ["latest", "highest"] as const)) g.contributionsSort = "nevaljano";
   if (!jedanOd(u.commentsMode, ["off", "contributors", "everyone"] as const)) g.commentsMode = "nevaljano";
+  const category = u.category.trim();
+  if (!category) {
+    if (k.kind !== "for_organization") g.category = "obavezno";
+  } else if (!jedanOd(category, KATEGORIJE)) g.category = "nevaljano";
+  const coverTheme = u.coverTheme.trim();
+  if (!coverTheme) g.coverTheme = "obavezno";
+  else if (!jedanOd(coverTheme, TEME)) g.coverTheme = "nevaljano";
+  const videoUrl = u.videoUrl.trim();
+  if (videoUrl && !valjanVideoUrl(videoUrl)) g.videoUrl = "nevaljano";
+  // Vrsta `recurring` je uvijek mjesečna (i `yearly` iz seeda ostaje); ostale biraju `none` ili `monthly`.
+  const recurrence = k.kind === "recurring" ? k.recurrence : u.allowMonthly ? "monthly" : "none";
 
   if (k.zakljucano) {
     if (title !== k.title) g.title = "zakljucano";
@@ -333,21 +368,33 @@ export async function spremiPostavke(
   await db
     .prepare(
       `UPDATE campaigns SET title = ?, description = ?, goal_cents = ?, min_contribution_cents = ?, ends_at = ?,
-              location_name = ?, visibility = ?, slug = ?, updated_at = ? WHERE id = ?`,
+              location_name = ?, visibility = ?, slug = ?, recurrence = ?, updated_at = ? WHERE id = ?`,
     )
-    .bind(title, description || null, goalCents, minCents, endsAt ?? null, locationName || null, u.visibility, slug, sad, k.id)
+    .bind(title, description || null, goalCents, minCents, endsAt ?? null, locationName || null, u.visibility, slug, recurrence, sad, k.id)
     .run();
   await db
     .prepare(
       `UPDATE campaign_settings SET contributions_list = ?, contributions_sort = ?, hide_raised = ?, hide_contributor_count = ?,
-              comments_mode = ?, allow_moneyboxes = ?, allow_external_offers = ?, thank_you_message = ?, indexable = ?, updated_at = ?
+              comments_mode = ?, allow_moneyboxes = ?, allow_external_offers = ?, thank_you_message = ?, indexable = ?,
+              category_key = ?, cover_theme = ?, updated_at = ?
         WHERE campaign_id = ?`,
     )
     .bind(
       u.contributionsList, u.contributionsSort, u.hideRaised ? 1 : 0, u.hideContributorCount ? 1 : 0, u.commentsMode,
-      u.allowMoneyboxes ? 1 : 0, u.allowOffers ? 1 : 0, thankYou || null, u.visibility === "public" ? 1 : 0, sad, k.id,
+      u.allowMoneyboxes ? 1 : 0, u.allowOffers ? 1 : 0, thankYou || null, u.visibility === "public" ? 1 : 0,
+      category || null, coverTheme, sad, k.id,
     )
     .run();
+  // Video: jedan zapis `campaign_media` (kind video) kao u čarobnjaku; fotografije (R2) se ne diraju.
+  if (videoUrl !== (k.videoUrl ?? "")) {
+    await db.prepare("DELETE FROM campaign_media WHERE campaign_id = ? AND kind = 'video'").bind(k.id).run();
+    if (videoUrl) {
+      await db
+        .prepare("INSERT INTO campaign_media (id, campaign_id, kind, file_id, video_url, position, created_at) VALUES (?, ?, 'video', NULL, ?, 0, ?)")
+        .bind(uuid7(sad), k.id, videoUrl, sad)
+        .run();
+    }
+  }
   return { ok: true };
 }
 
@@ -550,8 +597,10 @@ export interface UlazKasice {
   notifications: boolean;
   thankYouOn: boolean;
   thankYou: string;
+  /** Tema naslovnice (S10, `TEME`); prazno = naslovnica kampanje. */
+  coverTheme: string;
 }
-export type PoljeKasice = "title" | "alias" | "goal" | "description" | "rules" | "thankYou";
+export type PoljeKasice = "title" | "alias" | "goal" | "description" | "rules" | "thankYou" | "coverTheme";
 export type GreskaKasice = "obavezno" | "predugo" | "nevaljano" | "zauzeto";
 export type GreskeKasice = Partial<Record<PoljeKasice, GreskaKasice>>;
 
@@ -578,14 +627,16 @@ export async function stvoriKasicu(
   if (u.thankYouOn && !thankYou) g.thankYou = "obavezno";
   else if (thankYou.length > NAJVISE.thankYou) g.thankYou = "predugo";
   if (!u.rules) g.rules = "obavezno";
+  const coverTheme = u.coverTheme.trim();
+  if (coverTheme && !(TEME as readonly string[]).includes(coverTheme)) g.coverTheme = "nevaljano";
   if (Object.keys(g).length > 0) return { ok: false, greske: g };
   await db
     .prepare(
       `INSERT INTO moneyboxes (id, campaign_id, owner_user_id, alias, title, description, goal_cents, payment_notifications,
-                               thank_you_message, status, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)`,
+                               thank_you_message, cover_theme, status, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)`,
     )
-    .bind(uuid7(sad), o.campaignId, o.ownerId, alias, title, description || null, goal, u.notifications ? 1 : 0, thankYou || null, sad, sad)
+    .bind(uuid7(sad), o.campaignId, o.ownerId, alias, title, description || null, goal, u.notifications ? 1 : 0, thankYou || null, coverTheme || null, sad, sad)
     .run();
   await db
     .prepare("INSERT INTO consents (id, user_id, email, kind, text_version, granted, created_at) VALUES (?, ?, NULL, 'moneybox_rules', ?, 1, ?)")

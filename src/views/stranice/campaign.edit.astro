@@ -1,19 +1,25 @@
 ---
 // Uredi kampanju (javni pregled §4.2, docs/08 ToggleRow, Field): obrazac radi bez JS-a, greške uz polje.
-// Zaključana polja su read-only s objašnjenjem; poslužitelj ih svejedno odbija (docs/05).
+// Zaključana polja su read-only s objašnjenjem; poslužitelj ih svejedno odbija (docs/05). S10 (paritet B01):
+// alatna traka opisa (Markdown podskup, `lib/opis.ts`), kategorija, tema naslovnice, video, mjesečni doprinosi.
 import Lock from "@lucide/astro/icons/lock";
+import AlatnaTraka from "../../components/opis/AlatnaTraka.astro";
+import TemaNaslovne from "../../components/katalog/TemaNaslovne.astro";
 import OkvirUpravljanja from "../../components/upravljanje/OkvirUpravljanja.astro";
 import Poruka from "../../components/upravljanje/Poruka.astro";
 import PhaseBadge from "../../components/PhaseBadge.astro";
 import { GRESKA, GUMB, H2, OZNAKA, POLJE, POMOC, rub } from "../../components/upravljanje/stil";
+import { TEME } from "../../lib/db/nacrti";
 import { NAJVISE, type PoljePostavki } from "../../lib/db/upravljanje";
+import { TEME_NASLOVNICE } from "../sadrzaj/kampanja";
+import { OPIS_UREDIVAC } from "../sadrzaj/opis";
 import { UPRAVLJANJE } from "../sadrzaj/upravljanje";
 import type { PodaciUredi } from "./campaign.edit.ucitaj";
 import type { PropsStranice } from "../tipovi";
 
 type Props = PropsStranice<PodaciUredi>;
 const { lang, podaci } = Astro.props;
-const { u, vrijednosti: v, greske, spremljeno } = podaci;
+const { u, vrijednosti: v, greske, spremljeno, kategorije } = podaci;
 const { k } = u;
 const T = UPRAVLJANJE[lang].uredi;
 const O = UPRAVLJANJE[lang].opce;
@@ -22,6 +28,9 @@ const opis = (p: PoljePostavki, pomoc = true) => [pomoc ? `${p}-pomoc` : "", gre
 const imaGresaka = Object.keys(greske).length > 0;
 const fieldset = "mt-8 space-y-5 rounded-md border border-line p-4";
 const radio = "flex min-h-11 items-start gap-3 py-1";
+const imenaTema = TEME_NASLOVNICE[lang];
+const opisOpisa = k.zakljucano ? "zakljucano" : ["description-oblikovanje", opis("description")].filter(Boolean).join(" ");
+const KARTA = "cursor-pointer overflow-hidden rounded-md border border-ink-muted/40 has-[:checked]:border-action has-[:checked]:ring-2 has-[:checked]:ring-action";
 ---
 <OkvirUpravljanja lang={lang} u={u} aktivna="campaign.edit">
   <h2 class={H2}>{T.naslov}</h2>
@@ -45,8 +54,10 @@ const radio = "flex min-h-11 items-start gap-3 py-1";
       </div>
       <div>
         <label for="description" class={OZNAKA}>{T.description}</label>
+        <AlatnaTraka lang={lang} za="description" onemoguceno={k.zakljucano} />
         <textarea id="description" name="description" rows="10" maxlength={NAJVISE.description} readonly={k.zakljucano}
-          aria-invalid={greske.description ? "true" : undefined} aria-describedby={opis("description")} class:list={[POLJE, rub(greske.description)]}>{v.description}</textarea>
+          aria-invalid={greske.description ? "true" : undefined} aria-describedby={opisOpisa} class:list={[POLJE, rub(greske.description)]}>{v.description}</textarea>
+        {!k.zakljucano && <p id="description-oblikovanje" class={POMOC}>{OPIS_UREDIVAC[lang].uputa}</p>}
         <p id="description-pomoc" class={POMOC}>{T.descriptionPomoc}</p>
         {g("description") && <p id="description-greska" class={GRESKA}>{g("description")}</p>}
       </div>
@@ -81,11 +92,49 @@ const radio = "flex min-h-11 items-start gap-3 py-1";
         </div>
       </div>
       <div>
+        <label for="category" class={OZNAKA}>{T.kategorija}{k.kind !== "for_organization" && <span class="text-sm font-normal text-ink-muted"> ({O.obavezno})</span>}</label>
+        <select id="category" name="category" required={k.kind !== "for_organization"}
+          aria-invalid={greske.category ? "true" : undefined} aria-describedby={opis("category")} class:list={[POLJE, "max-w-sm", rub(greske.category)]}>
+          <option value="">{k.kind === "for_organization" ? T.kategorijaBez : T.kategorijaOdaberi}</option>
+          {kategorije.map((c) => <option value={c.key} selected={v.category === c.key}>{c[lang]}</option>)}
+        </select>
+        <p id="category-pomoc" class={POMOC}>{T.kategorijaPomoc}</p>
+        {g("category") && <p id="category-greska" class={GRESKA}>{g("category")}</p>}
+      </div>
+      <div>
         <label for="slug" class={OZNAKA}>{T.slug}</label>
         <input id="slug" name="slug" type="text" maxlength="60" value={v.slug} readonly={k.slugZakljucan}
           aria-invalid={greske.slug ? "true" : undefined} aria-describedby={opis("slug")} class:list={[POLJE, rub(greske.slug), "font-mono"]} />
         <p id="slug-pomoc" class={POMOC}>{k.slugZakljucan ? T.slugZakljucan : T.slugPomoc}</p>
         {g("slug") && <p id="slug-greska" class={GRESKA}>{g("slug")}</p>}
+      </div>
+    </fieldset>
+
+    <fieldset class={fieldset}>
+      <legend class="px-1 font-semibold text-ink">{T.naslovnicaNaslov}</legend>
+      <div role="radiogroup" aria-labelledby="coverTheme-oznaka" aria-describedby={opis("coverTheme")}>
+        <p id="coverTheme-oznaka" class={OZNAKA}>{T.coverTheme}</p>
+        <p id="coverTheme-pomoc" class={POMOC}>{T.coverThemePomoc}</p>
+        <div class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {TEME.map((t) => (
+            <label class={KARTA}>
+              <TemaNaslovne tema={t} kategorija={v.category || k.categoryKey} class="aspect-video" />
+              <span class="flex min-h-11 items-center gap-2 px-3 py-2">
+                <input type="radio" name="coverTheme" value={t} checked={v.coverTheme === t} class="size-5 shrink-0 accent-action" />
+                <span class="text-sm text-ink">{imenaTema[t] ?? t}</span>
+              </span>
+            </label>
+          ))}
+        </div>
+        {g("coverTheme") && <p id="coverTheme-greska" class={GRESKA}>{g("coverTheme")}</p>}
+      </div>
+      <p class="rounded-md bg-warning-bg p-3 text-sm font-medium text-warning" data-mock="galerija">{T.galerijaMock}</p>
+      <div>
+        <label for="videoUrl" class={OZNAKA}>{T.videoUrl}</label>
+        <input id="videoUrl" name="videoUrl" type="url" inputmode="url" maxlength="500" value={v.videoUrl} placeholder="https://"
+          aria-invalid={greske.videoUrl ? "true" : undefined} aria-describedby={opis("videoUrl")} class:list={[POLJE, rub(greske.videoUrl)]} />
+        <p id="videoUrl-pomoc" class={POMOC}>{T.videoUrlPomoc}</p>
+        {g("videoUrl") && <p id="videoUrl-greska" class={GRESKA}>{g("videoUrl")}</p>}
       </div>
     </fieldset>
 
@@ -116,6 +165,19 @@ const radio = "flex min-h-11 items-start gap-3 py-1";
       </div>
       <label class={radio}><input type="checkbox" name="hideRaised" value="1" checked={v.hideRaised} class="mt-1 size-5" /><span>{T.hideRaised}</span></label>
       <label class={radio}><input type="checkbox" name="hideContributorCount" value="1" checked={v.hideContributorCount} class="mt-1 size-5" /><span>{T.hideContributorCount}</span></label>
+      {
+        k.kind === "recurring" ? (
+          <label class={radio}>
+            <input type="checkbox" checked disabled class="mt-1 size-5" />
+            <span>{T.allowMonthly}<span class="block text-sm text-ink-muted">{T.allowMonthlyUvijek}</span></span>
+          </label>
+        ) : (
+          <label class={radio}>
+            <input type="checkbox" name="allowMonthly" value="1" checked={v.allowMonthly} class="mt-1 size-5" />
+            <span>{T.allowMonthly}<span class="block text-sm text-ink-muted">{T.allowMonthlyPomoc}</span></span>
+          </label>
+        )
+      }
     </fieldset>
 
     <fieldset class={fieldset}>
