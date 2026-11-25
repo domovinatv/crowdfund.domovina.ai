@@ -115,6 +115,11 @@
 }
 
 @layer components {
+  /* Spremnik s vodoravnim pomicanjem mora biti containing block, inače `sr-only` (position: absolute) u
+     tablici izlazi iz njega i širi stranicu na mobitelu (S6, smoke 375 px). */
+  .overflow-x-auto {
+    position: relative;
+  }
   .page-title {
     font-size: clamp(1.5rem, 4vw, 2.25rem);
     font-weight: 700;
