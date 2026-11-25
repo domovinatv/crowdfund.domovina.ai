@@ -480,3 +480,22 @@ koja se na nju poziva. Blokovi brojeva po sesiji: S1 od 100, S1b od 150, S2 od 2
 802. **Provjera vlasništva vanjske kampanje ostaje mock** (odluka 209): 4fund automatiziranim dohvatima vraća 403
      (`/terms`, `/faq`, `/{id}/pay`, 25. 11. 2026.), pa produkcijska provjera koda u opisu treba ručni pregled admina.
      (potvrditi)
+840. **Ponude imaju vlastitih 12 kategorija**, odvojeno od `categories` kampanja (migracija 0009: `offers.category`,
+     `offers.item_condition`). (potvrditi)
+841. **Cijena ponude:** „kupi odmah” `price_cents` je najmanji iznos (kupac smije dati više); aukcija = početna cijena;
+     `ends_at` je kraj trajanja za oba oblika.
+842. **Obrazac nove ponude sprema samo nacrt.** Ponuda na tuđoj kampanji je Founder's Offer: traži `person_kyc approved`
+     i sprema se s `founder_status = 'pending'`.
+843. **Licitanti se prikazuju kao „Licitant N”**, nikad imenom.
+844. **Razine podrške su samo prikaz** (faza 2): obrazac upravljanja razinama je onemogućen i ništa ne upisuje, jer
+     razina s cijenom znači nagradu ili prodaju, a checkout nema izbor razine. Postovi razine na stranici kampanje su
+     zaključani (vidi se samo naslov). (potvrditi)
+845. **Promocija** (`{id}/upravljanje/promocija`) ništa ne upisuje; cijene po javnom pregledu 4funda (alias 1/2/3 €,
+     istaknuto 5/10/15 €), fakturira ITalk u fazi 2. (potvrditi)
+846. **Osobne organizacije** (fizička osoba kao organizator) nisu u popisu `/hr/organizacije`.
+847. **Seed:** osobna organizacija ima slug `demo-osoba-…`; Sunčani krov ima odobren prvi KYB i noviji `org_kyb` u
+     pregledu (okidač `risk`), pa ostaje aktivan i dosljedan; prijava s odlukom je `decided`.
+848. **Sekcija `#ponude`** na stranici kampanje prikazuje se kad kampanja prima ponude, i bez ijedne ponude (veza
+     „Dodaj ponudu”).
+849. **Kupnja, licitiranje, izbor razine i plaćanje promocije onemogućeni** s objašnjenjem (fiskalizacija, DAC7);
+     faza-2 ekrani ne zovu MPT.
