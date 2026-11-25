@@ -12,6 +12,7 @@ import { komentariKampanje, novostiKampanje, uplateKampanje, type KomentariKampa
 import { kasiceKampanje, type Kasica } from "../../lib/db/kasice";
 import { dodajKomentar, pravoKomentara, type GreskaKomentara, type PravoKomentara } from "../../lib/db/komentari";
 import { ponudeKampanje, type Ponuda } from "../../lib/db/ponude";
+import { novostiRazina, type NovostRazine } from "../../lib/db/razine";
 import { pracenjeKorisnika, pratiKampanju, type ObavijestiPracenja } from "../../lib/db/pracenje";
 import { pristupKampanji } from "../../lib/pristup";
 import { url } from "../../lib/rute";
@@ -57,6 +58,8 @@ export interface PodaciKampanje {
   josUplata: boolean;
   komentari: KomentariKampanje;
   ponude: Ponuda[];
+  /** Ekskluzivne novosti razine (faza 2): samo naslov, razina i datum. */
+  novostiRazina: NovostRazine[];
   adresa: string;
   pracenje: StanjePracenja;
   komentiranje: StanjeKomentiranja;
@@ -109,7 +112,7 @@ export const ucitaj: Ucitaj<PodaciKampanje> = async (ctx) => {
   const sort = q.get("contributions");
   const stranicaUplata = Math.min(stranicaIz(q.get("contributions_page")), 9);
   const limit = UPLATA_PO_STRANICI * stranicaUplata;
-  const [novosti, kasice, uplateSve, komentari, ponude, pravo, mojePracenje, pristup] = await Promise.all([
+  const [novosti, kasice, uplateSve, komentari, ponude, pravo, mojePracenje, pristup, zakljucane] = await Promise.all([
     novostiKampanje(ctx.db, k.id),
     k.postavke.kasiceDopustene ? kasiceKampanje(ctx.db, k.id) : Promise.resolve([]),
     uplateKampanje(ctx.db, k.id, { sort: sort === "highest" || sort === "latest" ? sort : undefined, limit: limit + 1 }),
@@ -118,6 +121,7 @@ export const ucitaj: Ucitaj<PodaciKampanje> = async (ctx) => {
     pravoKomentara(ctx.db, k.id, korisnik?.id ?? null),
     korisnik ? pracenjeKorisnika(ctx.db, k.id, korisnik.id) : Promise.resolve(null),
     korisnik ? pristupKampanji(ctx.db, korisnik, k.id) : Promise.resolve(null),
+    k.razine.length > 0 ? novostiRazina(ctx.db, k.id) : Promise.resolve([]),
   ]);
   const josUplata = uplateSve.uplate.length > limit;
   const uplate = { ...uplateSve, uplate: uplateSve.uplate.slice(0, limit) };
@@ -141,6 +145,7 @@ export const ucitaj: Ucitaj<PodaciKampanje> = async (ctx) => {
       josUplata,
       komentari,
       ponude,
+      novostiRazina: zakljucane,
       adresa: apsolutno(ctx, put),
       pracenje,
       komentiranje,

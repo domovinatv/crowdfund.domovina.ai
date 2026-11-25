@@ -84,7 +84,8 @@ flowchart LR
 | `/hr/za-organizaciju` | `/en/for-organisations` | J | objašnjenje kampanje za organizaciju (Fixed Beneficiary), odobrenje, kamo ide novac | pregled §2.4 |
 | `/hr/mjesecne` | `/en/monthly` | J | mjesečne kampanje: podsjetnik + QR ili trajni nalog (odluka 14) | pregled §12 |
 | `/hr/ponude` | `/en/offers` | J | katalog ponuda; oznaka „nije u fazi 1” | 23, pregled §8.3 |
-| `/hr/ponude/nova` | `/en/offers/new` | P | odabir kampanje i obrazac ponude; „nije u fazi 1”, traži verificiran profil | 23 |
+| `/hr/ponude/nova` | `/en/offers/new` | P | odabir kampanje (`?campaign=`) i obrazac ponude; sprema samo nacrt; „nije u fazi 1”, Founder's Offer traži verificiran profil | 23 |
+| `/hr/ponude/{offer}` | `/en/offers/{offer}` | J | stranica ponude ili aukcije: opis, podaci, licitacije bez imena; kupnja i licitiranje onemogućeni (fiskalizacija, DAC7); „nije u fazi 1” (S8) | pregled §3, §8.3 |
 | `/hr/{id}` | `/en/{id}` | J | stranica kampanje; sidra `#novosti`, `#opis`, `#kasice`, `#uplate`, `#komentari`, `#ponude` | 22, pregled §4.3 |
 | `/hr/{id}/qr` | `/en/{id}/qr` | J | QR kampanje (link) i trajni uplatni QR (tok 12), preuzimanje SVG/PNG | pregled §4.4 |
 | `/hr/{id}/plakat` | `/en/{id}/poster` | J | plakat za ispis (A4) s QR-om | pregled §4.4 |
@@ -157,6 +158,8 @@ flowchart LR
 | `/hr/{id}/upravljanje/verifikacija` | `/en/{id}/manage/verification` | K (U:editor) | dokazi namjene (prag 5.000 €), stanje pregleda | 15 |
 | `/hr/{id}/upravljanje/novac` | `/en/{id}/manage/money` | K | „Kamo ide novac”: Safe kampanje, potpisnici organizacije, poveznica na explorer, bez isplate | 09, tok 4 |
 | `/hr/{id}/upravljanje/zatvori` | `/en/{id}/manage/close` | U:owner, P+e | ručno zatvaranje (`closed`) ili brisanje (soft) | pregled §4.5 |
+| `/hr/{id}/upravljanje/razine` | `/en/{id}/manage/tiers` | K | razine podrške i broj novosti razine; obrazac nove razine onemogućen; „nije u fazi 1” (S8) | pregled §3 |
+| `/hr/{id}/upravljanje/promocija` | `/en/{id}/manage/promotion` | K | alias (1/2/3 €) i isticanje (5/10/15 €), premium ITalk; obrazac onemogućen, bez naplate; „nije u fazi 1” (S8) | pregled §7 |
 
 ### Moje i postavke (S6)
 

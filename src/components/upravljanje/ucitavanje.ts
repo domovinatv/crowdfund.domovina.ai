@@ -24,6 +24,8 @@ export const STRANICE_UPRAVLJANJA = [
   "campaign.manage.notifications",
   "campaign.manage.verification",
   "campaign.manage.money",
+  "campaign.manage.tiers",
+  "campaign.manage.promotion",
   "campaign.manage.close",
 ] as const;
 export type StranicaUpravljanja = (typeof STRANICE_UPRAVLJANJA)[number] | "campaign.manage.finances.csv";

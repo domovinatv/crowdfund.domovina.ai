@@ -79,7 +79,7 @@ describe("P: zahtijevajPrijavu", () => {
     const put = `/hr/${primjeri.kampanja.aktivna}/kasica/nova`;
     expect(lokacija(await ucitajKasicu(kontekst(db, put)))).toBe(`/hr/prijava?next=${encodeURIComponent(put)}`);
     expect(await ucitajKasicu(kontekst(db, put, { korisnik: novi, params: { id: primjeri.kampanja.aktivna } }))).toHaveProperty("podaci.zatvoreno", null);
-    expect(await ucitajPonudu(kontekst(db, "/en/offers/new", { korisnik: novi }))).toEqual({ podaci: null });
+    expect(await ucitajPonudu(kontekst(db, "/en/offers/new", { korisnik: novi }))).toHaveProperty("podaci.verificiran", false);
   });
 });
 

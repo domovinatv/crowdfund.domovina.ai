@@ -24,6 +24,8 @@ import { ucitaj as ucitajObavijesti, type PodaciObavijesti } from "../src/views/
 import { ucitaj as ucitajVerifikaciju, type PodaciVerifikacije } from "../src/views/stranice/campaign.manage.verification.ucitaj";
 import { ucitaj as ucitajNovac, type PodaciNovca } from "../src/views/stranice/campaign.manage.money.ucitaj";
 import { ucitaj as ucitajZatvaranje, type PodaciZatvaranja } from "../src/views/stranice/campaign.manage.close.ucitaj";
+import { ucitaj as ucitajRazine } from "../src/views/stranice/campaign.manage.tiers.ucitaj";
+import { ucitaj as ucitajPromociju } from "../src/views/stranice/campaign.manage.promotion.ucitaj";
 import { ucitaj as ucitajNovuKasicu, type PodaciNoveKasice } from "../src/views/stranice/campaign.moneybox.new.ucitaj";
 import type { Ucitaj } from "../src/views/tipovi";
 import { broj } from "./pomoc/baza";
@@ -43,6 +45,8 @@ const UCITAVACI: Record<StranicaUpravljanja, Ucitaj<unknown>> = {
   "campaign.manage.notifications": ucitajObavijesti,
   "campaign.manage.verification": ucitajVerifikaciju,
   "campaign.manage.money": ucitajNovac,
+  "campaign.manage.tiers": ucitajRazine,
+  "campaign.manage.promotion": ucitajPromociju,
   "campaign.manage.close": ucitajZatvaranje,
 };
 
@@ -60,6 +64,8 @@ const SMIJE: Record<StranicaUpravljanja, Uloga[]> = {
   "campaign.manage.notifications": ["owner", "admin", "editor", "viewer", "moderator"],
   "campaign.manage.verification": ["owner", "admin", "editor", "moderator"],
   "campaign.manage.money": ["owner", "admin", "editor", "viewer", "moderator"],
+  "campaign.manage.tiers": ["owner", "admin", "editor", "viewer", "moderator"],
+  "campaign.manage.promotion": ["owner", "admin", "editor", "viewer", "moderator"],
   "campaign.manage.close": ["owner"],
 };
 const ULOGE: Uloga[] = ["owner", "admin", "editor", "viewer", "moderator", "novi"];

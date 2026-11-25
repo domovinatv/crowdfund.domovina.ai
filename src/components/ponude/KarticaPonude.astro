@@ -1,0 +1,54 @@
+---
+// Kartica ponude ili aukcije (faza 2, javni pregled §8.3): kategorija · vrsta, naslov (poveznica na ponudu), opis,
+// iznos (najmanji za kupnju, početna ili najviša licitacija za aukciju), dostupnost, rok, Founder's Offer, kampanja.
+import Gavel from "@lucide/astro/icons/gavel";
+import ShoppingBag from "@lucide/astro/icons/shopping-bag";
+import type { Lang } from "../../i18n";
+import type { KarticaPonude, Ponuda } from "../../lib/db/ponude";
+import { url } from "../../lib/rute";
+import { FAZA2 } from "../../views/sadrzaj/faza2";
+import { formatDatuma, formatNovca } from "../kampanja/format";
+
+interface Props {
+  lang: Lang;
+  p: Ponuda | KarticaPonude;
+  /** Prikaži kampanju (katalog); na stranici kampanje ne treba. */
+  kampanja?: boolean;
+  currency?: string;
+}
+const { lang, p, kampanja = false, currency = "EUR" } = Astro.props;
+const T = FAZA2[lang].ponude;
+const novac = formatNovca(lang, currency);
+const aukcija = p.mode === "auction";
+const iznos = aukcija && p.topBidCents !== null ? p.topBidCents : p.priceCents;
+const oznakaIznosa = aukcija ? (p.topBidCents !== null ? T.najvisa : T.pocetna) : T.najmanje;
+const k = kampanja && "campaign" in p ? p.campaign : null;
+---
+<article class="flex h-full flex-col rounded-md bg-paper p-4 shadow-card" data-ponuda={p.id}>
+  <p class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-medium text-ink-muted">
+    {p.category && <span>{T.kategorije[p.category] ?? p.category}</span>}
+    <span aria-hidden="true">·</span>
+    <span class="inline-flex items-center gap-1 text-ink-soft">
+      {aukcija ? <Gavel size={14} aria-hidden="true" /> : <ShoppingBag size={14} aria-hidden="true" />}
+      {T.nacini[p.mode]}
+    </span>
+    {p.founder && <span class="rounded-sm bg-mist px-1.5 py-0.5 font-semibold text-action" title={T.founderOpis}>{T.founder}</span>}
+  </p>
+  <h3 class="mt-1.5 font-semibold break-words text-ink">
+    <a href={url(lang, "offer", { offer: p.id })} class="underline-offset-2 hover:underline">{p.title}</a>
+  </h3>
+  {p.description && <p class="mt-1 line-clamp-3 text-sm text-ink-soft">{p.description}</p>}
+  <p class="mt-auto pt-3 text-sm text-ink-soft tabular-nums">
+    <span class="text-ink-muted">{oznakaIznosa}</span> <strong class="text-base text-ink">{novac(iznos)}</strong>
+    {aukcija && <span class="block text-ink-muted">{T.licitacija(p.bids)}</span>}
+    {!aukcija && p.quantity > 1 && <span class="block text-ink-muted">{T.dostupno(p.quantity)}</span>}
+    {p.endsAt !== null && (
+      <span class="block text-ink-muted">{p.status === "active" ? T.zavrsava : T.zavrsila} {formatDatuma(lang, p.endsAt)}</span>
+    )}
+  </p>
+  {k && (
+    <p class="mt-2 border-t border-line pt-2 text-sm text-ink-muted">
+      {T.zaKampanju}: <a href={url(lang, "campaign", { id: k.publicId })} class="font-medium text-ink underline-offset-2 hover:underline">{k.title}</a>
+    </p>
+  )}
+</article>

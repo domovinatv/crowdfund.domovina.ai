@@ -1,9 +1,152 @@
 ---
-// Nova ponuda (faza 2): vidi je samo prijavljeni (učitavač); obrazac dolazi s fazom 2.
+// Nova ponuda (faza 2, docs/07, obilazak 23): odabir kampanje (vlastite ili tuđe koje primaju ponude), naslov, opis,
+// kategorija, stanje, vrsta (kupnja / aukcija), najmanji iznos ili početna cijena, količina, trajanje, dostava.
+// Sprema se samo nacrt; ponude se u prvoj fazi ne objavljuju, ne kupuju i ne licitiraju.
 import StaticnaStranica from "../../components/StaticnaStranica.astro";
+import Poruka from "../../components/upravljanje/Poruka.astro";
+import { GRESKA, GUMB, KARTICA, OZNAKA, POLJE, POMOC, rub } from "../../components/upravljanje/stil";
+import { formatNovca } from "../../components/kampanja/format";
+import { DOSTAVE, GRANICE_PONUDE, KATEGORIJE_PONUDA, NACINI_PONUDE } from "../../lib/db/ponude";
+import { url } from "../../lib/rute";
+import { FAZA2 } from "../sadrzaj/faza2";
 import { PONUDE_NOVA } from "../sadrzaj/organizacije";
+import type { PodaciNovePonude } from "./offers.new.ucitaj";
 import type { PropsStranice } from "../tipovi";
-type Props = PropsStranice;
-const { lang } = Astro.props;
+type Props = PropsStranice<PodaciNovePonude>;
+const { lang, podaci } = Astro.props;
+const { kampanje, nacrti, verificiran, polja: f, greske: g, spremljeno } = podaci;
+const T = FAZA2[lang].ponude;
+const O = T.obrazac;
+const novac = formatNovca(lang);
+const vlastite = kampanje.filter((k) => k.vlastita);
+const tude = kampanje.filter((k) => !k.vlastita);
+const imaGresaka = Object.keys(g).length > 0;
+const greska = (k: keyof typeof g) => (g[k] ? O.greske[g[k]!] : null);
+const opisi = (ime: string, pomoc: boolean) => [pomoc ? `${ime}-pomoc` : "", g[ime as keyof typeof g] ? `${ime}-greska` : ""].filter(Boolean).join(" ") || undefined;
 ---
-<StaticnaStranica lang={lang} sadrzaj={PONUDE_NOVA[lang]} skupina="kako-radi" noindex />
+<StaticnaStranica lang={lang} sadrzaj={PONUDE_NOVA[lang]} skupina="kako-radi" noindex sidraPoslije={[{ id: "obrazac-ponude", naslov: O.naslov }, { id: "nacrti", naslov: O.nacrti }]}>
+  <section aria-labelledby="obrazac-ponude" class="mt-10 max-w-[70ch] scroll-mt-6">
+    <h2 id="obrazac-ponude" class="text-2xl font-semibold text-ink">{O.naslov}</h2>
+    <Poruka vrsta="ok" tekst={spremljeno ? O.spremljeno : null} />
+    <Poruka vrsta="greska" tekst={imaGresaka ? O.ispravi : null} />
+    {!verificiran && tude.length > 0 && (
+      <p class="mt-4 rounded-md bg-mist p-3 text-sm text-ink-soft">
+        {O.founderNapomena} <a href={url(lang, "settings.verification")} class="font-semibold text-action underline underline-offset-2">{O.verificiraj}</a>
+      </p>
+    )}
+    {kampanje.length === 0 ? (
+      <p class="mt-4 text-ink-muted">{O.nemaKampanja}</p>
+    ) : (
+      <form method="post" action={url(lang, "offers.new")} class={`mt-4 space-y-5 ${KARTICA}`} novalidate>
+        <div>
+          <label for="p-campaign" class={OZNAKA}>{O.kampanja}</label>
+          <p id="campaign-pomoc" class={POMOC}>{O.kampanjaPomoc}</p>
+          <select id="p-campaign" name="campaign" required class={`${POLJE} ${rub(g.campaign)}`} aria-describedby={opisi("campaign", true)} aria-invalid={g.campaign ? "true" : undefined}>
+            <option value="">{O.odaberi}</option>
+            {vlastite.length > 0 && <optgroup label={O.vlastite}>{vlastite.map((k) => <option value={k.publicId} selected={f.campaign === k.publicId}>{k.title} ({k.publicId})</option>)}</optgroup>}
+            {tude.length > 0 && <optgroup label={O.tude}>{tude.map((k) => <option value={k.publicId} selected={f.campaign === k.publicId}>{k.title} ({k.publicId})</option>)}</optgroup>}
+          </select>
+          {greska("campaign") && <p id="campaign-greska" class={GRESKA}>{greska("campaign")}</p>}
+        </div>
+        <div>
+          <label for="p-title" class={OZNAKA}>{O.naslovPonude}</label>
+          <input id="p-title" name="title" type="text" required maxlength={GRANICE_PONUDE.naslov.max} value={f.title}
+            class={`${POLJE} ${rub(g.title)}`} aria-describedby={opisi("title", false)} aria-invalid={g.title ? "true" : undefined} />
+          {greska("title") && <p id="title-greska" class={GRESKA}>{greska("title")}</p>}
+        </div>
+        <div>
+          <label for="p-description" class={OZNAKA}>{O.opis}</label>
+          <p id="description-pomoc" class={POMOC}>{O.opisPomoc}</p>
+          <textarea id="p-description" name="description" rows="5" required maxlength={GRANICE_PONUDE.opis.max}
+            class={`${POLJE} ${rub(g.description)}`} aria-describedby={opisi("description", true)} aria-invalid={g.description ? "true" : undefined}>{f.description}</textarea>
+          {greska("description") && <p id="description-greska" class={GRESKA}>{greska("description")}</p>}
+        </div>
+        <div class="grid gap-5 sm:grid-cols-2">
+          <div>
+            <label for="p-category" class={OZNAKA}>{O.kategorija}</label>
+            <select id="p-category" name="category" required class={`${POLJE} ${rub(g.category)}`} aria-describedby={opisi("category", false)} aria-invalid={g.category ? "true" : undefined}>
+              <option value="">—</option>
+              {KATEGORIJE_PONUDA.map((c) => <option value={c} selected={f.category === c}>{T.kategorije[c]}</option>)}
+            </select>
+            {greska("category") && <p id="category-greska" class={GRESKA}>{greska("category")}</p>}
+          </div>
+          <div>
+            <label for="p-condition" class={OZNAKA}>{O.stanje}</label>
+            <select id="p-condition" name="condition" class={`${POLJE} ${rub(g.condition)}`}>
+              <option value="">{O.stanjeNije}</option>
+              <option value="new" selected={f.condition === "new"}>{T.stanja.new}</option>
+              <option value="used" selected={f.condition === "used"}>{T.stanja.used}</option>
+            </select>
+          </div>
+        </div>
+        <fieldset>
+          <legend class={OZNAKA}>{O.vrsta}</legend>
+          <div class="mt-2 space-y-2">
+            {NACINI_PONUDE.map((n) => (
+              <label class="flex gap-3">
+                <input type="radio" name="mode" value={n} checked={f.mode === n} class="mt-1 size-5 shrink-0 accent-action" />
+                <span><span class="font-medium text-ink">{T.nacini[n]}</span><span class="block text-sm text-ink-muted">{n === "auction" ? O.aukcijaPomoc : O.kupnjaPomoc}</span></span>
+              </label>
+            ))}
+          </div>
+          {greska("mode") && <p class={GRESKA}>{greska("mode")}</p>}
+        </fieldset>
+        <div class="grid gap-5 sm:grid-cols-3">
+          <div>
+            <label for="p-price" class={OZNAKA}>{f.mode === "auction" ? O.cijenaAukcija : O.cijenaKupnja}</label>
+            <input id="p-price" name="price" type="text" inputmode="decimal" required value={f.price} placeholder="10"
+              class={`${POLJE} ${rub(g.price)}`} aria-describedby={opisi("price", true)} aria-invalid={g.price ? "true" : undefined} />
+            {greska("price") && <p id="price-greska" class={GRESKA}>{greska("price")}</p>}
+          </div>
+          <div>
+            <label for="p-quantity" class={OZNAKA}>{O.kolicina}</label>
+            <input id="p-quantity" name="quantity" type="number" min={GRANICE_PONUDE.kolicina.min} max={GRANICE_PONUDE.kolicina.max} value={f.quantity}
+              class={`${POLJE} ${rub(g.quantity)}`} aria-describedby={opisi("quantity", true)} aria-invalid={g.quantity ? "true" : undefined} />
+            {greska("quantity") && <p id="quantity-greska" class={GRESKA}>{greska("quantity")}</p>}
+          </div>
+          <div>
+            <label for="p-days" class={OZNAKA}>{O.trajanje}</label>
+            <input id="p-days" name="days" type="number" required min={GRANICE_PONUDE.trajanjeDana.min} max={GRANICE_PONUDE.trajanjeDana.max} value={f.days}
+              class={`${POLJE} ${rub(g.days)}`} aria-describedby={opisi("days", true)} aria-invalid={g.days ? "true" : undefined} />
+            {greska("days") && <p id="days-greska" class={GRESKA}>{greska("days")}</p>}
+          </div>
+        </div>
+        <ul class="space-y-1 text-sm text-ink-muted">
+          <li id="price-pomoc">{O.cijenaPomoc}</li>
+          <li id="quantity-pomoc">{O.kolicinaPomoc}</li>
+          <li id="days-pomoc">{O.trajanjePomoc}</li>
+        </ul>
+        <fieldset>
+          <legend class={OZNAKA}>{O.dostava}</legend>
+          <div class="mt-2 flex flex-wrap gap-x-5 gap-y-1">
+            {DOSTAVE.map((d) => (
+              <label class="inline-flex min-h-11 items-center gap-2"><input type="radio" name="delivery" value={d} checked={f.delivery === d} class="size-5 accent-action" />{T.dostave[d]}</label>
+            ))}
+          </div>
+          {greska("delivery") && <p class={GRESKA}>{greska("delivery")}</p>}
+        </fieldset>
+        <p class="rounded-md bg-warning-bg p-3 text-sm text-warning ring-1 ring-warning/20 ring-inset">{T.onemoguceno}</p>
+        <button type="submit" class={GUMB}>{O.spremi}</button>
+      </form>
+    )}
+  </section>
+
+  <section aria-labelledby="nacrti" class="mt-10 max-w-[70ch] scroll-mt-6">
+    <h2 id="nacrti" class="text-2xl font-semibold text-ink">{O.nacrti}</h2>
+    {nacrti.length === 0 ? (
+      <p class="mt-3 text-ink-muted">{O.bezNacrta}</p>
+    ) : (
+      <ul class="mt-3 divide-y divide-line rounded-md bg-paper shadow-card">
+        {nacrti.map((n) => (
+          <li class="flex flex-wrap items-baseline justify-between gap-2 px-4 py-3 text-sm">
+            <span class="min-w-0">
+              <span class="font-semibold text-ink break-words">{n.title}</span>
+              <span class="block text-ink-muted">{T.zaKampanju}: {n.campaign.title} · {T.nacini[n.mode]}{n.founder && ` · ${T.founder}`}</span>
+            </span>
+            <span class="tabular-nums text-ink-soft">{novac(n.priceCents)} · {T.statusi.draft}</span>
+          </li>
+        ))}
+      </ul>
+    )}
+  </section>
+</StaticnaStranica>

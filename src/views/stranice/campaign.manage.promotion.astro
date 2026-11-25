@@ -1,0 +1,67 @@
+---
+// Promocija (faza 2, javni pregled §7): kratka adresa (alias 1 / 2 / 3 €) i isticanje u katalogu (5 / 10 / 15 €),
+// premium usluga koju fakturira ITalk. Obrazac je onemogućen: ništa se ne zapisuje ni naplaćuje (odluka 8).
+import Link from "@lucide/astro/icons/link";
+import Megaphone from "@lucide/astro/icons/megaphone";
+import OkvirUpravljanja from "../../components/upravljanje/OkvirUpravljanja.astro";
+import PhaseBadge from "../../components/PhaseBadge.astro";
+import { formatNovca } from "../../components/kampanja/format";
+import { GUMB, H2, KARTICA, OZNAKA, POLJE, POMOC, rub } from "../../components/upravljanje/stil";
+import { url } from "../../lib/rute";
+import { FAZA2, PAKETI_PROMOCIJE } from "../sadrzaj/faza2";
+import type { PodaciPromocije } from "./campaign.manage.promotion.ucitaj";
+import type { PropsStranice } from "../tipovi";
+
+type Props = PropsStranice<PodaciPromocije>;
+const { lang, podaci } = Astro.props;
+const { u, prijedlogAliasa } = podaci;
+const T = FAZA2[lang].promocija;
+const novac = formatNovca(lang);
+const usluge = [
+  { kljuc: "alias", naslov: T.alias, pomoc: T.aliasPomoc, ikona: Link, paketi: PAKETI_PROMOCIJE.alias },
+  { kljuc: "istaknuto", naslov: T.istaknuto, pomoc: T.istaknutoPomoc, ikona: Megaphone, paketi: PAKETI_PROMOCIJE.istaknuto },
+] as const;
+---
+<OkvirUpravljanja lang={lang} u={u} aktivna="campaign.manage.promotion">
+  <h2 class={`flex flex-wrap items-center gap-2 ${H2}`}>{T.naslov} <PhaseBadge lang={lang} /></h2>
+  <p class="mt-1 max-w-[70ch] text-sm text-ink-muted">{T.opis}</p>
+  <p id="promocija-onemogucena" class="mt-4 max-w-[70ch] rounded-md bg-warning-bg p-3 text-sm text-warning ring-1 ring-warning/20 ring-inset">{T.onemoguceno}</p>
+
+  <form class="mt-6 max-w-[70ch] space-y-6" aria-describedby="promocija-onemogucena">
+    <fieldset disabled class="space-y-6">
+      <legend class="sr-only">{T.naruci}</legend>
+      {usluge.map((s) => {
+        const Ikona = s.ikona;
+        return (
+          <div class={KARTICA}>
+            <p class="flex items-center gap-2 font-semibold text-ink"><Ikona size={18} aria-hidden="true" />{s.naslov}</p>
+            <p class={POMOC}>{s.pomoc}</p>
+            {s.kljuc === "alias" && (
+              <div class="mt-3">
+                <label for="p-alias" class={OZNAKA}>{T.alias}</label>
+                <input id="p-alias" name="alias" type="text" value={prijedlogAliasa} class={`${POLJE} ${rub(null)}`} />
+                <p class={POMOC}>{T.aliasPrijedlog}: <span class="font-mono">/{prijedlogAliasa}</span></p>
+              </div>
+            )}
+            <fieldset class="mt-3">
+              <legend class={OZNAKA}>{T.paketi}</legend>
+              <div class="mt-1 flex flex-wrap gap-x-5 gap-y-1">
+                {s.paketi.map((p, i) => (
+                  <label class="inline-flex min-h-11 items-center gap-2 tabular-nums">
+                    <input type="radio" name={s.kljuc} value={p.dana} checked={i === 0} class="size-5 accent-action" />
+                    {T.paket(p.dana, novac(p.centi))}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          </div>
+        );
+      })}
+      <p class="text-sm text-ink-muted">{T.fakturira}</p>
+      <button type="submit" class={`${GUMB} cursor-not-allowed opacity-60`}>{T.naruci}</button>
+    </fieldset>
+  </form>
+  <p class="mt-4 text-sm">
+    <a href={url(lang, "ranking")} class="inline-flex min-h-11 items-center font-semibold text-action underline underline-offset-2">{T.pravila}</a>
+  </p>
+</OkvirUpravljanja>

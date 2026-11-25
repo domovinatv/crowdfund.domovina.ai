@@ -1,0 +1,77 @@
+---
+// Razine podrške (faza 2, odluka 8): popis razina kampanje s iznosom, zalihom i brojem novosti samo za razinu;
+// obrazac nove razine je onemogućen (razina s iznosom je nagrada ili prodaja), ništa se ne zapisuje.
+import OkvirUpravljanja from "../../components/upravljanje/OkvirUpravljanja.astro";
+import PhaseBadge from "../../components/PhaseBadge.astro";
+import { formatNovca } from "../../components/kampanja/format";
+import { GUMB, H2, KARTICA, OZNAKA, POLJE, TABLICA, TD, TH, rub } from "../../components/upravljanje/stil";
+import { FAZA2 } from "../sadrzaj/faza2";
+import type { PodaciRazina } from "./campaign.manage.tiers.ucitaj";
+import type { PropsStranice } from "../tipovi";
+
+type Props = PropsStranice<PodaciRazina>;
+const { lang, podaci } = Astro.props;
+const { u, razine } = podaci;
+const R = FAZA2[lang].razine;
+const T = R.upravljanje;
+const novac = formatNovca(lang);
+---
+<OkvirUpravljanja lang={lang} u={u} aktivna="campaign.manage.tiers">
+  <h2 class={`flex flex-wrap items-center gap-2 ${H2}`}>{R.naslov} <PhaseBadge lang={lang} /></h2>
+  <p class="mt-1 max-w-[70ch] text-sm text-ink-muted">{T.opis}</p>
+
+  <section aria-labelledby="postojece-razine" class="mt-6">
+    <h3 id="postojece-razine" class="font-semibold text-ink">{T.postojece}</h3>
+    {razine.length === 0 ? (
+      <p class="mt-2 text-ink-muted">{T.bezRazina}</p>
+    ) : (
+      <div class="mt-2 overflow-x-auto">
+        <table class={TABLICA}>
+          <thead>
+            <tr><th class={TH} scope="col">{T.razina}</th><th class={TH} scope="col">{T.iznos}</th><th class={TH} scope="col">{T.zaliha}</th><th class={TH} scope="col">{T.prodano}</th><th class={TH} scope="col">{T.novosti}</th></tr>
+          </thead>
+          <tbody>
+            {razine.map((r) => (
+              <tr>
+                <td class={TD}><span class="font-medium text-ink">{r.title}</span>{r.description && <span class="block text-ink-muted">{r.description}</span>}</td>
+                <td class={`${TD} tabular-nums`}>{r.priceCents === null ? R.bezIznosa : novac(r.priceCents)}</td>
+                <td class={`${TD} tabular-nums`}>{r.inventoryTotal ?? T.neograniceno}</td>
+                <td class={`${TD} tabular-nums`}>{r.inventoryClaimed}</td>
+                <td class={`${TD} tabular-nums`}>{r.novosti}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )}
+  </section>
+
+  <section aria-labelledby="nova-razina" class="mt-8 max-w-[70ch]">
+    <h3 id="nova-razina" class="flex flex-wrap items-center gap-2 font-semibold text-ink">{T.nova} <PhaseBadge lang={lang} /></h3>
+    <p id="razina-onemogucena" class="mt-2 rounded-md bg-warning-bg p-3 text-sm text-warning ring-1 ring-warning/20 ring-inset">{T.onemoguceno}</p>
+    <form class={`mt-4 ${KARTICA}`} aria-describedby="razina-onemogucena">
+      <fieldset disabled class="space-y-4">
+        <legend class="sr-only">{T.nova}</legend>
+        <div>
+          <label for="r-naslov" class={OZNAKA}>{T.naslovRazine}</label>
+          <input id="r-naslov" name="title" type="text" maxlength="120" class={`${POLJE} ${rub(null)}`} />
+        </div>
+        <div>
+          <label for="r-opis" class={OZNAKA}>{T.opisRazine}</label>
+          <textarea id="r-opis" name="description" rows="3" class={`${POLJE} ${rub(null)}`}></textarea>
+        </div>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label for="r-iznos" class={OZNAKA}>{T.iznosRazine}</label>
+            <input id="r-iznos" name="price" type="text" inputmode="decimal" class={`${POLJE} ${rub(null)}`} />
+          </div>
+          <div>
+            <label for="r-zaliha" class={OZNAKA}>{T.zalihaRazine}</label>
+            <input id="r-zaliha" name="inventory" type="number" min="1" class={`${POLJE} ${rub(null)}`} />
+          </div>
+        </div>
+        <button type="submit" class={`${GUMB} cursor-not-allowed opacity-60`}>{T.dodaj}</button>
+      </fieldset>
+    </form>
+  </section>
+</OkvirUpravljanja>

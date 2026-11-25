@@ -1,12 +1,12 @@
 ---
-// Sidra sekcija (docs/08 §3.2): Novosti · Opis · Kasice · Uplate · Komentari · Ponude, s brojem gdje
+// Sidra sekcija (docs/08 §3.2): Novosti · Opis · Razine · Kasice · Uplate · Komentari · Ponude, s brojem gdje
 // je broj javan. Sekcija koje nema (kasice isključene, komentari isključeni, nema ponuda) nema ni sidra.
 import type { Lang } from "../../i18n";
 import { KAMPANJA } from "../../views/sadrzaj/kampanja";
 
 export interface SidroSekcije {
   id: string;
-  kljuc: "novosti" | "opis" | "kasice" | "uplate" | "komentari" | "ponude";
+  kljuc: "novosti" | "opis" | "razine" | "kasice" | "uplate" | "komentari" | "ponude";
   broj: number | null;
 }
 

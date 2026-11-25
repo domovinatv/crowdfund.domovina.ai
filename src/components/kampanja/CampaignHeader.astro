@@ -4,6 +4,9 @@
 import BadgeCheck from "@lucide/astro/icons/badge-check";
 import Building from "@lucide/astro/icons/building";
 import User from "@lucide/astro/icons/user";
+import UserRound from "@lucide/astro/icons/user-round";
+import PhaseBadge from "../PhaseBadge.astro";
+import { FAZA2 } from "../../views/sadrzaj/faza2";
 import type { Lang } from "../../i18n";
 import type { StranicaKampanje } from "../../lib/db/kampanja";
 import { url } from "../../lib/rute";
@@ -17,6 +20,9 @@ const { lang, k } = Astro.props;
 const T = KAMPANJA[lang];
 const kategorija = k.category ? (lang === "hr" ? k.category.nameHr : k.category.nameEn) : null;
 const org = k.organizator;
+/** Kampanja fizičke osobe (osobna organizacija, `legal_form = osoba`): faza 2, odluka 8. */
+const osobna = org.legalForm === "osoba";
+const F = FAZA2[lang].osobna;
 const oznake: { tekst: string; ton: "ok" | "info" | "upozorenje" | "neutralno" }[] = [];
 if (k.purposeVerified) oznake.push({ tekst: T.oznake.namjena, ton: "ok" });
 if (k.kind === "for_organization") oznake.push({ tekst: T.oznake.zaOrganizaciju, ton: "info" });
@@ -50,6 +56,16 @@ const TON = {
     )}
     {org.city && <span class="text-sm text-ink-muted">· {org.city}</span>}
   </p>
+  {
+    osobna && (
+      <p class="mt-2 flex flex-wrap items-center gap-2 text-sm text-ink-soft" data-osobna-kampanja>
+        <UserRound size={16} aria-hidden="true" class="shrink-0" />
+        <span class="font-medium text-ink">{F.oznaka}</span>
+        <PhaseBadge lang={lang} />
+        <span class="basis-full text-ink-muted">{F.opis}</span>
+      </p>
+    )
+  }
   {
     k.autor?.name && (
       <p class="mt-1 flex items-center gap-2 text-sm text-ink-soft">

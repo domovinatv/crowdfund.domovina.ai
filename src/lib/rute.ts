@@ -13,7 +13,7 @@
  */
 import type { Lang } from "../i18n";
 
-export type Faza = "S4" | "S5" | "S6" | "S7";
+export type Faza = "S4" | "S5" | "S6" | "S7" | "S8";
 
 export interface Ruta {
   readonly kljuc: string;
@@ -32,6 +32,7 @@ export const RUTE = [
   { kljuc: "monthly", hr: "mjesecne", en: "monthly", pristup: "J", faza: "S5" },
   { kljuc: "offers", hr: "ponude", en: "offers", pristup: "J", faza: "S5" },
   { kljuc: "offers.new", hr: "ponude/nova", en: "offers/new", pristup: "P", faza: "S5" },
+  { kljuc: "offer", hr: "ponude/{offer}", en: "offers/{offer}", pristup: "J", faza: "S8" },
   { kljuc: "campaign", hr: "{id}", en: "{id}", pristup: "J", faza: "S5" },
   { kljuc: "campaign.qr", hr: "{id}/qr", en: "{id}/qr", pristup: "J", faza: "S5" },
   { kljuc: "campaign.poster", hr: "{id}/plakat", en: "{id}/poster", pristup: "J", faza: "S5" },
@@ -90,6 +91,8 @@ export const RUTE = [
   { kljuc: "campaign.manage.verification", hr: "{id}/upravljanje/verifikacija", en: "{id}/manage/verification", pristup: "K (U:editor)", faza: "S6" },
   { kljuc: "campaign.manage.money", hr: "{id}/upravljanje/novac", en: "{id}/manage/money", pristup: "K", faza: "S6" },
   { kljuc: "campaign.manage.close", hr: "{id}/upravljanje/zatvori", en: "{id}/manage/close", pristup: "U:owner, P+e", faza: "S6" },
+  { kljuc: "campaign.manage.tiers", hr: "{id}/upravljanje/razine", en: "{id}/manage/tiers", pristup: "K", faza: "S8" },
+  { kljuc: "campaign.manage.promotion", hr: "{id}/upravljanje/promocija", en: "{id}/manage/promotion", pristup: "K", faza: "S8" },
   { kljuc: "my.campaigns", hr: "moje/kampanje", en: "my/campaigns", pristup: "P", faza: "S6" },
   { kljuc: "my.donations", hr: "moje/donacije", en: "my/donations", pristup: "P", faza: "S6" },
   { kljuc: "my.moneyboxes", hr: "moje/kasice", en: "my/moneyboxes", pristup: "P", faza: "S6" },

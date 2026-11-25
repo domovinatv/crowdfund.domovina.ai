@@ -37,6 +37,10 @@ export interface Primjeri {
   korisnikSlug: string;
   /** Plaćeni checkout aktivne kampanje (koraci 2–4 checkouta, S7). */
   checkout: string;
+  /** Token važećeg mjesečnog podsjetnika (`recurring_reminders.token_hash = SHA-256(token)`, S8). */
+  podsjetnik?: string;
+  /** Aktivna aukcija s licitacijama (S8, faza 2). */
+  ponuda?: string;
 }
 
 export type Sesija = "organizator" | "moderator";
@@ -62,9 +66,10 @@ export const ucitajPrimjere = (): Primjeri =>
   JSON.parse(readFileSync(new URL("../seed/primjeri.json", import.meta.url), "utf8")) as Primjeri;
 
 /** Rute koje se namjerno ne provjeravaju, s razlogom (ulaze u izvještaj skripte). */
-export const IZOSTAVLJENE: Record<string, string> = {
-  reminder: "podsjetnik ponavljanja otvara novi MPT intent i ima vlastiti token: S8 s ponavljanjem (odluka 709)",
-};
+export const IZOSTAVLJENE: Record<string, string> = {};
+
+/** Token koji nije podsjetnik: dok seed nema `podsjetnik`, ruta se provjerava kao 404 (nepoznat token). */
+const NEPOZNAT_PODSJETNIK = "nepoznat-podsjetnik-0000000000000000000000";
 
 /** Namjerni statusi koji odstupaju od pravila iz `pristup` (bez sesije / sa sesijom), s razlogom. */
 export const IZNIMKE: Record<string, { bez: number; s: number; razlog: string }> = {
@@ -88,8 +93,12 @@ const imaStranicu = (put: string) => {
 function parametri(kljuc: string, p: Primjeri): Record<string, string> {
   const id = kljuc === "external.campaign" ? p.vanjska : p.kampanja.aktivna!;
   const slug = kljuc === "user" ? p.korisnik.javni : kljuc.startsWith("org.") ? p.organizacijaOrganizatora : p.organizacija;
-  const token = kljuc === "confirm-action" ? p.potvrdaRadnje : kljuc === "invite" ? p.pozivnica : p.pracenjeToken;
-  return { id, slug, alias: p.kasica, token, category: p.faqKategorija ?? "donating", checkout: p.checkout };
+  const token =
+    kljuc === "confirm-action" ? p.potvrdaRadnje
+    : kljuc === "invite" ? p.pozivnica
+    : kljuc === "reminder" ? (p.podsjetnik ?? NEPOZNAT_PODSJETNIK)
+    : p.pracenjeToken;
+  return { id, slug, alias: p.kasica, token, category: p.faqKategorija ?? "donating", checkout: p.checkout, offer: p.ponuda ?? "" };
 }
 
 const popuni = (uzorak: string, params: Record<string, string>) =>
@@ -118,11 +127,15 @@ function provjere(put: string, opis: string, kljuc: string, pristup: string, pog
 export function javneRute(p: Primjeri): ProvjeraRute[] {
   const out: ProvjeraRute[] = [{ put: "/", status: 302, opis: "korijen → jezik", pogled: true }];
   for (const r of RUTE) {
-    if ((r.faza !== "S5" && r.faza !== "S6") || r.kljuc in IZOSTAVLJENE) continue;
+    if ((r.faza !== "S5" && r.faza !== "S6" && r.faza !== "S8") || r.kljuc in IZOSTAVLJENE) continue;
     const params = parametri(r.kljuc, p);
     const pogled = imaPogled(r.kljuc);
     for (const lang of ["hr", "en"] as const) {
       const put = popuni(r[lang], params);
+      if (r.kljuc === "reminder" && !p.podsjetnik) {
+        out.push({ put: `/${lang}/${put}`, status: 404, opis: "reminder (seed bez podsjetnika: nepoznat token → 404)", kljuc: r.kljuc, pogled });
+        continue;
+      }
       out.push(...provjere(put ? `/${lang}/${put}` : `/${lang}`, r.kljuc, r.kljuc, r.pristup, pogled));
     }
   }
@@ -142,6 +155,10 @@ export function javneRute(p: Primjeri): ProvjeraRute[] {
   ] as const) {
     if (k[vrsta]) out.push({ put: `/hr/${k[vrsta]}`, status, opis: `campaign (${vrsta})`, pogled: true });
   }
+  // S8 (faza 2): kampanja fizičke osobe, nepostojeća ponuda, filtar kataloga ponuda.
+  if (k.osobna) out.push({ put: `/hr/${k.osobna}`, status: 200, opis: "campaign (osobna, faza 2)", pogled: true });
+  out.push({ put: "/hr/ponude/nema-ponude", status: 404, opis: "offer (nepostojeća)", pogled: imaPogled("offer") });
+  out.push({ put: "/hr/ponude?mode=auction&category=sport", status: 200, opis: "offers (filtar)", pogled: true });
   out.push({ put: `/hr/u/${p.korisnik.privatni404}`, status: 404, opis: "user (privatan profil)", pogled: true });
   out.push({ put: `/hr/u/${p.korisnikSlug}`, status: 200, opis: "user (slug, 0004)", pogled: true });
   out.push({ put: "/hr/zzzzzz", status: 404, opis: "campaign (nepostojeći ID)", pogled: true });

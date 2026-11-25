@@ -1,19 +1,80 @@
 ---
-// Katalog ponuda (faza 2, docs/07 red 80): bez upita u bazu, prazan s objašnjenjem.
+// Katalog ponuda i aukcija (faza 2, docs/07, javni pregled §8.3): filtar vrste i kategorije, kartice, stranice.
+// Kupnja i licitiranje su onemogućeni (fiskalizacija, DAC7); kartica vodi na stranicu ponude.
 import StaticnaStranica from "../../components/StaticnaStranica.astro";
+import KarticaPonude from "../../components/ponude/KarticaPonude.astro";
 import Gift from "@lucide/astro/icons/gift";
+import Plus from "@lucide/astro/icons/plus";
+import { KATEGORIJE_PONUDA, NACINI_PONUDE } from "../../lib/db/ponude";
 import { url } from "../../lib/rute";
+import { FAZA2 } from "../sadrzaj/faza2";
 import { PONUDE_KATALOG, PONUDE_PRAZNO } from "../sadrzaj/organizacije";
+import type { PodaciKatalogaPonuda } from "./offers.ucitaj";
 import type { PropsStranice } from "../tipovi";
-type Props = PropsStranice;
-const { lang } = Astro.props;
-const T = PONUDE_PRAZNO[lang];
+type Props = PropsStranice<PodaciKatalogaPonuda>;
+const { lang, podaci } = Astro.props;
+const { kartice, mode, category, ukupno, stranica, ukupnoStranica } = podaci;
+const T = FAZA2[lang].ponude;
+const K = T.katalog;
+const P = PONUDE_PRAZNO[lang];
+const osnova = url(lang, "offers");
+const upit = (page: number) => {
+  const q = new URLSearchParams();
+  if (mode) q.set("mode", mode);
+  if (category) q.set("category", category);
+  if (page > 1) q.set("page", String(page));
+  const s = q.toString();
+  return s ? `${osnova}?${s}` : osnova;
+};
+const polje = "mt-1 block w-full rounded-sm border border-ink-muted/60 bg-paper px-3 py-2.5 text-base text-ink";
 ---
 <StaticnaStranica lang={lang} sadrzaj={PONUDE_KATALOG[lang]} skupina="kako-radi">
-  <section aria-labelledby="prazno" class="mt-8 flex flex-col items-center rounded-lg bg-mist px-6 py-12 text-center">
-    <Gift size={32} aria-hidden="true" class="text-action" />
-    <h2 id="prazno" class="mt-3 text-lg font-semibold text-ink">{T.naslov}</h2>
-    <p class="mt-1 max-w-[50ch] text-sm text-ink-muted">{T.tekst}</p>
-    <a href={url(lang, "how-it-works.offers")} class="mt-5 inline-flex min-h-11 items-center rounded-md px-5 font-semibold text-action ring-1 ring-action/30 hover:bg-action/10">{T.veza}</a>
+  <p slot="prije" class="mt-4 max-w-[70ch] rounded-md bg-warning-bg p-3 text-sm text-warning ring-1 ring-warning/20 ring-inset" role="note">{T.onemoguceno}</p>
+  <section slot="prije" aria-labelledby="filtri-ponuda" class="mt-6">
+    <h2 id="filtri-ponuda" class="sr-only">{K.filtri}</h2>
+    <form method="get" action={osnova} class="flex flex-wrap items-end gap-4">
+      <fieldset class="min-w-0">
+        <legend class="text-sm font-semibold text-ink">{K.vrsta}</legend>
+        <div class="mt-1 flex flex-wrap gap-x-4 gap-y-1">
+          <label class="inline-flex min-h-11 items-center gap-2"><input type="radio" name="mode" value="" checked={!mode} class="size-5 accent-action" />{K.sve}</label>
+          {NACINI_PONUDE.map((n) => (
+            <label class="inline-flex min-h-11 items-center gap-2"><input type="radio" name="mode" value={n} checked={mode === n} class="size-5 accent-action" />{T.nacini[n]}</label>
+          ))}
+        </div>
+      </fieldset>
+      <div class="w-full sm:w-64">
+        <label for="kategorija-ponude" class="text-sm font-semibold text-ink">{K.kategorija}</label>
+        <select id="kategorija-ponude" name="category" class={polje}>
+          <option value="">{K.sveKategorije}</option>
+          {KATEGORIJE_PONUDA.map((c) => <option value={c} selected={category === c}>{T.kategorije[c]}</option>)}
+        </select>
+      </div>
+      <button type="submit" class="inline-flex min-h-11 items-center rounded-md bg-action px-5 font-semibold text-paper hover:bg-action-strong">{K.primijeni}</button>
+      {(mode || category) && <a href={osnova} class="inline-flex min-h-11 items-center font-semibold text-action underline underline-offset-2">{K.ponisti}</a>}
+    </form>
+    <div class="mt-6 flex flex-wrap items-center justify-between gap-3">
+      <p class="text-sm text-ink-muted" role="status">{K.rezultati(ukupno)}</p>
+      <a href={url(lang, "offers.new")} class="inline-flex min-h-11 items-center gap-2 rounded-md px-4 font-semibold text-action ring-1 ring-action/30 hover:bg-mist">
+        <Plus size={18} aria-hidden="true" />{K.dodaj}
+      </a>
+    </div>
+    {kartice.length === 0 ? (
+      <div class="mt-4 flex flex-col items-center rounded-lg bg-mist px-6 py-12 text-center">
+        <Gift size={32} aria-hidden="true" class="text-action" />
+        <p class="mt-3 max-w-[50ch] text-ink-soft">{K.prazno}</p>
+        <a href={url(lang, "how-it-works.offers")} class="mt-5 inline-flex min-h-11 items-center rounded-md px-5 font-semibold text-action ring-1 ring-action/30 hover:bg-action/10">{P.veza}</a>
+      </div>
+    ) : (
+      <ul class="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {kartice.map((p) => <li><KarticaPonude lang={lang} p={p} kampanja /></li>)}
+      </ul>
+    )}
+    {ukupnoStranica > 1 && (
+      <nav aria-label={K.stranica(stranica, ukupnoStranica)} class="mt-6 flex flex-wrap items-center gap-4 text-sm">
+        {stranica > 1 && <a href={upit(stranica - 1)} class="inline-flex min-h-11 items-center font-semibold text-action underline underline-offset-2">{K.prethodna}</a>}
+        <span class="text-ink-muted">{K.stranica(stranica, ukupnoStranica)}</span>
+        {stranica < ukupnoStranica && <a href={upit(stranica + 1)} class="inline-flex min-h-11 items-center font-semibold text-action underline underline-offset-2">{K.sljedeca}</a>}
+      </nav>
+    )}
   </section>
 </StaticnaStranica>

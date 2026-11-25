@@ -23,6 +23,8 @@ const hr = {
       "campaign.manage.notifications": "Obavijesti",
       "campaign.manage.verification": "Verifikacija",
       "campaign.manage.money": "Kamo ide novac",
+      "campaign.manage.tiers": "Razine",
+      "campaign.manage.promotion": "Promocija",
       "campaign.manage.close": "Zatvori ili obriši",
     } as Record<string, string>,
     stanja: {
@@ -393,6 +395,8 @@ const en: Tekstovi = {
       "campaign.manage.notifications": "Notifications",
       "campaign.manage.verification": "Verification",
       "campaign.manage.money": "Where the money goes",
+      "campaign.manage.tiers": "Levels",
+      "campaign.manage.promotion": "Promotion",
       "campaign.manage.close": "Close or delete",
     },
     stanja: {

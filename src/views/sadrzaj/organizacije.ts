@@ -200,7 +200,7 @@ export const PONUDE_KATALOG: Dvojezicno<SadrzajStranice> = {
   hr: {
     naslov: "Ponude",
     uvod:
-      "Ovdje će biti predmeti i usluge koje ljudi nude u korist kampanja. U prvoj fazi ponuda nema, pa je katalog prazan.",
+      "Predmeti, usluge i aukcije koje organizatori i podržavatelji nude u korist kampanja. Katalog je prikaz iz prototipa: u prvoj fazi ponude se ne kupuju i ne licitiraju.",
     opis: "Katalog ponuda u korist kampanja; nije dio prve faze.",
     faza2: true,
     odjeljci: [],
@@ -208,7 +208,7 @@ export const PONUDE_KATALOG: Dvojezicno<SadrzajStranice> = {
   en: {
     naslov: "Offers",
     uvod:
-      "This is where items and services that people offer to benefit campaigns will appear. There are no offers in the first phase, so the catalogue is empty.",
+      "Items, services and auctions that organisers and supporters offer to benefit campaigns. The catalogue is a prototype view: in the first phase offers cannot be bought or bid on.",
     opis: "Catalogue of offers that benefit campaigns; not part of the first phase.",
     faza2: true,
     odjeljci: [],
