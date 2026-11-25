@@ -21,6 +21,7 @@ const O = T.opis;
 const opis = podaci.polja?.opis ?? podaci.nacrt.opis ?? "";
 const g = porukaPolja(lang, podaci.greske, "opis", opis);
 // Objava odavde kad prethodnim koracima ništa ne nedostaje (opis provjerava poslužitelj pri spremanju).
+// „Pregledaj” ostaje zadnji gumb, kao „Dalje” na ostalim koracima (e2e `dalje()` klikne zadnji submit).
 const mozeObjaviti = podaci.prijavljen && podaci.nedostaje.every((n) => n === "opis" || n === "zabranjeno");
 const opisano = ["opis-pomoc", "opis-oblikovanje", "opis-napomena", g ? "opis-greska" : ""].filter(Boolean).join(" ");
 ---
@@ -51,8 +52,8 @@ const opisano = ["opis-pomoc", "opis-oblikovanje", "opis-napomena", g ? "opis-gr
       {
         mozeObjaviti ? (
           <div class="flex flex-wrap gap-3">
-            <button type="submit" class="inline-flex min-h-11 items-center rounded-md border border-ink-muted/60 px-4 font-medium text-ink hover:bg-mist">{O.pregledaj}</button>
             <button type="submit" name="akcija" value="objavi" class="inline-flex min-h-11 items-center rounded-md bg-action px-5 font-semibold text-paper hover:bg-action-strong">{T.pregled.objavi}</button>
+            <button type="submit" class="inline-flex min-h-11 items-center rounded-md border border-ink-muted/60 px-4 font-medium text-ink hover:bg-mist">{O.pregledaj}</button>
           </div>
         ) : (
           <button type="submit" class="inline-flex min-h-11 items-center rounded-md bg-action px-5 font-semibold text-paper hover:bg-action-strong">{T.dalje}</button>
