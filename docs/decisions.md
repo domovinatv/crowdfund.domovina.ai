@@ -480,6 +480,45 @@ koja se na nju poziva. Blokovi brojeva po sesiji: S1 od 100, S1b od 150, S2 od 2
 802. **Provjera vlasništva vanjske kampanje ostaje mock** (odluka 209): 4fund automatiziranim dohvatima vraća 403
      (`/terms`, `/faq`, `/{id}/pay`, 25. 11. 2026.), pa produkcijska provjera koda u opisu treba ručni pregled admina.
      (potvrditi)
+803. **Demo vanjske kampanje imaju 6-znakovni `external_id` s prefiksom `zz`** (`zz` + 4 hex), da gumb `/pay` postoji i
+     u seedu; URL ostaje na `4fund.invalid`. Slučajni ID može se poklopiti sa stvarnom 4fund kampanjom (mala
+     vjerojatnost). (potvrditi)
+804. **Seed ima jedno mjesečno obećanje s poslanim podsjetnikom** (token `demo-podsjetnik-mjesecni`, rok godinu dana),
+     pa `npm run routes` provjerava `podsjetnik/{token}` kao 200; seed se generira s `DEMO_SAD=2026-11-24` (kao S7).
+805. **Stupac „Ekran (S8)” u `docs/02`:** svaki red ima rutu ili ✗ s razlogom (kartice, isplata, valute, javni API,
+     strojni prijevod). AI prijedlog naslova je onemogućen gumb s oznakom faze 2 u koraku „cilj”.
+810. **Pravila vanjske kampanje u `src/lib/vanjske.ts`:** oblik URL-a, `external_id` `[a-z0-9]{6}`, `placanjeVanjske`,
+     opis do 300 znakova (prazan → NULL).
+811. **Organizator uređuje naslov, opis i kategoriju vanjske kampanje**; URL i kod vlasništva se ne mijenjaju.
+812. **Javna stranica vanjske kampanje** ima oznaku „plaćanje na 4fund.com” i jednu rečenicu zašto nema iznosa.
+813. **Vanjske kampanje u katalogu** su zaseban odjeljak ispod naših rezultata: samo stranica 1, samo uz filtre `q` ili
+     `category`, najviše 6; izvan redoslijeda i brojeva jer nemaju iznos. (potvrditi)
+814. **Gumb `/pay` samo iz ispravnog ID-a**; neispravan ID nema gumba.
+815. **„Svaki mjesec” u checkoutu** kad je kampanja `kind = recurring` ili `recurrence = monthly`, samo prijavljenima
+     (neprijavljeni dobiju poveznicu na prijavu s predodabranim mjesečno); tromjesečno i godišnje se ne nude. (potvrditi)
+816. **Prvi mjesec je običan checkout s `recurring_pledge_id`**; pad MPT-a otkazuje obećanje (ne briše ga).
+817. **Podsjetnik ne stvara intent unaprijed**: intent nastaje na „Plati ovaj mjesec”; postojeći otvoren ili plaćen
+     checkout tog podsjetnika se ponovno koristi. (potvrditi)
+818. **Token podsjetnika:** 32 nasumična bajta, sprema se samo SHA-256, vrijedi 7 dana; plaćanje otvoreno iz njega 24 h;
+     pauza i odjava rade i nakon isteka. `recurring_reminders` (migracija 0008) jedinstven po obećanju i mjesecu.
+     (potvrditi)
+819. **Podsjetnik u 07:00 UTC odabranog dana**, prvi idući mjesec (prvi se plaća u checkoutu); promjena dana ili
+     nastavak preračunava idući.
+820. **Tri neplaćena podsjetnika zaredom pauziraju obećanje**; plaćanje vraća brojač na 0.
+821. **Mock e-pošta je red u `notifications`**, ništa se ne šalje; payload podsjetnika nosi token (to je sadržaj poruke).
+     0008 dodaje `notifications.campaign_id`. (potvrditi)
+822. **Obavijest o novom doprinosu** ide autoru kampanje kad je `contribution_notifications = 1`; payload samo kampanja
+     i iznos, bez imena, e-pošte i IBAN-a.
+823. **Komentar iz poruke i obavijest organizatoru** upisuju se tek pri prijelazu u `paid`, u istom batchu i uvjetu kao
+     `campaign_stats` (odluka 712) uz `NOT EXISTS`; nema komentara uz `comments_mode = 'off'` ili skrivenu poruku.
+824. **Privola:** checkout neprijavljenog upisuje `consents(terms_privacy, email, VERZIJA_UVJETA)`; prijavljeni ne upisuje
+     ništa. Zatvara otvoreno iz odluke 725.
+825. **Podaci za trajni nalog** pošteno označeni: u sandboxu nema IBAN-a (704), trajna referenca kampanje tek s
+     produkcijskim `campaign-qr` (710).
+826. **Podsjetnik preuzima vidljivost imena i iznosa iz prvog checkouta obećanja.**
+827. **`dospjeliPodsjetnici(db, sada)`** bez mreže; Cron Trigger nije konfiguriran; gumb „pošalji sljedeći podsjetnik
+     sada” u `settings.recurring` radi samo na vlastitom obećanju.
+828. **`subscriptions` i `recurring_pledges.subscription_id` još nisu povezani** (tok 10) — S9 ili kasnije.
 840. **Ponude imaju vlastitih 12 kategorija**, odvojeno od `categories` kampanja (migracija 0009: `offers.category`,
      `offers.item_condition`). (potvrditi)
 841. **Cijena ponude:** „kupi odmah” `price_cents` je najmanji iznos (kupac smije dati više); aukcija = početna cijena;
