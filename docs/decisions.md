@@ -428,3 +428,18 @@ koja se na nju poziva. Blokovi brojeva po sesiji: S1 od 100, S1b od 150, S2 od 2
 711. **Potvrda:** MPT potvrda o uplati s ključem uplatitelja (ADR 0022/0023) u sandboxu ne postoji
      (`receipts_not_in_sandbox`); naša potvrda vodi na MPT stranicu intenta (`checkout_url`) i kaže da potvrda s
      ključem dolazi u produkciji.
+712. **`campaign_stats` u istom `db.batch` kao prijelaz doprinosa**, uvjetovano `EXISTS` doprinosa u polaznom stanju;
+     D1 izvodi batch serijski, pa paralelni webhook i pull mijenjaju statistiku jednom (test).
+713. **Primitak webhooka** je `INSERT … ON CONFLICT(webhook_id) DO NOTHING`; ponovljeni obrađeni id → 200 bez upisa,
+     primitak bez `processed_at` (pad usred obrade) obrađuje se ponovno, sigurno jer je svaki prijelaz uvjetan.
+714. **`contribution_events`:** svaki novi webhook dodaje red, pull samo kad izazove prijelaz; payload bez IBAN-a i imena.
+715. **Pull izvodi i dva stanja koja rail ne šalje webhookom:** `intent.expired` (doprinos i checkout `expired`) i
+     `underpaid.expired` (checkout `underpaid` → `underpaid_expired`); statistika se ne mijenja.
+716. **`payer_iban_hash`** = HMAC s `TAJNA_IBANA` kad postoji, inače SHA-256 od `crowdfund:iban:v1:<IBAN>`;
+     promjena tajne prekida prepoznavanje ranijih uplatitelja. (potvrditi)
+717. **`contributor_count`:** novi podržavatelj osim ako kampanja već ima drugi `paid` doprinos s istim
+     `payer_iban_hash`, istom e-poštom checkouta (bez obzira na veličinu slova) ili istim `user_id`. (potvrditi)
+718. **Statusi webhooka:** 401 bez/krivi/istekli potpis, 400 tijelo nije JSON, 503 bez `MPT_WEBHOOK_SECRET`, 200 za
+     nepoznat sid (`error = 'nepoznat_sid'`) i nepoznatu vrstu. `simulate` traži `sk_test_` i sandbox intent, inače 404.
+719. **`events` ne povlači intente u završnom stanju** (paid, late, underpaid_expired, rejected); greška raila vraća
+     stanje iz baze.
