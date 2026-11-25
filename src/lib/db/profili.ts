@@ -148,6 +148,8 @@ export interface VanjskaKartica {
   imageUrl: string | null;
   categoryKey: string | null;
   platform: string;
+  /** Kratki opis koji je organizator unio ručno (odluka 800); null = nema. */
+  description: string | null;
 }
 
 export interface ProfilOrganizacije {
@@ -210,11 +212,11 @@ export async function organizacijaPoSlugu(db: D1Database, slug: string, sad: Dat
     kartice(db, `${U_POPISU} AND c.organizer_id = ?`, [r.organizer_id], NA_PROFILU, sad, NAJVISE_NA_PROFILU),
     db
       .prepare(
-        `SELECT id, title, url, image_url, category_key, platform FROM external_campaigns
+        `SELECT id, title, url, image_url, category_key, platform, description FROM external_campaigns
           WHERE organization_id = ? AND status = 'active' ORDER BY created_at DESC, id`,
       )
       .bind(r.id)
-      .all<{ id: string; title: string; url: string; image_url: string | null; category_key: string | null; platform: string }>(),
+      .all<RedVanjske>(),
   ]);
   return {
     slug: r.slug,
@@ -231,7 +233,7 @@ export async function organizacijaPoSlugu(db: D1Database, slug: string, sad: Dat
     logoFileId: r.logo_file_id,
     safe: r.safe_address && r.safe_chain_id ? { address: r.safe_address, chainId: r.safe_chain_id } : null,
     kampanje: kamp,
-    vanjske: vanjske.map((v) => ({ id: v.id, title: v.title, url: v.url, imageUrl: v.image_url, categoryKey: v.category_key, platform: v.platform })),
+    vanjske: vanjske.map(karticaVanjske),
   };
 }
 
@@ -257,13 +259,16 @@ export interface KatalogOrganizacija {
   ukupnoStranica: number;
 }
 
-/** Katalog `/hr/organizacije`: aktivne organizacije, filtar kategorije, abecedno (neutralan redoslijed). */
+/**
+ * Katalog `/hr/organizacije`: aktivne organizacije, filtar kategorije, abecedno (neutralan redoslijed). Osobne
+ * organizacije (kampanje fizičkih osoba, faza 2) nisu u katalogu organizacija; profil `/hr/o/{slug}` im ostaje.
+ */
 export async function katalogOrganizacija(
   db: D1Database,
   { category = null, page = 1 }: { category?: string | null; page?: number | string | null } = {},
 ): Promise<KatalogOrganizacija> {
   const stranica = stranicaIz(page);
-  const uvjet = `o.deleted_at IS NULL AND o.status = 'active'${category ? " AND o.category_key = ?" : ""}`;
+  const uvjet = `o.deleted_at IS NULL AND o.status = 'active' AND o.kind = 'legal'${category ? " AND o.category_key = ?" : ""}`;
   const p = category ? [category] : [];
   const n = await db.prepare(`SELECT count(*) AS n FROM organizations o WHERE ${uvjet}`).bind(...p).first<{ n: number }>();
   const ukupno = n?.n ?? 0;
@@ -313,6 +318,53 @@ export async function katalogOrganizacija(
   };
 }
 
+interface RedVanjske {
+  id: string;
+  title: string;
+  url: string;
+  image_url: string | null;
+  category_key: string | null;
+  platform: string;
+  description: string | null;
+}
+
+const karticaVanjske = (v: RedVanjske): VanjskaKartica => ({
+  id: v.id, title: v.title, url: v.url, imageUrl: v.image_url, categoryKey: v.category_key, platform: v.platform, description: v.description,
+});
+
+/**
+ * Vanjske kampanje u katalogu (tok 9): zaseban odjeljak ispod rezultata, ne miješaju se s našim karticama (nemaju
+ * iznos, pa ne ulaze u redoslijede ni brojače). Filtri `q` (naslov i opis) i `category`; aktivne kampanje
+ * aktivnih organizacija, najnovije prve.
+ */
+export async function vanjskeUKatalogu(
+  db: D1Database,
+  f: { q?: string | null; category?: string | null } = {},
+  n = 6,
+): Promise<(VanjskaKartica & { organizacija: string })[]> {
+  const uvjeti = ["e.status = 'active'", "o.deleted_at IS NULL", "o.status = 'active'"];
+  const p: (string | number)[] = [];
+  const q = f.q?.trim().toLowerCase();
+  if (q) {
+    uvjeti.push("(lower(e.title) LIKE ? ESCAPE '\\' OR lower(COALESCE(e.description, '')) LIKE ? ESCAPE '\\')");
+    const uzorak = `%${q.replace(/[\\%_]/g, (z) => `\\${z}`)}%`;
+    p.push(uzorak, uzorak);
+  }
+  if (f.category) {
+    uvjeti.push("e.category_key = ?");
+    p.push(f.category);
+  }
+  const { results } = await db
+    .prepare(
+      `SELECT e.id, e.title, e.url, e.image_url, e.category_key, e.platform, e.description, o.display_name
+         FROM external_campaigns e JOIN organizations o ON o.id = e.organization_id
+        WHERE ${uvjeti.join(" AND ")} ORDER BY e.verified_at DESC, e.id LIMIT ?`,
+    )
+    .bind(...p, n)
+    .all<RedVanjske & { display_name: string }>();
+  return results.map((r) => ({ ...karticaVanjske(r), organizacija: r.display_name }));
+}
+
 export interface VanjskaKampanja extends VanjskaKartica {
   externalId: string;
   verifiedAt: number | null;
@@ -326,7 +378,7 @@ export async function vanjskaKampanja(db: D1Database, id: string): Promise<Vanjs
   if (!UUID.test(eid)) return null;
   const r = await db
     .prepare(
-      `SELECT e.id, e.title, e.url, e.image_url, e.category_key, e.platform, e.external_id, e.verified_at,
+      `SELECT e.id, e.title, e.url, e.image_url, e.category_key, e.platform, e.description, e.external_id, e.verified_at,
               k.name_hr, k.name_en, o.slug, o.display_name, ${ORG_VERIFICIRANA} AS verified
          FROM external_campaigns e
          JOIN organizations o ON o.id = e.organization_id
@@ -341,6 +393,7 @@ export async function vanjskaKampanja(db: D1Database, id: string): Promise<Vanjs
       image_url: string | null;
       category_key: string | null;
       platform: string;
+      description: string | null;
       external_id: string;
       verified_at: number | null;
       name_hr: string | null;
@@ -357,6 +410,7 @@ export async function vanjskaKampanja(db: D1Database, id: string): Promise<Vanjs
     imageUrl: r.image_url,
     categoryKey: r.category_key,
     platform: r.platform,
+    description: r.description,
     externalId: r.external_id,
     verifiedAt: r.verified_at,
     category: r.category_key ? { key: r.category_key, nameHr: r.name_hr ?? "", nameEn: r.name_en ?? "" } : null,

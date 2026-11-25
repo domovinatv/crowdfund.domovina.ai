@@ -131,6 +131,8 @@ export const KATALOG: Dvojezicno<{
   izvanNaslov: string;
   izvanTekst: string;
   naPrvu: string;
+  vanjskeNaslov: string;
+  vanjskeUvod: string;
 }> = {
   hr: {
     naslov: "Kampanje",
@@ -144,6 +146,9 @@ export const KATALOG: Dvojezicno<{
     izvanNaslov: "Stranica {n} ne postoji",
     izvanTekst: "Zadnja stranica rezultata za ove uvjete je {m}.",
     naPrvu: "Na prvu stranicu",
+    vanjskeNaslov: "Kampanje organizacija na 4fundu",
+    vanjskeUvod:
+      "Ove kampanje organizacije s naše platforme vode na 4fundu. Doprinos se uplaćuje tamo, a iznos ne prikazujemo. Nisu u redoslijedu ni u broju rezultata iznad.",
   },
   en: {
     naslov: "Campaigns",
@@ -157,6 +162,9 @@ export const KATALOG: Dvojezicno<{
     izvanNaslov: "Page {n} does not exist",
     izvanTekst: "The last page of results for these conditions is {m}.",
     naPrvu: "Go to the first page",
+    vanjskeNaslov: "Organisations' campaigns on 4fund",
+    vanjskeUvod:
+      "Organisations from our platform run these campaigns on 4fund. You contribute there, and we do not show the amount. They are not part of the ordering or the result count above.",
   },
 };
 
@@ -332,6 +340,9 @@ export const VANJSKA: Dvojezicno<{
   gumbOstalo: string;
   novaKartica: string;
   organizacija: string;
+  placanjeNa: string;
+  placanjeOpis: string;
+  opisOrganizacije: string;
 }> = {
   hr: {
     natrag: "Profil organizacije {ime}",
@@ -341,11 +352,15 @@ export const VANJSKA: Dvojezicno<{
     tekstOstalo:
       "Ovu kampanju {ime} vodi na drugoj platformi. Doprinos se uplaćuje na njezinoj stranici, prema njezinim uvjetima i troškovima.",
     potvrdeno: "Organizacija je {datum} potvrdila da je kampanja njezina.",
-    iznos: "Prikupljeni iznos ne prikazujemo jer se vodi na vanjskoj platformi.",
+    iznos:
+      "Prikupljeni iznos ne prikazujemo: 4fund ga ne objavljuje kroz javno sučelje koje bismo smjeli koristiti, pa bi broj ovdje bio netočan ili zastario. Stanje kampanje vidiš na 4fundu.",
     gumb4fund: "Podrži na 4fundu",
     gumbOstalo: "Podrži na vanjskoj stranici",
     novaKartica: "otvara se u novoj kartici",
     organizacija: "Organizacija",
+    placanjeNa: "plaćanje na 4fund.com",
+    placanjeOpis: "Gumb vodi na 4fund. Uplata ne prolazi kroz ovu platformu i ne vidimo je.",
+    opisOrganizacije: "Opis organizacije",
   },
   en: {
     natrag: "{ime} profile",
@@ -354,11 +369,15 @@ export const VANJSKA: Dvojezicno<{
       "{ime} runs this campaign on 4fund. You contribute on their page, under their terms and fees. It is listed here because the organisation linked it to its profile.",
     tekstOstalo: "{ime} runs this campaign on another platform. You contribute on its page, under its terms and fees.",
     potvrdeno: "On {datum} the organisation confirmed that the campaign is its own.",
-    iznos: "We do not show the amount raised because it is kept on the external platform.",
+    iznos:
+      "We do not show the amount raised: 4fund does not publish it through a public interface we may use, so a number here would be wrong or out of date. You can see the campaign's progress on 4fund.",
     gumb4fund: "Support on 4fund",
     gumbOstalo: "Support on the external page",
     novaKartica: "opens in a new tab",
     organizacija: "Organisation",
+    placanjeNa: "payment on 4fund.com",
+    placanjeOpis: "The button leads to 4fund. The payment does not go through this platform and we do not see it.",
+    opisOrganizacije: "Description by the organisation",
   },
 };
 

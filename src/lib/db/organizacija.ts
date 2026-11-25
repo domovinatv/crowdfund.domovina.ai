@@ -8,6 +8,7 @@
  * Odluku EMI-ja simulira moderator (`src/lib/db/moderacija.ts`). Sve funkcije primaju `D1Database`.
  */
 import { DAN, uuid7 } from "./zajednicko";
+import { idVanjske, provjeriNovuVanjsku, provjeriPodatkeVanjske, urlVanjske, type PoljeVanjske } from "../vanjske";
 
 // --- Pravila polja ------------------------------------------------------------------------------------
 
@@ -761,26 +762,32 @@ export interface VanjskaOrganizacije {
   url: string;
   externalId: string;
   naslov: string;
+  /** Kratki opis (ručni, do 300 znakova, migracija 0008); null = nema. */
+  opis: string | null;
+  kategorija: string | null;
   kod: string;
   status: "pending" | "active" | "removed";
   provjerena: number | null;
 }
 
-/** URL 4fund kampanje: `https://4fund.com/{6 znakova}` (s `www.` ili bez, s kosom crtom na kraju ili bez). */
-export function idVanjske(u: string): string | null {
-  const m = u.trim().match(/^https:\/\/(?:www\.)?4fund\.com\/([a-zA-Z0-9]{6})\/?$/);
-  return m ? m[1]!.toLowerCase() : null;
-}
+/** Pravila oblika su u `src/lib/vanjske.ts`; ovdje ostaje ime koje koriste postojeći testovi. */
+export { idVanjske };
 
 export async function vanjskeOrganizacije(db: D1Database, orgId: string): Promise<VanjskaOrganizacije[]> {
   const { results } = await db
     .prepare(
-      `SELECT id, url, external_id, title, verify_code, status, verified_at FROM external_campaigns
+      `SELECT id, url, external_id, title, description, category_key, verify_code, status, verified_at FROM external_campaigns
         WHERE organization_id = ? AND status <> 'removed' ORDER BY created_at DESC, id`,
     )
     .bind(orgId)
-    .all<{ id: string; url: string; external_id: string; title: string; verify_code: string; status: VanjskaOrganizacije["status"]; verified_at: number | null }>();
-  return results.map((r) => ({ id: r.id, url: r.url, externalId: r.external_id, naslov: r.title, kod: r.verify_code, status: r.status, provjerena: r.verified_at }));
+    .all<{
+      id: string; url: string; external_id: string; title: string; description: string | null; category_key: string | null;
+      verify_code: string; status: VanjskaOrganizacije["status"]; verified_at: number | null;
+    }>();
+  return results.map((r) => ({
+    id: r.id, url: r.url, externalId: r.external_id, naslov: r.title, opis: r.description, kategorija: r.category_key,
+    kod: r.verify_code, status: r.status, provjerena: r.verified_at,
+  }));
 }
 
 /** Kod za opis 4fund kampanje (dokaz vlasništva): `DOMOVINA-` + 8 znakova bez zbunjujućih slova. */
@@ -790,22 +797,18 @@ export function noviKodVanjske(): string {
   return `DOMOVINA-${[...b].map((x) => abeceda[x % abeceda.length]).join("")}`;
 }
 
-export type PoljeVanjske = "url" | "naslov" | "kategorija";
+export type { PoljeVanjske };
 
 export async function dodajVanjsku(
   db: D1Database,
   orgId: string,
-  u: { url: string; naslov: string; kategorija: string },
+  u: { url: string; naslov: string; opis?: string; kategorija: string },
   kategorije: readonly string[],
   sad: number = Date.now(),
 ): Promise<Ishod<PoljeVanjske, { id: string; kod: string }>> {
-  const g: Greske<PoljeVanjske> = {};
+  const ulaz = { ...u, opis: u.opis ?? "" };
+  const g: Greske<PoljeVanjske> = provjeriNovuVanjsku(ulaz, kategorije);
   const ext = idVanjske(u.url);
-  if (!u.url) g.url = "obavezno";
-  else if (!ext) g.url = "neispravno";
-  if (!u.naslov) g.naslov = "obavezno";
-  else if (u.naslov.length > 120) g.naslov = "predugo";
-  if (u.kategorija && !kategorije.includes(u.kategorija)) g.kategorija = "neispravno";
   if (!g.url && ext) {
     const postoji = await db.prepare("SELECT 1 AS da FROM external_campaigns WHERE platform = '4fund' AND external_id = ?").bind(ext).first();
     if (postoji) g.url = "zauzet";
@@ -815,13 +818,34 @@ export async function dodajVanjsku(
   const kod = noviKodVanjske();
   await db
     .prepare(
-      `INSERT INTO external_campaigns (id, organization_id, platform, external_id, url, title, image_url, category_key, verify_code,
-                                       status, verified_at, created_at, updated_at)
-       VALUES (?, ?, '4fund', ?, ?, ?, NULL, ?, ?, 'pending', NULL, ?, ?)`,
+      `INSERT INTO external_campaigns (id, organization_id, platform, external_id, url, title, description, image_url, category_key,
+                                       verify_code, status, verified_at, created_at, updated_at)
+       VALUES (?, ?, '4fund', ?, ?, ?, ?, NULL, ?, ?, 'pending', NULL, ?, ?)`,
     )
-    .bind(id, orgId, ext, `https://4fund.com/${ext}`, u.naslov, u.kategorija || null, kod, sad, sad)
+    .bind(id, orgId, ext, urlVanjske(ext), ulaz.naslov.trim(), ulaz.opis.trim() || null, u.kategorija || null, kod, sad, sad)
     .run();
   return { ok: true, id, kod };
+}
+
+/** Uređivanje naslova, kratkog opisa i kategorije (URL i kod se ne mijenjaju). */
+export async function urediVanjsku(
+  db: D1Database,
+  orgId: string,
+  id: string,
+  u: { naslov: string; opis: string; kategorija: string },
+  kategorije: readonly string[],
+  sad: number = Date.now(),
+): Promise<Ishod<PoljeVanjske>> {
+  const g = provjeriPodatkeVanjske(u, kategorije);
+  if (Object.keys(g).length) return { ok: false, greske: g };
+  const r = await db
+    .prepare(
+      `UPDATE external_campaigns SET title = ?, description = ?, category_key = ?, updated_at = ?
+        WHERE id = ? AND organization_id = ? AND status <> 'removed'`,
+    )
+    .bind(u.naslov.trim(), u.opis.trim() || null, u.kategorija || null, sad, id, orgId)
+    .run();
+  return (r.meta as { changes?: number }).changes === 1 ? { ok: true } : { ok: false, greske: { naslov: "neispravno" } };
 }
 
 /**

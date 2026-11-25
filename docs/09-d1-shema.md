@@ -13,6 +13,7 @@ vrijeme unix ms, skup = `CHECK (x IN (…))`, boolean `CHECK (x IN (0,1))`, JSON
 | `migrations/0003_seed_reference.sql` | kategorije | ovaj dokument |
 | `migrations/0004_s6.sql` | `users.slug`, `campaign_settings.contributions_list`, `campaign_follows` s e-poštom i tokenom, indeksi prijave | §0004 ispod (S6) |
 | `migrations/0007_s6_organizacija.sql` | odbijanje kampanje za organizaciju (`campaign_settings.beneficiary_rejected_*`), zastupnik u `organization_applications.representative` | §0007 ispod (S6) |
+| `migrations/0008_s8_vanjske_ponavljanje.sql` | kratki opis vanjske kampanje, `recurring_reminders` (mjesečni podsjetnik s tokenom), `notifications.campaign_id` | §0008 ispod (S8) |
 
 S4 ima test koji uspoređuje `0001_core.sql` s opisom iz paketa (kao planirani J2 test u campaign-coreu), pa
 nova verzija paketa ruši build dok se migracija ne obnovi. Vertikale (`campaign_energy`,
@@ -641,6 +642,38 @@ Organizacija (S6, `src/lib/db/{organizacija,clanovi,odobravanje}.ts`) inače kor
 (`status`, `step`, `reason`), `verifications` (`org_kyb`, mock pružatelj), `memberships` (barem jedan `owner`),
 `membership_invites` (7 dana, `token_hash = SHA-256(token)`, istek se računa iz `expires_at` bez zapisa) i
 `external_campaigns` (kod vlasništva, mock provjera).
+
+## 0008_s8_vanjske_ponavljanje.sql
+
+S8, vanjska kampanja (tok 9, odluke 800–802) i ponavljanje (tok 10, odluka 14). 0001–0007 se ne mijenjaju.
+
+- **`external_campaigns.description`** (1–300 znakova ili NULL): kratki opis koji organizator unosi ručno, jer s
+  4funda ništa ne preuzimamo (odluka 800). Provjera u `src/lib/vanjske.ts` broji znakove, ne bajtove.
+- **`recurring_reminders`**: jedan red po obećanju i mjesecu (`period` = `YYYY-MM`, UNIQUE s `pledge_id`, pa
+  ponovljeno generiranje ne udvostručuje podsjetnik). Token iz poveznice `/hr/podsjetnik/{token}` se ne sprema,
+  samo `token_hash = SHA-256(token)` (kao pozivnice); `expires_at` je rok poveznice. `checkout_id` nastaje tek kad
+  podržavatelj klikne „Plati ovaj mjesec” (intent se ne stvara unaprijed), `notification_id` je mock e-poruka.
+- **`notifications.campaign_id`**: mock pošta organizatora po kampanji (obavijest o novom doprinosu); podsjetnik
+  podržavatelju je red s `user_id` i `kind = 'recurring_reminder'`. Prototip ništa ne šalje (`sent_at` NULL).
+
+```sql
+ALTER TABLE external_campaigns ADD COLUMN description TEXT
+  CHECK (description IS NULL OR length(description) BETWEEN 1 AND 300);
+CREATE TABLE recurring_reminders (
+  id               TEXT PRIMARY KEY,
+  pledge_id        TEXT NOT NULL REFERENCES recurring_pledges(id),
+  period           TEXT NOT NULL CHECK (length(period) = 7 AND period GLOB '[0-9][0-9][0-9][0-9]-[0-1][0-9]'),
+  token_hash       TEXT NOT NULL UNIQUE,
+  expires_at       INTEGER NOT NULL,
+  checkout_id      TEXT REFERENCES checkouts(id),
+  notification_id  TEXT REFERENCES notifications(id),
+  created_at       INTEGER NOT NULL,
+  UNIQUE (pledge_id, period)
+);
+CREATE INDEX recurring_reminders_pledge ON recurring_reminders (pledge_id, created_at DESC);
+ALTER TABLE notifications ADD COLUMN campaign_id TEXT REFERENCES campaigns(id);
+CREATE INDEX notifications_campaign ON notifications (campaign_id, created_at DESC) WHERE campaign_id IS NOT NULL;
+```
 
 ## Napomene za S4
 

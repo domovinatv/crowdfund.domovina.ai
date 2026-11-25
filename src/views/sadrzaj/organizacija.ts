@@ -190,6 +190,11 @@ export interface TekstoviOrganizacije {
     url: string;
     urlPomoc: string;
     naslovPolje: string;
+    opisPolje: string;
+    opisPomoc: string;
+    uredi: string;
+    spremi: string;
+    javna: string;
     dodaj: string;
     nema: string;
     kodUvod: string;
@@ -486,6 +491,11 @@ export const ORGANIZACIJA: Dvojezicno<TekstoviOrganizacije> = {
       url: "Poveznica na 4fund kampanju",
       urlPomoc: "Oblik https://4fund.com/abc123",
       naslovPolje: "Naslov za prikaz",
+      opisPolje: "Kratki opis",
+      opisPomoc: "Do 300 znakova, svojim riječima. S 4funda ništa ne preuzimamo, pa ni opis.",
+      uredi: "Uredi",
+      spremi: "Spremi",
+      javna: "Javna stranica",
       dodaj: "Dodaj kampanju",
       nema: "Nema vanjskih kampanja.",
       kodUvod: "Dokaz vlasništva: upišite ovaj kod u opis kampanje na 4fundu, pa kliknite „Provjeri”.",
@@ -780,6 +790,11 @@ export const ORGANIZACIJA: Dvojezicno<TekstoviOrganizacije> = {
       url: "Link to the 4fund campaign",
       urlPomoc: "Format https://4fund.com/abc123",
       naslovPolje: "Title to display",
+      opisPolje: "Short description",
+      opisPomoc: "Up to 300 characters, in your own words. We take nothing from 4fund, including the description.",
+      uredi: "Edit",
+      spremi: "Save",
+      javna: "Public page",
       dodaj: "Add campaign",
       nema: "No external campaigns.",
       kodUvod: "Proof of ownership: put this code in the campaign description on 4fund, then click “Check”.",

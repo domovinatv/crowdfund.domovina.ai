@@ -15,12 +15,14 @@ interface Props {
   /** Naziv kategorije na jeziku stranice (vanjska kartica nosi samo ključ). */
   kategorija?: string | null;
   razina?: "h2" | "h3";
+  /** Ime organizacije (u katalogu; na profilu organizacije se ne ponavlja). */
+  organizacija?: string | null;
 }
-const { lang, v, kategorija = null, razina = "h3" } = Astro.props;
+const { lang, v, kategorija = null, razina = "h3", organizacija = null } = Astro.props;
 const t = prevoditelj(lang);
 const Naslov = razina;
 ---
-<article class="flex h-full flex-col overflow-hidden rounded-md bg-paper shadow-card">
+<article data-vanjska-kartica class="flex h-full flex-col overflow-hidden rounded-md bg-paper shadow-card">
   <TemaNaslovne tema={temaKategorije(v.categoryKey)} kategorija={v.categoryKey} class="h-24 shrink-0" />
   <div class="flex flex-1 flex-col p-4">
     <div class="flex flex-wrap items-center gap-1.5 text-xs">
@@ -33,6 +35,8 @@ const Naslov = razina;
     <Naslov class="mt-2 line-clamp-2 text-lg font-semibold leading-tight">
       <a href={url(lang, "external.campaign", { id: v.id })} class="hover:text-action hover:underline">{v.title}</a>
     </Naslov>
+    {organizacija && <p class="mt-1 truncate text-sm text-ink-soft">{organizacija}</p>}
+    {v.description && <p class="mt-2 line-clamp-3 break-words text-sm text-ink-soft">{v.description}</p>}
     <p class="mt-auto pt-4 text-xs text-ink-muted">{t("external.noAmount")}</p>
   </div>
 </article>

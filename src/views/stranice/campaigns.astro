@@ -3,6 +3,7 @@
 // čipovi aktivnih filtara s ✕, broj rezultata, prazno stanje, paginacija. Od `lg` filtri su lijevo.
 import Base from "../../layouts/Base.astro";
 import KarticaKampanje from "../../components/KarticaKampanje.astro";
+import ExternalCampaignCard from "../../components/katalog/ExternalCampaignCard.astro";
 import FiltriKataloga from "../../components/katalog/FiltriKataloga.astro";
 import SortSelect from "../../components/katalog/SortSelect.astro";
 import Paginacija from "../../components/katalog/Paginacija.astro";
@@ -124,6 +125,25 @@ const ocisti = sUpitom(put, filtri.sort ? [["sort", filtri.sort]] : []);
       }
 
       <Paginacija lang={lang} stranica={rezultat.stranica} ukupnoStranica={rezultat.ukupnoStranica} poveznica={(n: number) => naStranicu(put, upit, n)} />
+
+      {
+        podaci.vanjske.length > 0 && (
+          <section aria-labelledby="vanjske-katalog" class="mt-10" data-vanjske-katalog>
+            <h2 id="vanjske-katalog" class="text-xl font-semibold text-ink">{T.vanjskeNaslov}</h2>
+            <p class="mt-1 max-w-[70ch] text-sm text-ink-muted">{T.vanjskeUvod}</p>
+            <ul class="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {podaci.vanjske.map((v) => {
+                const kat = kategorije.find((x) => x.key === v.categoryKey);
+                return (
+                  <li>
+                    <ExternalCampaignCard lang={lang} v={v} organizacija={v.organizacija} kategorija={kat ? (lang === "hr" ? kat.nameHr : kat.nameEn) : null} />
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )
+      }
     </section>
   </div>
 </Base>
