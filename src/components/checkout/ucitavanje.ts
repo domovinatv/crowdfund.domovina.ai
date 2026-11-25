@@ -26,6 +26,9 @@ const tajnaIbana = (env: unknown): string | undefined => {
 
 export const konfigIzKonteksta = (ctx: KontekstStranice): MptKonfig | null => mptKonfig(ctx.env);
 
+/** Id demo poruke (mock e-pošta) s poveznicom za potvrdu praćenja novosti iz checkouta gosta (S10, A19). */
+export const demoPracenjaCheckouta = (checkoutId: string): string => `pracenje-checkout:${checkoutId}`;
+
 /** Kampanja + checkout; `uskladi` prvo povuče stanje s raila (GET stranice = „Osvježi stanje” bez JS-a). */
 export async function ucitajCheckout(ctx: KontekstStranice, kljuc: KljucRute, uskladi = true): Promise<Response | UcitaniCheckout> {
   const k = await ucitajKampanju(ctx, kljuc);

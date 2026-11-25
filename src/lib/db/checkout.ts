@@ -51,11 +51,15 @@ export interface ObrazacCheckouta {
   tvrtka: string;
   oib: string;
   uvjeti: boolean;
+  /** „Obavijesti me e-poštom o novostima ove kampanje” (praćenje novosti, S10 A19); nikad predodabrano. */
+  novosti: boolean;
+  /** Marketinška privola platforme (`consents.newsletter`), odvojena od novosti kampanje; nikad predodabrano. */
+  marketing: boolean;
 }
 
 export const prazanObrazac = (): ObrazacCheckouta => ({
   izbor: "", svojIznos: "", poruka: "", komentar: false, skrijIme: false, skrijIznos: false,
-  email: "", ime: "", prezime: "", kaoTvrtka: false, tvrtka: "", oib: "", uvjeti: false,
+  email: "", ime: "", prezime: "", kaoTvrtka: false, tvrtka: "", oib: "", uvjeti: false, novosti: false, marketing: false,
 });
 
 export type PoljeCheckouta = "iznos" | "poruka" | "email" | "ime" | "prezime" | "tvrtka" | "oib" | "uvjeti";
@@ -76,6 +80,10 @@ export interface CistiCheckout {
   kaoTvrtka: boolean;
   tvrtka: string | null;
   oib: string | null;
+  /** Praćenje novosti kampanje za ovu e-poštu (prijavljenom odmah, gostu nakon potvrde poveznicom). */
+  pratiNovosti: boolean;
+  /** Upisati `consents(newsletter, granted 1)`; neoznačeno ne upisuje ništa. */
+  marketing: boolean;
 }
 
 const EMAIL = /^[^\s@]{1,64}@[^\s@]+\.[^\s@]{2,}$/;
@@ -155,6 +163,8 @@ export function provjeriObrazac(
       kaoTvrtka,
       tvrtka: tvrtka || null,
       oib: oib || null,
+      pratiNovosti: o.novosti === true,
+      marketing: o.marketing === true,
     },
   };
 }
@@ -314,6 +324,18 @@ export async function stvoriCheckout(db: D1Database, k: MptKonfig, n: NoviChecko
             )
             .bind(uuid7(sad), c.email, VERZIJA_UVJETA, sad),
         ]),
+    // Marketinška privola platforme (S10, A19): samo kad je kvačica označena; prijavljenom po računu (kao
+    // `newsletter` pri registraciji i u postavkama), gostu po e-pošti. Neoznačena ne upisuje odbijanje.
+    ...(c.marketing
+      ? [
+          db
+            .prepare(
+              `INSERT INTO consents (id, user_id, email, kind, text_version, granted, created_at)
+               VALUES (?, ?, ?, 'newsletter', ?, 1, ?)`,
+            )
+            .bind(uuid7(sad), n.korisnik?.id ?? null, n.korisnik ? null : c.email, VERZIJA_UVJETA, sad),
+        ]
+      : []),
   ]);
 
   const metadata: Record<string, string> = { checkout: checkoutId, kampanja: kampanja.publicId, vrsta: "doprinos" };

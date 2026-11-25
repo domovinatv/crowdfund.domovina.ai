@@ -6,7 +6,8 @@
 import { doprinosNeuspio, doprinosPlacen, type Checkout } from "../../lib/db/checkout";
 import type { StranicaKampanje } from "../../lib/db/kampanja";
 import type { MptIntent } from "../../lib/mpt/klijent";
-import { intentZaPrikaz, jeSandbox, ucitajCheckout } from "../../components/checkout/ucitavanje";
+import { demoPracenjaCheckouta, intentZaPrikaz, jeSandbox, ucitajCheckout } from "../../components/checkout/ucitavanje";
+import { procitajDemoPostu } from "../../lib/sesija";
 import { obecanjeCheckouta, type ObecanjeCheckouta } from "../../lib/db/ponavljanje";
 import type { Ucitaj } from "../tipovi";
 
@@ -19,6 +20,8 @@ export interface PodaciPlacanja {
   neuspio: boolean;
   /** Checkout je prvi mjesec (ili mjesec s podsjetnika) mjesečne podrške (S8). */
   obecanje: ObecanjeCheckouta | null;
+  /** Mock e-pošta gostu: poveznica za potvrdu praćenja novosti iz kvačice obrasca (S10, A19). */
+  demoPracenje: { email: string; link: string } | null;
 }
 
 export const ucitaj: Ucitaj<PodaciPlacanja> = async (ctx) => {
@@ -29,5 +32,7 @@ export const ucitaj: Ucitaj<PodaciPlacanja> = async (ctx) => {
   const neuspio = doprinosNeuspio(ch);
   const intent = placen || neuspio ? null : await intentZaPrikaz(konfig, ch.sid);
   const obecanje = await obecanjeCheckouta(ctx.db, ch.id);
-  return { podaci: { k, ch, intent, sandbox: jeSandbox(konfig, intent), placen, neuspio, obecanje } };
+  const posta = ctx.cookies ? procitajDemoPostu(ctx.cookies, demoPracenjaCheckouta(ch.id)) : null;
+  const demoPracenje = posta?.link ? { email: posta.email, link: posta.link } : null;
+  return { podaci: { k, ch, intent, sandbox: jeSandbox(konfig, intent), placen, neuspio, obecanje, demoPracenje } };
 };

@@ -8,6 +8,8 @@
  * S8: „svaki mjesec” (odluka 14, tok 10) za prijavljene na mjesečnim kampanjama stvara `recurring_pledges` i prvi
  * mjesec kroz isti `stvoriCheckout` (`ponavljanjeId`); kućica „prikaži poruku kao komentar”; neprijavljenom se
  * prihvat uvjeta upisuje u `consents` (u `stvoriCheckout`).
+ * S10 (A19): dvije zasebne, neoznačene kvačice — „novosti ove kampanje” (praćenje `notify_updates`; gostu mock
+ * e-pošta s poveznicom za potvrdu, prikazana na stranici plaćanja) i marketinška privola platforme (`consents`).
  */
 import type { StranicaKampanje } from "../../lib/db/kampanja";
 import { kasicaPoAliasu, type KasicaSKampanjom } from "../../lib/db/kasice";
@@ -21,7 +23,9 @@ import {
   type ObrazacCheckouta,
 } from "../../lib/db/checkout";
 import { ucitajKampanju, apsolutno } from "../../components/kampanja/ucitavanje";
-import { konfigIzKonteksta } from "../../components/checkout/ucitavanje";
+import { demoPracenjaCheckouta, konfigIzKonteksta } from "../../components/checkout/ucitavanje";
+import { pratiNovostiIzCheckouta } from "../../lib/db/pracenje";
+import { posaljiDemoPostu } from "../../lib/sesija";
 import { KOLACIC_ATRIBUCIJE } from "../../components/kampanja/posjetitelj";
 import { kucica, polje } from "../../components/upravljanje/ucitavanje";
 import { url } from "../../lib/rute";
@@ -68,6 +72,8 @@ export function obrazacIzForme(f: FormData): ObrazacCheckouta {
     tvrtka: polje(f, "tvrtka"),
     oib: polje(f, "oib"),
     uvjeti: kucica(f, "uvjeti"),
+    novosti: kucica(f, "novosti"),
+    marketing: kucica(f, "marketing"),
   };
 }
 
@@ -130,6 +136,13 @@ export const ucitaj: Ucitaj<PodaciPodrske> = async (ctx) => {
         });
         if (!rez.ok && obecanje) await otkaziObecanje(ctx.db, obecanje, sad);
         if (rez.ok) {
+          if (r.cisto.pratiNovosti) {
+            const p = await pratiNovostiIzCheckouta(ctx.db, k.id, korisnik ? { userId: korisnik.id } : { email: r.cisto.email }, sad);
+            if (p.ok && p.vrsta === "potvrda" && ctx.cookies) {
+              const link = apsolutno(ctx, url(lang, "follow", { token: p.token }));
+              posaljiDemoPostu(ctx.cookies, ctx.url, { id: demoPracenjaCheckouta(rez.checkoutId), email: p.email, kod: "", link });
+            }
+          }
           return new Response(null, {
             status: 303,
             headers: { Location: url(lang, "campaign.support.checkout", { id: k.publicId, checkout: rez.checkoutId }) },

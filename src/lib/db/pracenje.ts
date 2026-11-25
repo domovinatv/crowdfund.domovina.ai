@@ -198,3 +198,49 @@ export async function pratiKampanju(
     .run();
   return { ok: true, vrsta: "potvrda", token, email };
 }
+
+/**
+ * Kvačica „Obavijesti me e-poštom o novostima ove kampanje” u checkoutu (S10, A19, obilazak 19). Uključuje samo
+ * `notify_updates`, a ostale postojeće prekidače ne dira (za razliku od `pratiKampanju`, koji postavlja sva tri).
+ * Prijavljeni: potvrđeno odmah. Gost: kao „Prati” bez prijave — novi token, praćenje vrijedi tek nakon potvrde
+ * poveznicom; kod već potvrđenog praćenja iste e-pošte prekidači se ne mijenjaju bez poveznice.
+ */
+export async function pratiNovostiIzCheckouta(
+  db: D1Database,
+  campaignId: string,
+  tko: { userId: string } | { email: string },
+  sad: number,
+): Promise<IshodPracenja> {
+  const vidljiva = await db
+    .prepare(`SELECT 1 AS da FROM campaigns c JOIN campaign_settings s ON s.campaign_id = c.id WHERE c.id = ? AND ${VIDLJIVA}`)
+    .bind(campaignId)
+    .first();
+  if (!vidljiva) return { ok: false, greska: "kampanja" };
+  if ("userId" in tko) {
+    await db
+      .prepare(
+        `INSERT INTO campaign_follows (user_id, email, campaign_id, notify_comments, notify_updates, notify_end, token_hash, confirmed_at, created_at)
+         VALUES (?1, NULL, ?2, 0, 1, 0, NULL, ?3, ?3)
+         ON CONFLICT (user_id, campaign_id) WHERE user_id IS NOT NULL
+         DO UPDATE SET notify_updates = 1, confirmed_at = COALESCE(confirmed_at, excluded.confirmed_at)`,
+      )
+      .bind(tko.userId, campaignId, sad)
+      .run();
+    return { ok: true, vrsta: "prijavljen", aktivno: true };
+  }
+  const email = normalizirajEmail(tko.email);
+  if (!valjanEmail(email)) return { ok: false, greska: "email" };
+  const token = noviToken();
+  const h = await hashTokena(token);
+  await db
+    .prepare(
+      `INSERT INTO campaign_follows (user_id, email, campaign_id, notify_comments, notify_updates, notify_end, token_hash, confirmed_at, created_at)
+       VALUES (NULL, ?1, ?2, 0, 1, 0, ?3, NULL, ?4)
+       ON CONFLICT (email, campaign_id) WHERE user_id IS NULL
+       DO UPDATE SET token_hash = excluded.token_hash,
+         notify_updates = CASE WHEN confirmed_at IS NULL THEN 1 ELSE notify_updates END`,
+    )
+    .bind(email, campaignId, h, sad)
+    .run();
+  return { ok: true, vrsta: "potvrda", token, email };
+}

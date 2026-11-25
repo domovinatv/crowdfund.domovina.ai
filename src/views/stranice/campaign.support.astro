@@ -3,7 +3,7 @@
 // e-pošta (prijavljenom iz sesije), „kao tvrtka” samo neprijavljenom, prihvat uvjeta. Radi bez JS-a (POST na
 // istu rutu, greške uz polja); skripta samo broji znakove poruke i bira „svoj iznos” kad se u njega upisuje.
 // S8: „svaki mjesec” (dan 1–28, podsjetnik ili trajni nalog) na mjesečnim kampanjama, samo prijavljenima;
-// „prikaži poruku kao komentar”.
+// „prikaži poruku kao komentar”. S10 (A19): dvije zasebne neoznačene kvačice obavijesti (novosti kampanje, marketing).
 import ArrowLeft from "@lucide/astro/icons/arrow-left";
 import PiggyBank from "@lucide/astro/icons/piggy-bank";
 import ShieldCheck from "@lucide/astro/icons/shield-check";
@@ -247,6 +247,25 @@ const GUMB_IZNOSA = "flex min-h-11 cursor-pointer items-center justify-center ro
                 </div>
               </>
             )}
+          </fieldset>
+
+          <fieldset class={`space-y-4 ${KARTICA}`} aria-describedby="obavijesti-pomoc" data-obavijesti-checkouta>
+            <legend class="text-lg font-semibold text-ink">{T.obavijesti}</legend>
+            <p id="obavijesti-pomoc" class="text-sm text-ink-muted">{T.obavijestiPomoc}</p>
+            <label class="flex gap-3">
+              <input name="novosti" type="checkbox" value="1" checked={v.novosti} aria-describedby="novosti-pomoc" class="mt-1 size-5 shrink-0 accent-action" />
+              <span>
+                <span class="block text-ink">{T.novosti}</span>
+                <span id="novosti-pomoc" class="block text-sm text-ink-muted">{T.novostiPomoc}</span>
+              </span>
+            </label>
+            <label class="flex gap-3">
+              <input name="marketing" type="checkbox" value="1" checked={v.marketing} aria-describedby="marketing-pomoc" class="mt-1 size-5 shrink-0 accent-action" />
+              <span>
+                <span class="block text-ink">{T.marketing}</span>
+                <span id="marketing-pomoc" class="block text-sm text-ink-muted">{T.marketingPomoc}</span>
+              </span>
+            </label>
           </fieldset>
 
           <section aria-labelledby="sazetak" class={KARTICA}>

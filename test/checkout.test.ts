@@ -369,6 +369,71 @@ describe("učitavači koraka checkouta", () => {
     expect((pt.podaci as PodaciPotvrde).ch.doprinos?.stanje).toBe("paid");
   });
 
+  it("S10 A19: kvačice obavijesti su neoznačene; novosti → praćenje (gost potvrdom iz demo pošte), marketing → consents", async () => {
+    vi.stubGlobal("fetch", dv.dohvat);
+    expect(prazanObrazac()).toMatchObject({ novosti: false, marketing: false });
+    expect(cisto()).toMatchObject({ pratiNovosti: false, marketing: false });
+    const cid = idKampanje(AKTIVNA);
+    const pracenje = (email: string) =>
+      sqlite.prepare("SELECT notify_comments, notify_updates, notify_end, confirmed_at FROM campaign_follows WHERE email = ? AND campaign_id = ?").get(email, cid);
+    const privole = (gdje: string, v: string) =>
+      redovi<{ granted: number; user_id: string | null; email: string | null }>(sqlite, `SELECT granted, user_id, email FROM consents WHERE kind = 'newsletter' AND ${gdje} = ?`, v);
+
+    // Gost bez kvačica: ni praćenja ni marketinške privole.
+    const bez = await ucitajPodrsku({
+      ...kontekst(db, `/hr/${AKTIVNA}/podrzi`, { params: { id: AKTIVNA }, obrazac: { izbor: "1000", email: "bez@example.org", uvjeti: "1" } }),
+      env: env(),
+    });
+    expect((bez as Response).status).toBe(303);
+    expect(pracenje("bez@example.org")).toBeUndefined();
+    expect(privole("email", "bez@example.org")).toEqual([]);
+
+    // Gost s obje kvačice: nepotvrđeno praćenje samo novosti, privola po e-pošti, poveznica u demo pošti.
+    const kolacici = laziKolacici();
+    const s = await ucitajPodrsku({
+      ...kontekst(db, `/hr/${AKTIVNA}/podrzi`, {
+        params: { id: AKTIVNA },
+        obrazac: { izbor: "1000", email: "Nov@Example.org", uvjeti: "1", novosti: "1", marketing: "1" },
+        kolacici,
+      }),
+      env: env(),
+    });
+    const lokacija = (s as Response).headers.get("location")!;
+    const id = lokacija.split("/").pop()!;
+    expect(pracenje("nov@example.org")).toEqual({ notify_comments: 0, notify_updates: 1, notify_end: 0, confirmed_at: null });
+    expect(privole("email", "Nov@Example.org")).toEqual([{ granted: 1, user_id: null, email: "Nov@Example.org" }]);
+    const p = await ucitajPlacanje({ ...kontekst(db, lokacija, { params: { id: AKTIVNA, checkout: id }, kolacici }), env: env() });
+    if (p instanceof Response) throw new Error(String(p.status));
+    const demo = (p.podaci as PodaciPlacanja).demoPracenje!;
+    expect(demo.email).toBe("nov@example.org");
+    expect(demo.link).toMatch(/\/hr\/pracenje\/[A-Za-z0-9_-]+$/);
+    // Tuđi preglednik (bez kolačića) ne vidi poveznicu.
+    const tudi = await ucitajPlacanje({ ...kontekst(db, lokacija, { params: { id: AKTIVNA, checkout: id } }), env: env() });
+    if (tudi instanceof Response) throw new Error(String(tudi.status));
+    expect((tudi.podaci as PodaciPlacanja).demoPracenje).toBeNull();
+
+    // Prijavljeni s postojećim praćenjem komentara: novosti se dodaju, komentari ostaju; privola po računu.
+    const korisnik = (await korisnikSesije(db, primjeri.demoSesija, Date.now()))!;
+    sqlite.prepare("DELETE FROM campaign_follows WHERE user_id = ? AND campaign_id = ?").run(korisnik.id, cid);
+    sqlite
+      .prepare(
+        `INSERT INTO campaign_follows (user_id, email, campaign_id, notify_comments, notify_updates, notify_end, token_hash, confirmed_at, created_at)
+         VALUES (?, NULL, ?, 1, 0, 0, NULL, 1, 1)`,
+      )
+      .run(korisnik.id, cid);
+    const privolaPrije = privole("user_id", korisnik.id).length;
+    const pr = await ucitajPodrsku({
+      ...kontekst(db, `/hr/${AKTIVNA}/podrzi`, { params: { id: AKTIVNA }, korisnik, obrazac: { izbor: "1000", novosti: "1", marketing: "1" } }),
+      env: env(),
+    });
+    expect((pr as Response).status).toBe(303);
+    expect(sqlite.prepare("SELECT notify_comments, notify_updates, notify_end FROM campaign_follows WHERE user_id = ? AND campaign_id = ?").get(korisnik.id, cid))
+      .toEqual({ notify_comments: 1, notify_updates: 1, notify_end: 0 });
+    const privolePoslije = privole("user_id", korisnik.id);
+    expect(privolePoslije).toHaveLength(privolaPrije + 1);
+    expect(privolePoslije.at(-1)).toEqual({ granted: 1, user_id: korisnik.id, email: null });
+  });
+
   it("checkout tuđe kampanje ili nepoznat ID → 404; seed checkout bez MPT-a radi iz baze", async () => {
     const tudi = await ucitajPlacanje(kontekst(db, "/hr/x", { params: { id: primjeri.kampanja.zavrsena!, checkout: primjeri.checkout } }));
     expect((tudi as Response).status).toBe(404);

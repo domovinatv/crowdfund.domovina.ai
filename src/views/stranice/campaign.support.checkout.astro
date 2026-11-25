@@ -19,7 +19,7 @@ import type { PropsStranice } from "../tipovi";
 
 type Props = PropsStranice<PodaciPlacanja>;
 const { lang, podaci } = Astro.props;
-const { k, ch, intent, sandbox, placen, neuspio, obecanje } = podaci;
+const { k, ch, intent, sandbox, placen, neuspio, obecanje, demoPracenje } = podaci;
 const O = PONAVLJANJE[lang].obecanje;
 const C = CHECKOUT[lang];
 const T = C.placanje;
@@ -86,6 +86,15 @@ const odbijena = ch.stanje === "rejected" || intent?.stage === "rejected";
           )}
           <a href={url(lang, "settings.recurring")} class="mt-3 inline-flex min-h-11 items-center text-sm font-semibold text-action underline underline-offset-2">{O.upravljaj}</a>
         </section>
+      )
+    }
+    {
+      demoPracenje && (
+        <aside aria-labelledby="demo-pracenje" class="mt-6 rounded-md border border-dashed border-ink-muted/60 bg-mist p-4 text-sm" data-demo-pracenje>
+          <h2 id="demo-pracenje" class="font-semibold text-ink">{T.demoPracenjeNaslov}</h2>
+          <p class="mt-1 text-ink-soft">{popuni(T.demoPracenjeTekst, { email: demoPracenje.email })}</p>
+          <a href={demoPracenje.link} class="mt-2 inline-flex min-h-11 items-center font-semibold text-action underline underline-offset-2">{T.demoPracenjeLink}</a>
+        </aside>
       )
     }
   </div>
