@@ -394,3 +394,37 @@ koja se na nju poziva. Blokovi brojeva po sesiji: S1 od 100, S1b od 150, S2 od 2
      se učitava s `networkidle`; anonimne provjere kroz `request` (bez kolačića preglednika).
 673. **`.overflow-x-auto` je containing block** (`position: relative`, `global.css`): inače `sr-only` u tablici izlazi
      iz spremnika i širi stranicu na 375 px. Smoke provjerava CSV kroz `request` (preuzimanje, ne stranica).
+
+## S7 — 25. 11. 2026.
+
+700. **Sandbox tenant `sbx-73b4d4042e`** stvoren 25. 11. 2026. (`POST https://api.mpt.hr/api/sandbox/tenants`,
+     ADR 0024), bez `webhook_url`: tunel prema `wrangler dev` traži korisnikov pristanak, pa se lokalno potvrđuje
+     pullom. Ključevi samo u `.dev.vars` (gitignore), predložak `.dev.vars.example`. Tenant istječe nakon 90 dana
+     bez aktivnosti (`expires_at` 23. 2. 2027.); novi se dobiva istom naredbom.
+701. **Host `https://api.mpt.hr`, putanje `/v1/intents`** (ADR 0021); quickstart koristi stari alias `/api/`.
+702. **MPT klijent samo na poslužitelju** (`src/lib/mpt/klijent.ts`), `fetch` se ubacuje (test double). Energy
+     `lib/mpt-intent.ts` je pisan za preglednik (`@/` putanje, javni ključ), pa je preuzet samo oblik statusa s
+     izvornim commitom u zaglavlju (revizijska klauzula odluke 11).
+703. **Naš sid prije intenta:** 16 znakova base64url (96 bita) šalje se railu kao `sid`, pa red `checkouts` i
+     `contributions(pending)` postoje prije poziva MPT-a; ID checkouta je zaseban nasumičan token (ruta T).
+704. **Sandbox nema IBAN ni QR** (rail vraća `iban`/`epc_qr_data`/`hub3_data` = null): stranica plaćanja pokazuje
+     referencu (`short_ref`, memo), oznaku „sandbox, ne šalji novac”, QR na MPT `checkout_url` i gumbe simulacije kroz
+     naš poslužitelj (samo za sandbox intent). U produkciji QR iz `epc_qr_data`, HUB3 iz `hub3_data`.
+705. **Stanje u bazi mijenja samo webhook ili pull.** Preglednik sluša javni MPT `status_stream_url` (SSE) za prikaz
+     faze i zove `GET /api/checkouts/{id}/events`, koji čita intent s raila i primjenjuje isti put kao webhook.
+     `mpt_status` iz `return_url` je samo natuknica za UI.
+706. **Webhook `POST /webhooks/mpt`:** Standard Webhooks (`v1,` + base64 HMAC-SHA256 nad `id.timestamp.tijelo`,
+     ključ = base64 dio `whsec_`), tolerancija vremena 5 min, dedupe na `webhook_receipts.webhook_id`, idempotentno na
+     `sid`: `campaign_stats` se mijenja samo pri prijelazu doprinosa u `paid`.
+707. **Kasna i manja uplata se priznaju:** novac je već na Safeu kampanje (platforma ga ne drži), pa `payment.late`
+     i `payment.underpaid` → doprinos `paid` s primljenim iznosom (`underpaid = 1` za manjak), checkout
+     `late`/`underpaid`. `payment.rejected` → `failed`, istek bez uplate → `expired`. Statistika broji primljeni iznos.
+708. **Napojnica** (odluka 7): zaseban intent na `MPT_TIP_TARGET` (u sandboxu demo adresa raila), ponuđena nakon
+     doprinosa; izbori 0, 1, 2, 5 € i svoj iznos, „0” prvi i jednako istaknut, ništa nije predodabrano. Napojnica
+     nikad ne dira `contributions` ni `campaign_stats`.
+709. **`reminder` ruta ide u S8** zajedno s ponavljanjem (plan: recurring je S8); u S7 ostaje izostavljena.
+710. **Registracija kampanje kod MPT-a ostaje mock** (odluke 633, 642): sandbox prima bilo koju ciljnu adresu,
+     a prava registracija i trajni QR (`campaign-qr`) traže produkcijski tenant.
+711. **Potvrda:** MPT potvrda o uplati s ključem uplatitelja (ADR 0022/0023) u sandboxu ne postoji
+     (`receipts_not_in_sandbox`); naša potvrda vodi na MPT stranicu intenta (`checkout_url`) i kaže da potvrda s
+     ključem dolazi u produkciji.
