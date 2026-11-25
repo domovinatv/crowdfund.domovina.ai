@@ -165,7 +165,7 @@ const hr = {
       obavezno_primatelj: "Odaberite organizaciju za koju prikupljate.",
     },
     tema: { obavezno: "Odaberite temu naslovnice." },
-    video: { neispravno: "Poveznica mora biti https adresa s YouTubea ili Vimea." },
+    video: { neispravno: "Poveznica mora biti https adresa jednog videa na YouTubeu (watch, youtu.be, shorts) ili Vimeu (vimeo.com/broj)." },
     opis: {
       obavezno: "Upišite opis.",
       prekratko: "Opis ima najmanje 50 znakova.",
@@ -338,7 +338,7 @@ const en: typeof hr = {
       obavezno_primatelj: "Choose the organisation you are raising for.",
     },
     tema: { obavezno: "Choose a cover theme." },
-    video: { neispravno: "The link must be an https address on YouTube or Vimeo." },
+    video: { neispravno: "The link must be an https address of a single video on YouTube (watch, youtu.be, shorts) or Vimeo (vimeo.com/number)." },
     opis: {
       obavezno: "Enter a description.",
       prekratko: "The description has at least 50 characters.",

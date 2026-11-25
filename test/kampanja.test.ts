@@ -36,7 +36,20 @@ describe("kampanjaPoJavnomId()", () => {
     expect(k.brojevi.kasice).toBe(1);
     expect(k.postavke).toMatchObject({ komentari: "everyone", kasiceDopustene: true, popisUplataVidljiv: true });
     expect(k.autor).toBeNull();
+    expect(k.videoUrl).toBeNull();
     bezOsobnih(k);
+  });
+
+  it("video: prvi zapis `campaign_media` (kind video) po poziciji (S11)", async () => {
+    const id = idKampanje(K.aktivna);
+    const umetni = sqlite.prepare("INSERT INTO campaign_media (id, campaign_id, kind, file_id, video_url, position, created_at) VALUES (?, ?, 'video', NULL, ?, ?, 0)");
+    umetni.run("m-video-2", id, "https://vimeo.com/76979871", 1);
+    umetni.run("m-video-1", id, "https://youtu.be/dQw4w9WgXcQ", 0);
+    try {
+      expect((await kampanja(K.aktivna)).videoUrl).toBe("https://youtu.be/dQw4w9WgXcQ");
+    } finally {
+      sqlite.prepare("DELETE FROM campaign_media WHERE id IN ('m-video-1', 'm-video-2')").run();
+    }
   });
 
   it("nevaljan ili nepostojeći ID → null", async () => {

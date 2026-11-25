@@ -111,10 +111,10 @@ describe("B01: kategorija, naslovnica, video i mjesečni doprinosi u uređivanju
     const k = (await kampanjaZaUpravljanje(o.db, o.aktivna.id))!;
     const ulaz = ulazIzKampanje(k, "hr");
     expect(ulaz.allowMonthly).toBe(false);
-    const r = await spremiPostavke(o.db, k, { ...ulaz, category: "sport", coverTheme: "sports", videoUrl: "https://www.youtube.com/watch?v=abc", allowMonthly: true }, o.sad);
+    const r = await spremiPostavke(o.db, k, { ...ulaz, category: "sport", coverTheme: "sports", videoUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", allowMonthly: true }, o.sad);
     expect(r).toEqual({ ok: true });
     const n = (await kampanjaZaUpravljanje(o.db, o.aktivna.id))!;
-    expect([n.categoryKey, n.coverTheme, n.videoUrl, n.recurrence]).toEqual(["sport", "sports", "https://www.youtube.com/watch?v=abc", "monthly"]);
+    expect([n.categoryKey, n.coverTheme, n.videoUrl, n.recurrence]).toEqual(["sport", "sports", "https://www.youtube.com/watch?v=dQw4w9WgXcQ", "monthly"]);
     // Prazan video briše zapis; isključeno mjesečno vraća `none`.
     expect(await spremiPostavke(o.db, n, { ...ulazIzKampanje(n, "hr"), videoUrl: "", allowMonthly: false }, o.sad)).toEqual({ ok: true });
     expect(broj(o.sqlite, "SELECT count(*) FROM campaign_media WHERE campaign_id = ?", o.aktivna.id)).toBe(0);

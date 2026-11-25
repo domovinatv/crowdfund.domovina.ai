@@ -38,6 +38,8 @@ export interface StranicaKampanje {
   category: { key: string; nameHr: string; nameEn: string } | null;
   coverTheme: string | null;
   coverImageUrl: string | null;
+  /** Prvi video iz `campaign_media` kako ga je organizator upisao; prikazuje se tek kroz `parsirajVideo`. */
+  videoUrl: string | null;
   locationName: string | null;
   currency: string;
   goalCents: number | null;
@@ -142,6 +144,7 @@ interface RedakKampanje {
   n_uplate: number;
   n_komentari: number;
   n_ponude: number;
+  video_url: string | null;
 }
 
 /**
@@ -171,7 +174,9 @@ export async function kampanjaPoJavnomId(db: D1Database, publicId: string, sad: 
               (SELECT count(*) FROM comments x LEFT JOIN comments p ON p.id = x.parent_id
                 WHERE x.campaign_id = c.id AND x.hidden_at IS NULL AND x.deleted_at IS NULL
                   AND (x.parent_id IS NULL OR (p.hidden_at IS NULL AND p.deleted_at IS NULL))) AS n_komentari,
-              (SELECT count(*) FROM offers x WHERE x.campaign_id = c.id AND x.status = 'active') AS n_ponude
+              (SELECT count(*) FROM offers x WHERE x.campaign_id = c.id AND x.status = 'active') AS n_ponude,
+              (SELECT m.video_url FROM campaign_media m WHERE m.campaign_id = c.id AND m.kind = 'video'
+                ORDER BY m.position, m.id LIMIT 1) AS video_url
          FROM campaigns c
          JOIN campaign_settings s ON s.campaign_id = c.id
          JOIN organizers g        ON g.id = c.organizer_id
@@ -220,6 +225,7 @@ export async function kampanjaPoJavnomId(db: D1Database, publicId: string, sad: 
     category: r.category_key ? { key: r.category_key, nameHr: r.name_hr ?? "", nameEn: r.name_en ?? "" } : null,
     coverTheme: r.cover_theme,
     coverImageUrl: r.cover_image_url,
+    videoUrl: r.video_url,
     locationName: r.location_name,
     currency: r.currency,
     goalCents: r.goal_cents,

@@ -106,7 +106,7 @@ describe("objava: u ime svoje organizacije", () => {
     const k = await korisnik(db, primjeri.demoRacuni.organizator);
     const oid = orgId(sqlite, primjeri.organizacijaOrganizatora);
     sqlite.prepare("INSERT INTO campaign_drafts (id, user_id, source, step, data, created_at, updated_at) VALUES ('n1', ?, 'server', 5, '{}', ?, ?)").run(k.id, SAD, SAD);
-    const r = await objavi(db, k, potpun({ nacin: "moja", orgId: oid }, { ciljCenti: 100_000, videoUrl: "https://youtu.be/abc" }), "n1", SAD);
+    const r = await objavi(db, k, potpun({ nacin: "moja", orgId: oid }, { ciljCenti: 100_000, videoUrl: "https://youtu.be/dQw4w9WgXcQ" }), "n1", SAD);
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.state).toBe("active");

@@ -10,6 +10,7 @@
  * u `views/sadrzaj/carobnjak.ts`).
  */
 import { uuid7 } from "./zajednicko";
+import { parsirajVideo } from "../video";
 
 export const KORACI = ["type", "goal", "media", "description", "preview"] as const;
 export type Korak = (typeof KORACI)[number];
@@ -151,14 +152,9 @@ export const danUtc = (ms: number): string => new Date(ms).toISOString().slice(0
 /** Kraj dana roka u ms (23:59:59.999 UTC), za `campaigns.ends_at`. */
 export const krajDana = (rok: string): number => Date.parse(`${rok}T23:59:59.999Z`);
 
+/** Samo URL koji stranica kampanje zna prikazati (`parsirajVideo`, S11): YouTube ili Vimeo sa strogim ID-om. */
 export function valjanVideoUrl(s: string): boolean {
-  if (s.length > 500) return false;
-  try {
-    const u = new URL(s);
-    return u.protocol === "https:" && /(^|\.)(youtube\.com|youtu\.be|vimeo\.com)$/.test(u.hostname);
-  } catch {
-    return false;
-  }
+  return parsirajVideo(s) !== null;
 }
 
 type Polja = Record<string, string>;

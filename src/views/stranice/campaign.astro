@@ -23,10 +23,12 @@ import PromoTools from "../../components/kampanja/PromoTools.astro";
 import ShareSheet from "../../components/kampanja/ShareSheet.astro";
 import SupportBar from "../../components/kampanja/SupportBar.astro";
 import UpdateList from "../../components/kampanja/UpdateList.astro";
+import VideoKampanje from "../../components/kampanja/VideoKampanje.astro";
 import KarticaPonude from "../../components/ponude/KarticaPonude.astro";
 import { formatDatuma, formatNovca } from "../../components/kampanja/format";
 import { KLASA_OPISA, obicniTekstOpisa, renderirajOpis } from "../../lib/opis";
 import { url } from "../../lib/rute";
+import { parsirajVideo } from "../../lib/video";
 import { FAZA2 } from "../sadrzaj/faza2";
 import { KAMPANJA } from "../sadrzaj/kampanja";
 import { UPRAVLJANJE } from "../sadrzaj/upravljanje";
@@ -59,6 +61,7 @@ if (sekcijaPonuda) sidra.push({ id: "ponude", kljuc: "ponude", broj: ponude.leng
 const sekcija = "scroll-mt-4 focus:outline-none";
 const h2 = "text-2xl font-semibold text-ink";
 const opis = (k.description ?? "").trim();
+const video = parsirajVideo(k.videoUrl);
 ---
 <Base lang={lang} title={k.title} description={opis ? obicniTekstOpisa(opis).slice(0, 160) : undefined} noindex={k.noindex}>
   {upravljanje && (
@@ -88,6 +91,7 @@ const opis = (k.description ?? "").trim();
 
       <section id="opis" tabindex="-1" aria-labelledby="opis-naslov" class={`mt-10 ${sekcija}`}>
         <h2 id="opis-naslov" class={h2}>{T.sekcije.opis}</h2>
+        {video && <div class="mt-4"><VideoKampanje lang={lang} video={video} /></div>}
         {opis ? <div class={`mt-4 ${KLASA_OPISA}`} data-opis set:html={renderirajOpis(opis)} /> : <p class="mt-4 text-ink-muted">{T.opis.prazno}</p>}
         <div class="mt-6"><MoneyDestination lang={lang} novac={k.novac} /></div>
       </section>

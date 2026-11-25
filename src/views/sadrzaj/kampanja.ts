@@ -71,6 +71,16 @@ export const KAMPANJA = {
       ponude: "Ponude",
     },
     opis: { prazno: "Organizator još nije dodao opis." },
+    video: {
+      naslov: "Video kampanje",
+      gumb: { youtube: "Video s YouTubea", vimeo: "Video s Vimea" },
+      napomena: {
+        youtube: "Klikom učitavaš sadržaj YouTubea, koji može postaviti vlastite kolačiće.",
+        vimeo: "Klikom učitavaš sadržaj Vimea, koji može postaviti vlastite kolačiće.",
+      },
+      bezJs: "Bez JavaScripta video se otvara na izvornoj stranici u novoj kartici.",
+      iframe: { youtube: "Video kampanje (YouTube)", vimeo: "Video kampanje (Vimeo)" },
+    },
     novac: {
       naslov: "Kamo ide novac",
       tekst: "Doprinosi idu izravno na Safe organizacije (višepotpisni novčanik). Platforma ne drži novac ni ključeve.",
@@ -223,6 +233,16 @@ export const KAMPANJA = {
       ponude: "Offers",
     },
     opis: { prazno: "The organiser has not added a description yet." },
+    video: {
+      naslov: "Campaign video",
+      gumb: { youtube: "Video from YouTube", vimeo: "Video from Vimeo" },
+      napomena: {
+        youtube: "Clicking loads content from YouTube, which may set its own cookies.",
+        vimeo: "Clicking loads content from Vimeo, which may set its own cookies.",
+      },
+      bezJs: "Without JavaScript the video opens on the original site in a new tab.",
+      iframe: { youtube: "Campaign video (YouTube)", vimeo: "Campaign video (Vimeo)" },
+    },
     novac: {
       naslov: "Where the money goes",
       tekst: "Contributions go straight to the organisation's Safe (a multi-signature wallet). The platform never holds money or keys.",

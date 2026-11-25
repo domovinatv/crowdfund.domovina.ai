@@ -93,9 +93,9 @@ describe("koraci (čiste funkcije)", () => {
     expect(korakMediji({}, {}).greske).toEqual({ tema: "obavezno" });
     expect(korakMediji({}, { tema: "school", video: "http://youtube.com/x" }).greske).toEqual({ video: "neispravno" });
     expect(korakMediji({}, { tema: "school", video: "https://evil.example/x" }).greske).toEqual({ video: "neispravno" });
-    const ok = korakMediji({}, { tema: "school", video: "https://www.youtube.com/watch?v=abc" });
+    const ok = korakMediji({}, { tema: "school", video: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" });
     expect(ok.greske).toEqual({});
-    expect(ok.nacrt).toMatchObject({ tema: "school", videoUrl: "https://www.youtube.com/watch?v=abc", mediji: true });
+    expect(ok.nacrt).toMatchObject({ tema: "school", videoUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", mediji: true });
   });
 
   it("opis: ≥ 50 znakova, ≤ 5000, bez zabranjenih riječi", () => {

@@ -1,0 +1,58 @@
+---
+// Video kampanje (S11). Prije klika nema ničega s YouTubea ni Vimea: naš statični okvir s ikonom play
+// (bez thumbnaila s njihovih servera). Klik ga zamjenjuje iframeom (youtube-nocookie / player.vimeo ?dnt=1).
+// Bez JS-a okvir je obična poveznica na izvorni video u novoj kartici. Adrese grade se iz provjerenog ID-a
+// (`lib/video.ts`), nikad iz URL-a organizatora.
+import Play from "@lucide/astro/icons/play";
+import type { Lang } from "../../i18n";
+import type { Video } from "../../lib/video";
+import { KAMPANJA } from "../../views/sadrzaj/kampanja";
+
+interface Props {
+  lang: Lang;
+  video: Video;
+}
+const { lang, video } = Astro.props;
+const T = KAMPANJA[lang].video;
+---
+<div class="relative aspect-video w-full overflow-hidden rounded-md bg-ink text-paper" data-video={video.izvor}>
+  <a
+    href={video.izvorni}
+    target="_blank"
+    rel="noopener"
+    class="group absolute inset-0 flex flex-col items-center justify-center gap-3 p-4 text-center focus-visible:outline-3 focus-visible:-outline-offset-3 focus-visible:outline-paper"
+    data-video-okvir
+    data-ugradnja={video.ugradnja}
+    data-naslov={T.iframe[video.izvor]}
+  >
+    <span class="flex size-16 items-center justify-center rounded-full bg-paper text-ink transition-transform group-hover:scale-105 sm:size-20" aria-hidden="true">
+      <Play size={32} class="ml-1" />
+    </span>
+    <span class="text-base font-semibold sm:text-lg">{T.gumb[video.izvor]}</span>
+    <span class="max-w-[42ch] text-xs sm:text-sm">{T.napomena[video.izvor]}</span>
+    <noscript><span class="block max-w-[42ch] text-xs sm:text-sm">{T.bezJs}</span></noscript>
+  </a>
+</div>
+
+<script>
+  // Klik (bez modifikatora) zamjenjuje okvir iframeom; Ctrl/Cmd/Shift + klik i srednji klik ostaju poveznica.
+  const DOPUSTENO = /^https:\/\/(www\.youtube-nocookie\.com\/embed\/|player\.vimeo\.com\/video\/)/;
+  for (const a of document.querySelectorAll<HTMLAnchorElement>("[data-video-okvir]")) {
+    a.addEventListener("click", (e) => {
+      if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+      const src = a.dataset.ugradnja ?? "";
+      if (!DOPUSTENO.test(src)) return;
+      e.preventDefault();
+      const f = document.createElement("iframe");
+      f.src = src;
+      f.title = a.dataset.naslov ?? "";
+      f.allow = "autoplay; encrypted-media; fullscreen; picture-in-picture";
+      f.allowFullscreen = true;
+      f.referrerPolicy = "strict-origin-when-cross-origin";
+      f.loading = "lazy";
+      f.className = "absolute inset-0 h-full w-full border-0";
+      a.replaceWith(f);
+      f.focus();
+    });
+  }
+</script>
