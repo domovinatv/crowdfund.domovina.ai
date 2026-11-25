@@ -379,3 +379,18 @@ koja se na nju poziva. Blokovi brojeva po sesiji: S1 od 100, S1b od 150, S2 od 2
      roka. Organizatorov obrazac žalbe nema rutu, pa je u prototipu bilježi moderator (označeno). (potvrditi; S8/S9)
 664. **Razlozi:** odbijanje KYB-a 1–500 znakova; odbijena namjena i blokada/deblokada ≥ 20 znakova.
 665. **`/admin` tekstovi samo hr** (07); obavijesti prijavitelju i organizatoru o odluci se ne šalju (prototip, označeno).
+666. **„Moje kampanje”** = kampanje organizacija u kojima sam član (bilo koja uloga, uključujući osobnu) i kampanje
+     kojima sam autor; obrisane se ne vide. Stanja active, paused, review, draft, closed (uključuje funded),
+     cancelled, blocked (blokirana ima prednost).
+667. **Filtri „Moje kampanje”:** `?state=`, `?org=`, `?sort=` (newest, oldest, most, least, most_payments,
+     least_payments); 4fundov redoslijed „iznos za isplatu” izostavljen jer isplate nema (odluka 6).
+668. **Izbornik kampanje** (`<details>`, bez JS-a) koristi isto pravilo kao upravljanje; QR, widget i plakat samo za
+     javnu kampanju koja nije zatvorena. Nacrti: „Nastavi” 303 na prvi nedovršeni korak, „Obriši nacrt” POST.
+669. **`?objavljeno=` i `?obrisana=`** pokazuju naslov samo za moju kampanju.
+670. **Moje donacije** po `user_id` ili mojoj e-pošti (bez obzira na veličinu slova); potvrda nema poveznicu do S7.
+671. **Moje kasice:** aktivne, isključene, obrisane; isključuje vlasnik, obrisana se ne vraća; iznos skriven kad ga
+     kampanja skriva. „Kamo ide novac” grupiran po organizaciji, 0 potpisnika platforme, Safe „nije provjeren” do S7.
+672. **E2E:** katalog se provjerava po poveznici `href="/hr/{id}"` (naslov je uvijek u polju pretrage); registracija
+     se učitava s `networkidle`; anonimne provjere kroz `request` (bez kolačića preglednika).
+673. **`.overflow-x-auto` je containing block** (`position: relative`, `global.css`): inače `sr-only` u tablici izlazi
+     iz spremnika i širi stranicu na 375 px. Smoke provjerava CSV kroz `request` (preuzimanje, ne stranica).

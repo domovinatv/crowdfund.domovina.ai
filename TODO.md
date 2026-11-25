@@ -37,11 +37,13 @@ Legenda: `[x]` gotovo · `[ ]` otvoreno · `[~]` u radu · `(!)` traži korisnik
 - [x] Astro + Cloudflare + D1 kostur, `npm run check` → S4
 - [x] Migracije + seed (24 kampanje, 4 tipa, 8 kategorija) → S4
 - [x] Javne rute + Playwright smoke (85/85 ruta, 146 smoke testova) → S5
-- [ ] Organizatorski tokovi + e2e „nova kampanja” → S6
+- [x] Organizatorski tokovi + e2e „nova kampanja” i „organizacija odobri tuđu kampanju” (400 Playwright) → S6
 
-- [~] Rute bez en oblika u 07 (odluka 409): S5 dodao FAQ kategoriju i odjavu praćenja (502); S6 ostatak → S6
-- [ ] Migracije koje predlaže S5: `users.slug`, token praćenja, skriveni popis uplata (odluke 507–509) → S6
-- [ ] Seed relativno na datum seedanja (odluka 532) → S6
+- [x] Rute bez en oblika u 07 (odluke 409, 502, 613) → S6
+- [x] Migracije koje predlaže S5: `users.slug`, token praćenja, skriveni popis uplata (0004, odluke 608–610) → S6
+- [x] Seed relativno na datum seedanja (odluka 611) → S6
+- [ ] Seed nedosljednosti: `demo-suncani-krov` `active` uz KYB `in_review`; `prijavaModeracije` `in_review` s odlukom → S8
+- [ ] Login CSRF (POST bez Origin prolazi), `sessions.last_activity_at` se ne osvježava → S9
 
 ## F3 — Plaćanje i hibrid
 
