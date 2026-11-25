@@ -7,3 +7,4 @@ MPT_PUBLIC_KEY=
 MPT_WEBHOOK_SECRET=
 MPT_DEMO_TARGET=0x000000000000000000000000000000000000dEaD
 # MPT_TIP_TARGET= (Safe platforme za napojnicu; bez njega demo adresa)
+# TAJNA_IBANA= (HMAC za payer_iban_hash; bez nje SHA-256 s prefiksom domene, src/lib/db/uplate.ts)

@@ -51,6 +51,24 @@ export function kaoD1(db: DatabaseSync): D1Database {
       return r ? { ...r } : null;
     },
     run: async () => ({ results: [], success: true, meta: db.prepare(sql).run(...p) }),
+    /** Sinkrono izvođenje za `batch` (SELECT vraća retke, ostalo `changes`). */
+    izvedi: () =>
+      /^\s*(SELECT|WITH)\b/i.test(sql) || /\bRETURNING\b/i.test(sql)
+        ? { results: db.prepare(sql).all(...p).map((r) => ({ ...r })), success: true, meta: {} }
+        : { results: [], success: true, meta: db.prepare(sql).run(...p) },
   });
-  return { prepare: (sql: string) => izjava(sql) } as unknown as D1Database;
+  type Izjava = ReturnType<typeof izjava>;
+  // D1 `batch` je transakcija: sve ili ništa, izjave serijski (S7, src/lib/db/uplate.ts).
+  const batch = async (izjave: Izjava[]) => {
+    db.exec("BEGIN");
+    try {
+      const rez = izjave.map((i) => i.izvedi());
+      db.exec("COMMIT");
+      return rez;
+    } catch (e) {
+      db.exec("ROLLBACK");
+      throw e;
+    }
+  };
+  return { prepare: (sql: string) => izjava(sql), batch } as unknown as D1Database;
 }
