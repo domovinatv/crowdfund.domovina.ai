@@ -66,6 +66,7 @@ export const DEMO_TOKENI = {
   poveznicaPrijave: "demo-poveznica-novi",
   pozivnica: "demo-pozivnica-novi",
   pozivnicaIstekla: "demo-pozivnica-istekla",
+  podsjetnik: "demo-podsjetnik-mjesecni",
 };
 
 // --- PRNG i ID-evi -----------------------------------------------------------------------------
@@ -746,7 +747,7 @@ function generiraj(/** @type {string} */ demoSad) {
   const vanjske = VANJSKE.map(([oi, naslov, kat, status], i) => {
     const te = orgs[oi].t + (20 + i) * DAN;
     const eid = uuid7(te);
-    const ext = `demo-${hex(8)}`;
+    const ext = `zz${hex(4)}`; // 6 znakova kao 4fund ID (odluka 801), prefiks zz za demo
     upisi("external_campaigns", {
       id: eid, organization_id: orgs[oi].orgId, platform: "4fund", external_id: ext,
       url: `https://4fund.invalid/${ext}`, title: naslov, image_url: null, category_key: kat,
@@ -754,6 +755,21 @@ function generiraj(/** @type {string} */ demoSad) {
       created_at: te, updated_at: te + DAN,
     });
     return { id: eid, status };
+  });
+
+  // Mjesečno obećanje s poslanim podsjetnikom (tok 10, S8): ruta `podsjetnik/{token}` u provjeri ruta vraća 200.
+  const kMj = kInfo[22];
+  const tp = SAD - 3 * DAN;
+  const pledgeId = uuid7(tp);
+  upisi("recurring_pledges", {
+    id: pledgeId, user_id: users[2].id, campaign_id: kMj.id, tier_id: null, amount_cents: 1000, day_of_month: 5,
+    mode: "reminder", status: "active", subscription_id: null, missed_count: 0, next_reminder_at: SAD + 27 * DAN,
+    created_at: tp - 30 * DAN, cancelled_at: null, updated_at: tp,
+  });
+  const mjesec = new Date(tp).toISOString().slice(0, 7);
+  upisi("recurring_reminders", {
+    id: uuid7(tp + 1), pledge_id: pledgeId, period: mjesec, token_hash: sha256(DEMO_TOKENI.podsjetnik),
+    expires_at: SAD + 365 * DAN, checkout_id: null, notification_id: null, created_at: tp,
   });
 
   // Praćenja (campaign_follows): [osoba, kampanja, komentari, novosti, kraj]
@@ -819,6 +835,7 @@ function generiraj(/** @type {string} */ demoSad) {
     linkZaPracenjeNeaktivan404: linkovi.find((l) => l.status !== "active")?.slug,
     vanjska: vanjske.find((v) => v.status === "active")?.id,
     vanjskaNeaktivna404: vanjske.find((v) => v.status !== "active")?.id,
+    podsjetnik: DEMO_TOKENI.podsjetnik,
     pracenjeToken: tokenPracenja(users[PRACENJA[0][0]].id, kInfo[PRACENJA[0][1]].id),
     kategorija: "animals",
   };

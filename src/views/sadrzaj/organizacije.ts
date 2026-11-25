@@ -125,7 +125,7 @@ export const MJESECNE: Dvojezicno<SadrzajStranice> = {
         naslov: "Mjesečni podsjetnik",
         koraci: [
           "Na kampanji odabereš mjesečnu podršku, iznos i dan u mjesecu (od 1. do 28.).",
-          "Tog dana dobiješ e-poruku s novim QR kodom i referencom za taj mjesec. Poveznica vrijedi 24 sata.",
+          "Tog dana dobiješ e-poruku s novim QR kodom i referencom za taj mjesec. Poveznica vrijedi 7 dana, a plaćanje otvoreno iz nje 24 sata.",
           "Platiš u svojoj banci, kao i svaku drugu donaciju.",
         ],
         tekst: ["Ništa se ne naplaćuje samo od sebe: svaku uplatu potvrđuješ ti."],
@@ -165,7 +165,7 @@ export const MJESECNE: Dvojezicno<SadrzajStranice> = {
         naslov: "Monthly reminder",
         koraci: [
           "On the campaign, choose monthly support, an amount and a day of the month (1st to 28th).",
-          "On that day you get an email with a new QR code and reference for that month. The link is valid for 24 hours.",
+          "On that day you get an email with a new QR code and reference for that month. The link is valid for 7 days and the payment opened from it for 24 hours.",
           "You pay in your bank, like any other donation.",
         ],
         tekst: ["Nothing is charged automatically: you confirm every payment yourself."],

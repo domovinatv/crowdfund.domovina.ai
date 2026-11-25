@@ -143,7 +143,7 @@ describe("seed/demo.sql", () => {
     expect(broj(db, "SELECT count(*) FROM link_visits WHERE tracking_link_id IS NOT NULL")).toBeGreaterThan(5);
     expect(broj(db, "SELECT count(*) FROM link_visits WHERE visitor_hash NOT LIKE 'demo%'")).toBe(0);
     expect(broj(db, "SELECT count(*) FROM external_campaigns WHERE status = 'active'")).toBeGreaterThanOrEqual(2);
-    expect(broj(db, "SELECT count(*) FROM external_campaigns WHERE url NOT LIKE 'https://4fund.invalid/demo-%'")).toBe(0);
+    expect(broj(db, "SELECT count(*) FROM external_campaigns WHERE url NOT LIKE 'https://4fund.invalid/zz%'")).toBe(0);
     expect(broj(db, "SELECT count(*) FROM campaign_follows")).toBeGreaterThanOrEqual(3);
     expect(broj(db, "SELECT count(*) FROM offers")).toBeGreaterThan(0);
     // atribucija kasice/linka i checkout se slažu

@@ -148,9 +148,9 @@ describe("podsjetnici", () => {
     const id = await obecanje();
     expect(await dospjeliPodsjetnici(db, Date.UTC(2026, 11, 9))).toEqual([]);
     const sada = Date.UTC(2026, 11, 10, 8);
-    const prvi = await dospjeliPodsjetnici(db, sada);
+    const prvi = (await dospjeliPodsjetnici(db, sada)).filter((r) => r.pledgeId === id); // seed ima svoje obećanje
     expect(prvi).toEqual([{ pledgeId: id, ishod: "poslan", period: "2026-12", token: expect.stringMatching(/^[A-Za-z0-9_-]{43}$/) }]);
-    expect(await dospjeliPodsjetnici(db, sada)).toEqual([]);
+    expect((await dospjeliPodsjetnici(db, sada)).filter((r) => r.pledgeId === id)).toEqual([]);
     const [x] = redovi<{ period: string; token_hash: string; expires_at: number; notification_id: string }>(sqlite, "SELECT * FROM recurring_reminders WHERE pledge_id = ?", id);
     expect(x!.expires_at).toBe(sada + ROK_PODSJETNIKA);
     expect(x!.token_hash).not.toContain(prvi[0]!.token!);
@@ -168,7 +168,7 @@ describe("podsjetnici", () => {
     let t = Date.UTC(2026, 11, 1, 8);
     const ishodi: string[] = [];
     for (let i = 0; i < NEPLACENIH_DO_PAUZE + 1; i++) {
-      for (const r of await dospjeliPodsjetnici(db, t)) {
+      for (const r of (await dospjeliPodsjetnici(db, t)).filter((x) => x.pledgeId === id || x.pledgeId === drugi)) {
         expect(r.pledgeId).toBe(id);
         ishodi.push(r.ishod);
       }

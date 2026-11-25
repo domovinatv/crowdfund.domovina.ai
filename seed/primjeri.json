@@ -17,8 +17,8 @@
     "draft404": "ryhs5w",
     "blokirana404": "w70emf",
     "obrisana404": "necdy4",
-    "zaOdobrenje404": "94cw6h",
-    "osobna": "p4tvc4"
+    "zaOdobrenje404": "vqgfh5",
+    "osobna": "016s2v"
   },
   "korisnik": {
     "javni": "019e04e2-4c00-72fa-bdb3-a8c1e48e8d77",
@@ -32,10 +32,11 @@
   "linkZaPracenje": "demo-obroci-fb",
   "linkZaPracenjeNeaktivan404": "demo-oprema-stari",
   "vanjska": "019ed2e0-ac00-755f-ba1f-d2648d7250bf",
-  "vanjskaNeaktivna404": "019f10ac-fc00-733a-ae33-6596bf583905",
+  "vanjskaNeaktivna404": "019f10ac-fc00-7bde-beb9-b33aae336596",
+  "podsjetnik": "demo-podsjetnik-mjesecni",
   "pracenjeToken": "019e28ee-d000-757b-a8f1-690dce1d00c9.01a01ed3-eb80-795d-a1cc-4538bacfd1e4.bfUORyB-vdSmDPrS_phYPReUPROeiuEjaodPZLXTnT8",
   "kategorija": "animals",
-  "ponuda": "01a03893-b780-706c-b820-f916ec512a2b",
+  "ponuda": "01a03893-b780-7def-92a9-1096bfe1d017",
   "demoSad": "2026-11-24",
   "demoRacuni": {
     "organizator": "ivana.testic@demo.invalid",
@@ -47,13 +48,13 @@
   "demoSesijaNovi": "demo-sesija-novi",
   "organizacijaOrganizatora": "demo-svjetionik",
   "poveznicaPrijave": "demo-poveznica-novi",
-  "potvrdaRadnje": "01a20ac7-dc80-7606-b7ae-985a68f99966",
+  "potvrdaRadnje": "01a20ac7-dc80-778c-b8a4-d3a2f48c40cd",
   "pozivnica": "demo-pozivnica-novi",
   "prijavaModeracije": "01a1f640-bc00-7203-bfe2-a81784a17cfd",
   "korisnikSlug": "demo-marko",
   "checkout": "01a023e5-a7bc-77a1-b6eb-93e665bf4d4b",
   "organizacijaNaCekanju": "demo-zeleni-kvart",
   "pozivnicaIstekla": "demo-pozivnica-istekla",
-  "verifikacijaNamjene": "01a1f640-bc00-715c-a8f1-74b2673c1378",
-  "prijavaNova": "01a20990-9500-7bee-be48-a4578f69d235"
+  "verifikacijaNamjene": "01a1f640-bc00-7a45-98f6-9d2354373711",
+  "prijavaNova": "01a20990-9500-7987-90f1-5d96afb6304f"
 }
