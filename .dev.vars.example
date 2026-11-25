@@ -1,0 +1,9 @@
+# MPT sandbox (S7). Ključeve daje POST https://api.mpt.hr/api/sandbox/tenants (jednom);
+# kopiraj u .dev.vars (gitignore). Vidi docs/handoffs/S7.md i odluke 700–.
+MPT_API_URL=https://api.mpt.hr
+MPT_TENANT_ID=
+MPT_SECRET_KEY=
+MPT_PUBLIC_KEY=
+MPT_WEBHOOK_SECRET=
+MPT_DEMO_TARGET=0x000000000000000000000000000000000000dEaD
+# MPT_TIP_TARGET= (Safe platforme za napojnicu; bez njega demo adresa)
