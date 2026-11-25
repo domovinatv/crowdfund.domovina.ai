@@ -30,7 +30,7 @@ Prioritet: **1–4 blokiraju fazu 1**, 5–9 blokiraju pojedine funkcije, 10–1
 
 | # | Korak | Stanje u prototipu | Tko odlučuje |
 |---|---|---|---|
-| 1 | **Ime, brend, domena** (vrh handoffa od S3; preporuka „Doprinos”) | radno ime i DOMOVINA paleta, 6 brend tokena (odluka 404) | korisnik (kupnja domene) |
+| 1 | **Ime, brend, domena** (nijedan prijedlog nije prihvaćen, odluka 1004; dvije runde u `08` §6 i `research/2026-11-25-ime-platforme-iteracija-2.md`) | radno ime i DOMOVINA paleta, 6 brend tokena (odluka 404) | korisnik (kupnja domene) |
 | 2 | **Produkcijski MPT tenant** platforme: ključevi `sk_live_`, `webhook_url` na produkcijski Worker, `whsec_` u Worker secretu, `MPT_TIP_TARGET` = ITalkov Safe/račun | sandbox tenant istječe 23. 2. 2027. (odluka 700); webhook potvrđen samo unit testovima i pullom | korisnik + MPT |
 | 3 | **Registracija kampanje kod MPT-a** i trajni QR (`campaign-qr`), pravi IBAN/EPC/HUB3 na stranici plaćanja | mock (odluke 704, 710); sandbox ne vraća IBAN ni QR | MPT |
 | 4 | **KYB organizacija kroz Monerium** (korporativni profil, Safe po kampanji) umjesto mock statusa | mock `verifications(org_kyb)` (odluka 639) | korisnik + Monerium |
@@ -41,11 +41,18 @@ Prioritet: **1–4 blokiraju fazu 1**, 5–9 blokiraju pojedine funkcije, 10–1
 | 9 | **Cron Trigger** za mjesečne podsjetnike (`dospjeliPodsjetnici`) | funkcija postoji, okidač nije konfiguriran (odluka 827) | implementacija |
 | 10 | **Status uplate uživo:** pravi SSE (CORS na MPT `/stream` ili proxy kroz Worker) | pull svake 3 s (odluka 728) | MPT ili implementacija |
 | 11 | **Produkcijski D1** (`database_id`), migracije 0001–0009, bez demo seeda; `campaign-core` prijedlozi (odluka 213) | lokalni D1 `crowdfund-dev` s nul-ID-om u `wrangler.jsonc` | vlasnik jezgre + implementacija |
-| 12 | **GitHub remote i javnost repoa** | repo lokalan (odluka 17) | korisnik |
+| 12 | **GitHub remote i javnost repoa** | gotovo: javni `github.com/domovinatv/crowdfund.domovina.ai` (odluka 1006) | — |
 | 13 | **4fund API token** za iznose vanjskih kampanja | zahtjev 4fundu nije poslan (odluka 800) | korisnik |
-| 14 | **Preview deploy** na `*.workers.dev` | pripremljen, čeka odobrenje (vrata S9) | korisnik |
+| 14 | **Staging deploy** | gotovo: `https://crowdfund-staging.domovina.ai` (javno, sandbox, noindex; odluke 1000–1003); bez Cloudflare Accessa | — |
 
-## C. Preview deploy na `*.workers.dev` (pripremljeno, čeka korisnika)
+## C. Staging deploy (S10, odluke 1000–1003)
+
+Izvedeno 25. 11. 2026. drukčije od pripreme ispod: custom domena `crowdfund-staging.domovina.ai` umjesto
+`*.workers.dev`, D1 `crowdfund-staging`, bez Accessa (javno, s trakom sandboxa i noindexom), webhook sandbox tenanta na
+`/webhooks/mpt` stagingu. Ponovni deploy: `npm run deploy:staging` (uz `CLOUDFLARE_ACCOUNT_ID` D.O.M.); baza: `npm run
+db:staging` samo nad praznom bazom. Gašenje: `npx wrangler delete --name crowdfund-domovina-ai-staging`.
+
+Izvorna priprema (S9), ostaje kao povijest:
 
 Ništa od ovoga nije pokrenuto (vrata S9). `wrangler whoami` (25. 11. 2026.) je prijavljen OAuth-om i vidi više
 Cloudflare računa; ostali domovinatv repoi koriste račun **D.O.M.** (`account_id` `7dc7167b…`), pa je to

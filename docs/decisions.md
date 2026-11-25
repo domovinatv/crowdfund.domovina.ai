@@ -568,3 +568,37 @@ koja se na nju poziva. Blokovi brojeva po sesiji: S1 od 100, S1b od 150, S2 od 2
 910. **Ispravci dokumenata:** promocija je faza 2 na `/hr/{id}/upravljanje/promocija` (07 je govorio ✗ premium);
      brisanje računa je u `/hr/postavke/profil`; prijava sadržaja nema privitak dok nema R2 (02: ≈); profil ima 9
      prekidača vidljivosti (10. 4fundov je „završeni vodiči”).
+
+## S10 — 25. 11. 2026.
+
+1000. **Staging deploy (odgovor korisnika na vrata S9):** Worker `crowdfund-domovina-ai-staging` na custom domeni
+      `https://crowdfund-staging.domovina.ai`, račun D.O.M. (`7dc7167b…`, isti kao zona `domovina.ai` i ostali
+      `*-staging` Workeri), D1 `crowdfund-staging` (`7299d4ae…`, migracije 0001–0009 + `seed/demo.sql`). Okruženje se
+      bira pri buildu: `npm run deploy:staging` = `CLOUDFLARE_ENV=staging astro build && wrangler deploy` (uzor
+      `domovina-ulaznice/web` odluka 102); vrh `wrangler.jsonc` ostaje lokalni dev s nul-ID-om. Bez Cloudflare Accessa
+      (korisnik ga nije tražio): deploy je javan.
+1001. **Javni staging se ne indeksira i jasno je sandbox:** traka na vrhu svake stranice „Prototip – samo MPT sandbox,
+      nema pravog novca” (`demo.bar`), `X-Robots-Tag: noindex, nofollow` na svakom odgovoru (`bezIndeksa` u
+      `src/middleware.ts` + `public/_headers` za statične datoteke), `public/robots.txt` `Disallow: /`. Vrijedi i
+      lokalno: prototip se nigdje ne indeksira.
+1002. **Samo sandbox ključevi u Worker secretima:** 6 vrijednosti iz `.dev.vars` (`wrangler secret bulk`, datoteka u
+      scratchpadu obrisana odmah); skripta je prije slanja provjerila `sk_test_` i `sbx-` prefikse. Live ključevi nikad.
+1003. **Webhook sandbox tenanta je na stagingu:** `PUT /api/sandbox/webhook` → `webhook_url` =
+      `https://crowdfund-staging.domovina.ai/webhooks/mpt` (tajna nije rotirana, `.dev.vars` vrijedi). Provjereno
+      izvana: e2e `uplata.spec.ts` nad stagingom 4/4, a `wrangler tail` je pokazao 2 × `POST /webhooks/mpt` → 200
+      (`payment.received`, `intent.paid`) u `webhook_receipts`. Zatvara TODO F3 „webhook izvana”. Lokalni `wrangler dev`
+      od sada dobiva stanje samo pullom (kao i prije).
+1004. **Ime platforme ostaje otvoreno:** korisniku se nije svidio nijedan prijedlog (ni „Doprinos” iz `08` §6, ni druga
+      runda: Moba, Priskočimo, Škuda, Složimo, Pripomoć — `research/2026-11-25-ime-platforme-iteracija-2.md`). Vrijedi
+      radno ime (odluka 305), brend tokeni se ne mijenjaju.
+1005. **4fund ne nudi licencu kao servis** (`research/2026-11-25-4fund-licenca-kao-servis.md`): Zrzutka.pl ima PI
+      licencu bez acquiringa i bez agenata, uplate procesiraju PayU i ZEN.COM. PSP ugovor s 4fundom nije opcija.
+1006. **GitHub: javni repo** `github.com/domovinatv/crowdfund.domovina.ai` (korisnik je odabrao javni). Pregled prije
+      prvog pusha nad cijelom poviješću (78 commitova): nema `sk_`/`pk_`/`whsec_` ključeva ni tokena (`git log -p --all`
+      grep), `.dev.vars` nikad nije commitan (samo `.dev.vars.example` s praznim vrijednostima), nema 4fund snimki
+      (`docs/research/obilazak/snimke/` gitignore od S0), svi ljudi i e-pošte u seedu i testovima su izmišljeni
+      (`@demo.invalid`, `@example.org`). Ostaju javni: ID sandbox tenanta `sbx-73b4d4042e` (identifikator, ne tajna) i
+      e-pošta autora commitova (ista kao u javnim `pay.domovina.ai` i `campaign-core`). Odluka 17 je zatvorena.
+1007. **Prijenos medija i privitak ✗ do odluke o R2** (A05 fotografije, B01 galerija, A22 privitak prijave): UI ostaje
+      mock s oznakom, bez R2 bucketa. Razlog: za UI prototip upload ne dodaje novi tok, a javni staging s uploadom
+      otvara moderaciju i GDPR tuđih fotografija. (auto, potvrditi)
