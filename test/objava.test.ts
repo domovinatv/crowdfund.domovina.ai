@@ -218,7 +218,7 @@ describe("objava: osobno (nije u fazi 1)", () => {
     expect(await objavi(db, k, potpun({ nacin: "osobno" }), null, SAD)).toMatchObject({ ok: false, greska: "osoba_neverificirana" });
     verificiraj(sqlite, k.id, "rejected");
     expect(await objavi(db, k, potpun({ nacin: "osobno" }), null, SAD)).toMatchObject({ ok: false, greska: "osoba_neverificirana" });
-    expect(broj(sqlite, "SELECT COUNT(*) FROM organizations WHERE kind = 'personal'")).toBe(0);
+    expect(broj(sqlite, "SELECT COUNT(*) FROM organizations o JOIN memberships m ON m.organization_id = o.id WHERE o.kind = 'personal' AND m.user_id = ?", k.id)).toBe(0);
   });
 
   it("verificirana osoba: osobna organizacija (personal, osoba, owner) nastaje jednom", async () => {
@@ -229,7 +229,12 @@ describe("objava: osobno (nije u fazi 1)", () => {
     const b = await objavi(db, k, potpun({ nacin: "osobno" }, { vrsta: "recurring", ciljCenti: null, rok: null }), null, SAD);
     expect(a).toMatchObject({ ok: true, state: "active" });
     expect(b).toMatchObject({ ok: true, state: "active" });
-    const o = redovi<Record<string, unknown>>(sqlite, "SELECT o.*, g.holder_type FROM organizations o JOIN organizers g ON g.id = o.organizer_id WHERE o.kind = 'personal'");
+    const o = redovi<Record<string, unknown>>(
+      sqlite,
+      `SELECT o.*, g.holder_type FROM organizations o JOIN organizers g ON g.id = o.organizer_id
+         JOIN memberships m ON m.organization_id = o.id AND m.user_id = ? WHERE o.kind = 'personal'`,
+      k.id,
+    );
     expect(o).toHaveLength(1);
     expect(o[0]).toMatchObject({ legal_form: "osoba", status: "active", holder_type: "person", is_fixed_beneficiary: 0 });
     expect(String(o[0]!.slug)).toMatch(/^osoba-[a-z0-9-]+$/);

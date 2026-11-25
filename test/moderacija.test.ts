@@ -86,12 +86,14 @@ function svjeze() {
 
 describe("red prijava i detalj", () => {
   const { db } = svjeze();
-  it("otvorene prve: received prije in_review; filtar po statusu", async () => {
+  it("otvorene prve: received prije decided; filtar po statusu", async () => {
     const red = await redPrijava(db);
     expect(red.map((p) => p.id)).toEqual([NOVA, STARA]);
     expect(red[0]).toMatchObject({ vrsta: "campaign", status: "received", razlog: "spam" });
     expect(red[0]!.oznaka).toContain(`(${"sg3842"})`);
-    expect((await redPrijava(db, "in_review")).map((p) => p.id)).toEqual([STARA]);
+    // Prijava s odlukom (blokada) je `decided` (S8: seed usklađen, odluka postoji).
+    expect((await redPrijava(db, "decided")).map((p) => p.id)).toEqual([STARA]);
+    expect(await redPrijava(db, "in_review")).toEqual([]);
     expect(await redPrijava(db, "closed")).toEqual([]);
   });
   it("detalj: kampanja cilja (blokirana), prijavitelj, odluke; nepostojeća null", async () => {
@@ -344,7 +346,7 @@ describe("pristup /admin/* (A, odluka 602)", () => {
     expect(((await ucitajPrijavu(ctx(db, ADMIN.prijava("nema"), mod), "nema")) as Response).status).toBe(404);
   });
   it("filtar statusa: nepoznat status znači sve", async () => {
-    expect(podaci(await ucitajPrijave(ctx(db, `${ADMIN.prijave}?status=decided`, mod))).stavke).toEqual([]);
+    expect(podaci(await ucitajPrijave(ctx(db, `${ADMIN.prijave}?status=appealed`, mod))).stavke).toEqual([]);
     expect(podaci(await ucitajPrijave(ctx(db, `${ADMIN.prijave}?status=xx`, mod)))).toMatchObject({ status: null });
   });
 });

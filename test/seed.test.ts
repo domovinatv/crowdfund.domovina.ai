@@ -95,12 +95,13 @@ describe("seed/demo.sql", () => {
     expect(redovi(d2, "PRAGMA foreign_key_check")).toEqual([]);
   });
 
-  it("količine: ≥ 20 kampanja, 6 organizacija (jedna na čekanju, S6), 10 osoba", () => {
+  it("količine: ≥ 20 kampanja, 7 organizacija (jedna na čekanju S6, jedna osobna S8), 12 korisnika", () => {
     expect(kampanje.length).toBeGreaterThanOrEqual(20);
-    expect(broj(db, "SELECT count(*) FROM organizations")).toBe(6);
+    expect(broj(db, "SELECT count(*) FROM organizations")).toBe(7);
+    expect(broj(db, "SELECT count(*) FROM organizations WHERE kind = 'personal'")).toBe(1);
     expect(broj(db, "SELECT count(*) FROM organizations WHERE status = 'pending'")).toBe(1);
-    expect(broj(db, "SELECT count(*) FROM organizers")).toBe(6);
-    expect(broj(db, "SELECT count(*) FROM users")).toBe(11);
+    expect(broj(db, "SELECT count(*) FROM organizers")).toBe(7);
+    expect(broj(db, "SELECT count(*) FROM users")).toBe(12);
     expect(broj(db, "SELECT count(*) FROM contributions")).toBeGreaterThan(100);
     expect(broj(db, "SELECT count(*) FROM campaign_updates")).toBeGreaterThan(0);
     expect(broj(db, "SELECT count(*) FROM comments")).toBeGreaterThan(0);
@@ -259,5 +260,54 @@ describe("seed/demo.sql", () => {
     // refundirani doprinosi imaju zapis povrata
     expect(broj(db, `SELECT count(*) FROM contributions c WHERE state = 'refunded'
                       AND NOT EXISTS (SELECT 1 FROM refunds r WHERE r.contribution_id = c.id)`)).toBe(0);
+  });
+
+  it("S8 faza 2 i usklađenje: ponude i licitacije, Founder's Offer, novosti razine, kampanja osobe, KYB, prijava", () => {
+    const P = JSON.parse(readFileSync(new URL("../seed/primjeri.json", import.meta.url), "utf8")) as {
+      ponuda: string; kampanja: Record<string, string>; prijavaModeracije: string;
+    };
+    // Ponude samo na kampanjama koje ih dopuštaju; barem 3 kampanje s aktivnim ponudama, aukcija i kupnja.
+    expect(broj(db, `SELECT count(*) FROM offers o JOIN campaign_settings s ON s.campaign_id = o.campaign_id
+                      WHERE s.allow_external_offers = 0`)).toBe(0);
+    expect(broj(db, "SELECT count(DISTINCT campaign_id) FROM offers WHERE status = 'active'")).toBeGreaterThanOrEqual(3);
+    expect(broj(db, "SELECT count(*) FROM offers WHERE status = 'active' AND mode = 'auction'")).toBeGreaterThanOrEqual(2);
+    expect(broj(db, "SELECT count(*) FROM offers WHERE status = 'draft'")).toBeGreaterThanOrEqual(1);
+    expect(broj(db, "SELECT count(*) FROM offers WHERE category IS NULL")).toBe(0);
+    // Primjer ponude je aktivna aukcija s licitacijama; licitacije aukcije rastu i nisu ispod početne cijene.
+    expect(redovi(db, "SELECT mode, status FROM offers WHERE id = ?", P.ponuda)).toEqual([{ mode: "auction", status: "active" }]);
+    expect(broj(db, "SELECT count(*) FROM offer_bids WHERE offer_id = ?", P.ponuda)).toBeGreaterThanOrEqual(2);
+    expect(broj(db, `SELECT count(*) FROM offer_bids b JOIN offers o ON o.id = b.offer_id
+                      WHERE o.mode <> 'auction' OR b.amount_cents <= o.price_cents`)).toBe(0);
+    // Founder's Offer: prihvaćen, prodavatelj verificiran (person_kyc approved) i nije član organizacije kampanje.
+    const founder = redovi<{ seller_user_id: string; founder_status: string; campaign_id: string }>(
+      db, "SELECT seller_user_id, founder_status, campaign_id FROM offers WHERE is_founder = 1");
+    expect(founder.length).toBeGreaterThanOrEqual(1);
+    for (const f of founder) {
+      expect(f.founder_status).toBe("accepted");
+      expect(broj(db, "SELECT count(*) FROM verifications WHERE kind = 'person_kyc' AND subject_id = ? AND status = 'approved'", f.seller_user_id)).toBe(1);
+      expect(broj(db, `SELECT count(*) FROM memberships m JOIN organizations o ON o.id = m.organization_id
+                        JOIN campaigns c ON c.organizer_id = o.organizer_id WHERE c.id = ? AND m.user_id = ?`, f.campaign_id, f.seller_user_id)).toBe(0);
+    }
+    // Novosti razine pripadaju razini iste kampanje.
+    expect(broj(db, "SELECT count(*) FROM campaign_updates WHERE tier_id IS NOT NULL")).toBeGreaterThanOrEqual(2);
+    expect(broj(db, `SELECT count(*) FROM campaign_updates u JOIN campaign_tiers t ON t.id = u.tier_id
+                      WHERE t.campaign_id <> u.campaign_id`)).toBe(0);
+    // Kampanja fizičke osobe: osobna organizacija, organizator `person`, autor verificiran, aktivna.
+    const osobna = redovi(db, `SELECT o.kind, o.legal_form, g.holder_type, c.state,
+                                  (SELECT status FROM verifications v WHERE v.kind = 'person_kyc' AND v.subject_id = c.created_by) AS kyc
+                             FROM campaign_settings s JOIN campaigns c ON c.id = s.campaign_id JOIN organizers g ON g.id = c.organizer_id
+                             JOIN organizations o ON o.organizer_id = g.id WHERE s.public_id = ?`, P.kampanja.osobna!);
+    expect(osobna).toEqual([{ kind: "personal", legal_form: "osoba", holder_type: "person", state: "active", kyc: "approved" }]);
+    // Aktivna organizacija ima odobren prvi KYB; Sunčani krov ima noviju provjeru u tijeku.
+    expect(broj(db, `SELECT count(*) FROM organizations o WHERE o.status = 'active' AND o.kind = 'legal' AND NOT EXISTS
+                      (SELECT 1 FROM verifications v WHERE v.kind = 'org_kyb' AND v.subject_id = o.id AND v.status = 'approved')`)).toBe(0);
+    expect(redovi(db, `SELECT v.status, v.trigger FROM verifications v JOIN organizations o ON o.id = v.subject_id
+                        WHERE o.slug = 'demo-suncani-krov' ORDER BY v.requested_at`)).toEqual([
+      { status: "approved", trigger: "user" }, { status: "in_review", trigger: "risk" },
+    ]);
+    // Prijava s odlukom nije `in_review`; prijava bez odluke nije `decided`.
+    expect(redovi(db, "SELECT status FROM reports WHERE id = ?", P.prijavaModeracije)).toEqual([{ status: "decided" }]);
+    expect(broj(db, `SELECT count(*) FROM reports r WHERE (r.status IN ('decided','closed','appealed'))
+                      != EXISTS (SELECT 1 FROM moderation_decisions d WHERE d.report_id = r.id)`)).toBe(0);
   });
 });

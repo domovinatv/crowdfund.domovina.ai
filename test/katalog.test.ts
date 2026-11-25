@@ -35,7 +35,7 @@ const sirovo = redovi<Sirovo>(
           COALESCE(st.raised_cents, 0) AS raised, s.hide_raised, c.goal_cents, s.kind, s.category_key,
           (SELECT COALESCE(SUM(amount_received_cents), 0) FROM contributions d
             WHERE d.campaign_id = c.id AND d.state = 'paid' AND d.paid_at >= ?) AS dan,
-          (SELECT MAX(published_at) FROM campaign_updates u WHERE u.campaign_id = c.id AND u.deleted_at IS NULL) AS novost,
+          (SELECT MAX(published_at) FROM campaign_updates u WHERE u.campaign_id = c.id AND u.deleted_at IS NULL AND u.tier_id IS NULL) AS novost,
           COALESCE((SELECT v.status = 'approved' FROM organizations o JOIN verifications v
                      ON v.subject_id = o.id AND v.kind = 'org_kyb' WHERE o.organizer_id = c.organizer_id
                      ORDER BY v.requested_at DESC LIMIT 1), 0) AS verified

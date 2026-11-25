@@ -133,7 +133,7 @@ describe("organizacije i vanjske kampanje", () => {
     expect(sve.ukupnoStranica).toBe(1);
     const imena = sve.organizacije.map((o) => o.displayName);
     // NOCASE je ASCII: „Š” ide iza „Z” (D1 nema ICU kolaciju za hrvatski).
-    expect(imena).toEqual(redovi<{ n: string }>(sqlite, "SELECT display_name AS n FROM organizations WHERE status = 'active' ORDER BY n COLLATE NOCASE").map((r) => r.n));
+    expect(imena).toEqual(redovi<{ n: string }>(sqlite, "SELECT display_name AS n FROM organizations WHERE status = 'active' AND kind = 'legal' ORDER BY n COLLATE NOCASE").map((r) => r.n));
     expect(sve.organizacije.reduce((a, o) => a + o.brojAktivnihKampanja, 0)).toBeGreaterThan(10);
     const ziv = await katalogOrganizacija(db, { category: "animals" });
     expect(ziv.organizacije.map((o) => o.slug)).toEqual(["demo-sapica"]);

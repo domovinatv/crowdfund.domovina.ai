@@ -17,7 +17,8 @@
     "draft404": "ryhs5w",
     "blokirana404": "w70emf",
     "obrisana404": "necdy4",
-    "zaOdobrenje404": "94cw6h"
+    "zaOdobrenje404": "94cw6h",
+    "osobna": "p4tvc4"
   },
   "korisnik": {
     "javni": "019e04e2-4c00-72fa-bdb3-a8c1e48e8d77",
@@ -34,6 +35,7 @@
   "vanjskaNeaktivna404": "019f10ac-fc00-733a-ae33-6596bf583905",
   "pracenjeToken": "019e28ee-d000-757b-a8f1-690dce1d00c9.01a01ed3-eb80-795d-a1cc-4538bacfd1e4.bfUORyB-vdSmDPrS_phYPReUPROeiuEjaodPZLXTnT8",
   "kategorija": "animals",
+  "ponuda": "01a03893-b780-706c-b820-f916ec512a2b",
   "demoSad": "2026-11-24",
   "demoRacuni": {
     "organizator": "ivana.testic@demo.invalid",

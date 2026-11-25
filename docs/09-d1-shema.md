@@ -14,6 +14,7 @@ vrijeme unix ms, skup = `CHECK (x IN (…))`, boolean `CHECK (x IN (0,1))`, JSON
 | `migrations/0004_s6.sql` | `users.slug`, `campaign_settings.contributions_list`, `campaign_follows` s e-poštom i tokenom, indeksi prijave | §0004 ispod (S6) |
 | `migrations/0007_s6_organizacija.sql` | odbijanje kampanje za organizaciju (`campaign_settings.beneficiary_rejected_*`), zastupnik u `organization_applications.representative` | §0007 ispod (S6) |
 | `migrations/0008_s8_vanjske_ponavljanje.sql` | kratki opis vanjske kampanje, `recurring_reminders` (mjesečni podsjetnik s tokenom), `notifications.campaign_id` | §0008 ispod (S8) |
+| `migrations/0009_s8_faza2.sql` | ponude faze 2: `offers.category`, `offers.item_condition`, indeksi kataloga ponuda i licitacija | §0009 ispod (S8) |
 
 S4 ima test koji uspoređuje `0001_core.sql` s opisom iz paketa (kao planirani J2 test u campaign-coreu), pa
 nova verzija paketa ruši build dok se migracija ne obnovi. Vertikale (`campaign_energy`,
@@ -674,6 +675,35 @@ CREATE INDEX recurring_reminders_pledge ON recurring_reminders (pledge_id, creat
 ALTER TABLE notifications ADD COLUMN campaign_id TEXT REFERENCES campaigns(id);
 CREATE INDEX notifications_campaign ON notifications (campaign_id, created_at DESC) WHERE campaign_id IS NOT NULL;
 ```
+
+## 0009_s8_faza2.sql
+
+S8 (agent B), ponude i aukcije kao UI faze 2 (odluka 8): obrazac `/hr/ponude/nova` sprema **nacrt** (`offers.status =
+'draft'`), katalog `/hr/ponude` i stranica ponude `/hr/ponude/{offer}` čitaju aktivne ponude. Kupnje ni licitiranja
+nema (fiskalizacija, DAC7), pa `offer_bids` puni samo seed. Samo `ALTER TABLE ... ADD COLUMN` i indeksi.
+
+- **`offers.category`**: vlastitih 12 ključeva (`kids`, `fashion`, `books`, `art`, `home`, `tickets`, `autographs`,
+  `sport`, `electronics`, `experiences`, `thanks`, `other`) po uzoru na ~15 kategorija 4fundova kataloga (javni
+  pregled §8.3). Nisu `categories` kampanja: katalog ponuda filtrira po vrsti predmeta, a ne po namjeni kampanje.
+- **`offers.item_condition`**: `new` / `used`, NULL za uslugu, doživljaj i digitalni sadržaj (javni pregled §3 „Polja
+  ponude”).
+- Za kupnju odmah `price_cents` je **najmanji iznos** (kupac smije dati više), za aukciju **početna cijena**;
+  `ends_at` je kraj trajanja (obje vrste). Founder's Offer = `is_founder = 1`, `founder_status = 'pending'` dok
+  organizator ne prihvati; ponuđač mora imati `person_kyc approved` (obilazak 23).
+
+```sql
+ALTER TABLE offers ADD COLUMN category TEXT
+  CHECK (category IS NULL OR category IN ('kids','fashion','books','art','home','tickets','autographs','sport',
+                                          'electronics','experiences','thanks','other'));
+ALTER TABLE offers ADD COLUMN item_condition TEXT CHECK (item_condition IS NULL OR item_condition IN ('new','used'));
+CREATE INDEX offers_status_created ON offers (status, created_at DESC);
+CREATE INDEX offers_campaign ON offers (campaign_id, status);
+CREATE INDEX offer_bids_offer ON offer_bids (offer_id, amount_cents DESC);
+```
+
+Razine podrške (`campaign_tiers`, ekskluzivne novosti `campaign_updates.tier_id`) i promocija ne traže shemu: razine
+i novosti razine već postoje, a ekran promocije (`/hr/{id}/upravljanje/promocija`) ništa ne zapisuje (premium
+fakturira ITalk, faza 2).
 
 ## Napomene za S4
 

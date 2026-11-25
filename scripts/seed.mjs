@@ -246,6 +246,28 @@ const PONUDE = [
   [15, "Ručno pletena dekica za mačke", "buy_now", 25, "sold", 4],
 ];
 
+/**
+ * S8 (faza 2, samo UI): ponude i aukcije na kampanjama koje ih dopuštaju. `k` = indeks kampanje, `po` = prodavatelj
+ * (indeks osobe), `founder` = Founder's Offer (prodavatelj nije član organizacije, verificiran, organizator prihvatio),
+ * `rok` = dana od SAD-a, `licitacije` = [osoba, €] uzlazno. Status `draft` = nacrt iz obrasca `/hr/ponude/nova`.
+ */
+const PONUDE_S8 = [
+  { k: 0, po: 2, naslov: "Ručno oslikana šalica sa svjetionikom", nacin: "buy_now", eur: 20, status: "active", kat: "home", stanje: "new",
+    dostava: "post", rok: 30, kolicina: 5, opis: "Keramička šalica koju su oslikali volonteri zaklade. Najmanji iznos je 20 €, a možete dati i više." },
+  { k: 0, po: 5, founder: true, naslov: "Domaći kolači za vaš rođendan", nacin: "buy_now", eur: 35, status: "active", kat: "experiences",
+    dostava: "in_person", rok: 21, kolicina: 3, opis: "Pladanj domaćih kolača za proslavu do 20 osoba, preuzimanje u Splitu. Founder's Offer: prodaje podržavatelj, novac ide kampanji." },
+  { k: 0, po: 2, naslov: "Večera s volonterima pučke kuhinje", nacin: "auction", eur: 50, status: "active", kat: "experiences",
+    dostava: "in_person", rok: 12, kolicina: 1, opis: "Kuhajte i večerajte s našim volonterima jedne subote u prosincu.", licitacije: [[1, 55], [6, 60], [1, 70]] },
+  { k: 0, po: 2, naslov: "Zidni kalendar zaklade 2027.", nacin: "buy_now", eur: 15, status: "draft", kat: "books", stanje: "new",
+    dostava: "post", rok: 45, kolicina: 50, opis: "Nacrt ponude: kalendar s fotografijama volontera (demo)." },
+  { k: 12, po: 6, naslov: "Dres juniorske momčadi s potpisima", nacin: "auction", eur: 40, status: "active", kat: "autographs", stanje: "new",
+    dostava: "post", rok: 7, kolicina: 1, opis: "Dres s potpisima svih igrača juniorske momčadi, veličina M.", licitacije: [[0, 45], [8, 50], [4, 65]] },
+  { k: 12, po: 7, naslov: "Trening s trenerom juniora", nacin: "buy_now", eur: 25, status: "active", kat: "sport",
+    dostava: "in_person", rok: 20, kolicina: 8, opis: "Sat individualnog treninga za dijete od 8 do 14 godina u dvorani kluba." },
+  { k: 12, po: 6, naslov: "Lopta s finala prošle sezone", nacin: "auction", eur: 30, status: "ended", kat: "sport", stanje: "used",
+    dostava: "post", rok: -2, kolicina: 1, opis: "Aukcija je završila; pobjednik je kontaktiran (demo).", licitacije: [[1, 35], [0, 42]] },
+];
+
 // --- SQL pomoćnici ------------------------------------------------------------------------------
 
 /** @param {unknown} v */
@@ -372,10 +394,11 @@ function generiraj(/** @type {string} */ demoSad) {
     }
     upisi("verifications", {
       id: uuid7(t + SAT), kind: "org_kyb", subject_type: "organization", subject_id: orgId,
-      // Sunčani krov (3) je još u pregledu: filtar `verified` u katalogu ima što isključiti (S5).
-      status: i === 3 ? "in_review" : "approved",
+      // Svi prvi KYB-ovi su odobreni (organizacija je `active`). Sunčani krov (3) ima noviju provjeru `in_review`
+      // (S8, na kraju skripte), pa filtar `verified` u katalogu i dalje ima što isključiti (S5).
+      status: "approved",
       provider: "mock", provider_ref: `DEMO-KYB-${i + 1}`, trigger: "user", reason: null,
-      requested_at: t + SAT, decided_at: i === 3 ? null : t + 2 * DAN, due_at: null,
+      requested_at: t + SAT, decided_at: t + 2 * DAN, due_at: null,
     });
     return { organizerId, orgId, safe, vlasnik: users[vlasnik], naziv, t };
   });
@@ -401,6 +424,8 @@ function generiraj(/** @type {string} */ demoSad) {
   const kInfo = [];
   /** @type {string[]} */
   const prijaveModeracije = [];
+  /** Razine po indeksu kampanje (S8: ekskluzivne novosti razine). @type {Map<number, {id: string, naslov: string}[]>} */
+  const razineKampanje = new Map();
   KAMPANJE.forEach((k, idx) => {
     const org = orgs[k.org];
     const autor = users[k.by];
@@ -449,7 +474,8 @@ function generiraj(/** @type {string} */ demoSad) {
       amount_presets: [2000, 5000, 10000, 30000, 50000], indexable: 1,
       hide_raised: k.hideRaised ? 1 : 0, hide_contributor_count: k.hideCount ? 1 : 0,
       contributions_sort: k.sort ?? "latest", comments_mode: k.komentari ?? "everyone",
-      allow_moneyboxes: k.bezKasica ? 0 : 1, allow_external_offers: PONUDE.some((p) => p[0] === idx) ? 1 : 0,
+      allow_moneyboxes: k.bezKasica ? 0 : 1,
+      allow_external_offers: PONUDE.some((p) => p[0] === idx) || PONUDE_S8.some((p) => p.k === idx) ? 1 : 0,
       contribution_notifications: 1, thank_you_message: "Hvala na podršci! (demo)",
       purpose_verified: k.purpose ? 1 : 0,
       contributions_list: k.popisSkriven ? "hidden" : "visible",
@@ -546,6 +572,7 @@ function generiraj(/** @type {string} */ demoSad) {
       placeni.push({ id: cid, t: tc, platitelj, poruka, anon });
     });
 
+    razineKampanje.set(idx, tiers.map((r) => ({ id: r.id, naslov: r.naslov })));
     for (const r of tiers) {
       upisi("campaign_tiers", {
         id: r.id, campaign_id: id, title: r.naslov, description: r.opis,
@@ -625,7 +652,8 @@ function generiraj(/** @type {string} */ demoSad) {
         id: rid, target_type: "campaign", target_id: id, reason: "fraud",
         description: "Demo prijava: sumnjam da parcela nije u vlasništvu organizatora i da vrt neće biti napravljen.",
         reporter_user_id: users[8].id, reporter_email: null, phone: null, attachment_file_id: null,
-        status: "in_review", created_at: tr, updated_at: krajAktivnosti,
+        // S8: prijava s odlukom je `decided` (odluka unutar roka za žalbu), ne `in_review`.
+        status: "decided", created_at: tr, updated_at: krajAktivnosti,
       });
       upisi("moderation_decisions", {
         id: uuid7(krajAktivnosti), report_id: rid, target_type: "campaign", target_id: id, action: "block_campaign",
@@ -749,6 +777,7 @@ function generiraj(/** @type {string} */ demoSad) {
     upisi("offers", {
       id: oid, campaign_id: kInfo[ki].id, seller_user_id: users[prodavatelj].id, is_founder: 0, founder_status: null,
       title: naslov, description: "Prihod od ponude ide u kampanju (demo, nije u fazi 1).", mode: nacin,
+      category: nacin === "auction" ? "experiences" : prodavatelj === 3 ? "art" : "home", item_condition: nacin === "auction" ? null : "new",
       price_cents: eur * 100, quantity: 1, delivery: nacin === "auction" ? "in_person" : "post", status,
       ends_at: nacin === "auction" ? SAD + 10 * DAN : null, created_at: to, updated_at: to,
     });
@@ -940,6 +969,138 @@ function generiraj(/** @type {string} */ demoSad) {
     status: "received", created_at: SAD - 6 * SAT, updated_at: SAD - 6 * SAT,
   });
   primjeri.kampanja.zaOdobrenje404 = zaOdobrenje.publicId;
+
+  // --- S8 (agent B): faza 2 i usklađivanje seeda. Opet na kraju, da PRNG ne pomakne ništa iznad ------------------
+  // 1. Sunčani krov: prvi KYB odobren (gore), ovo je novija provjera EMI-ja (`risk`) u tijeku. Organizacija ostaje
+  //    `active` (bez blokade, kao kod pragova), a do odluke nema oznaku „verificirana”.
+  upisi("verifications", {
+    id: uuid7(SAD - 5 * DAN), kind: "org_kyb", subject_type: "organization", subject_id: orgs[3].orgId, status: "in_review",
+    provider: "mock", provider_ref: "DEMO-KYB-4-PROVJERA", trigger: "risk", reason: null, requested_at: SAD - 5 * DAN,
+    decided_at: null, due_at: SAD + 9 * DAN,
+  });
+
+  // 2. Verificirana osoba za Founder's Offer (Tomislav, nije član Svjetionika): `person_kyc approved`.
+  upisi("verifications", {
+    id: uuid7(SAD - 40 * DAN), kind: "person_kyc", subject_type: "user", subject_id: users[5].id, status: "approved",
+    provider: "mock", provider_ref: "DEMO-KYC-TOMISLAV", trigger: "user", reason: null, requested_at: SAD - 40 * DAN,
+    decided_at: SAD - 39 * DAN, due_at: null,
+  });
+
+  // 3. Ponude i aukcije (faza 2): PONUDE_S8 gore. Licitacije su uzlazne, svaka dan nakon prethodne.
+  /** @type {string | null} */
+  let primjerPonude = null;
+  for (const p of PONUDE_S8) {
+    const to = kInfo[p.k].t + 5 * DAN;
+    const oid = uuid7(to);
+    if (!primjerPonude && p.nacin === "auction" && p.status === "active") primjerPonude = oid;
+    upisi("offers", {
+      id: oid, campaign_id: kInfo[p.k].id, seller_user_id: users[p.po].id, is_founder: p.founder ? 1 : 0,
+      founder_status: p.founder ? "accepted" : null, title: p.naslov, description: p.opis, mode: p.nacin,
+      price_cents: p.eur * 100, quantity: p.kolicina, delivery: p.dostava, status: p.status, ends_at: SAD + p.rok * DAN,
+      created_at: to, updated_at: to, category: p.kat, item_condition: p.stanje ?? null,
+    });
+    (p.licitacije ?? []).forEach(([ui, eur], b) => upisi("offer_bids", {
+      id: uuid7(to + (b + 1) * DAN), offer_id: oid, user_id: users[ui].id, amount_cents: eur * 100, created_at: to + (b + 1) * DAN,
+    }));
+  }
+
+  // 4. Ekskluzivne novosti razine (campaign_updates.tier_id, faza 2): javno se vidi samo zaključan pregled.
+  //    [kampanja, indeks razine, naslov, tekst, dana prije SAD-a]
+  const NOVOSTI_RAZINE = [
+    [22, 1, "Za kumove: kako je prošla zima u skloništu", "Fotografije novih boksova i popis pasa koji su ove zime našli dom. Hvala kumovima!", 6],
+    [22, 0, "Za prijatelje: plan nabave hrane", "Prijatelji Šapice prvi vide plan nabave hrane za sljedeća tri mjeseca.", 12],
+    [4, 1, "Za podržavatelje CD-a: prvi snimljeni napjev", "Prvi napjev je snimljen; ovdje je kratka priča iz studija.", 9],
+  ];
+  for (const [ki, ri, naslov, tekst, prije] of NOVOSTI_RAZINE) {
+    const razina = razineKampanje.get(ki)?.[ri];
+    if (!razina) throw new Error(`kampanja ${ki} nema razinu ${ri}`);
+    const tu = SAD - prije * DAN;
+    upisi("campaign_updates", {
+      id: uuid7(tu), campaign_id: kInfo[ki].id, author_id: kInfo[ki].org.vlasnik.id, title: naslov, body: tekst,
+      tier_id: razina.id, published_at: tu, updated_at: tu, deleted_at: null,
+    });
+  }
+
+  // 5. Kampanja fizičke osobe (odluka 8 i 636, „nije u fazi 1”): nova demo osoba, `person_kyc approved`, osobna
+  //    organizacija (`personal`, `osoba`, owner) i aktivna jednokratna kampanja s nekoliko uplata preko QR-a kampanje.
+  const tFo = SAD - 30 * DAN;
+  const osoba = { id: uuid7(tFo), email: "nikolina.osobna@demo.invalid", ime: "Nikolina", prezime: "Osobnić" };
+  upisi("users", {
+    id: osoba.id, email: osoba.email, display_name: `${osoba.ime} ${osoba.prezime}`, first_name: osoba.ime, last_name: osoba.prezime,
+    slug: null, about: "Izmišljena demo osoba: kampanja fizičke osobe (nije u fazi 1).", website: null, phone: null,
+    country_code: "HR", avatar_file_id: null, locale: "hr", platform_role: "user", email_verified_at: tFo + SAT,
+    created_at: tFo, updated_at: tFo, deleted_at: null,
+  });
+  upisi("auth_identities", { id: uuid7(tFo), user_id: osoba.id, provider: "email_link", subject: osoba.email, created_at: tFo, last_used_at: SAD - 2 * DAN });
+  upisi("verifications", {
+    id: uuid7(tFo + DAN), kind: "person_kyc", subject_type: "user", subject_id: osoba.id, status: "approved", provider: "mock",
+    provider_ref: "DEMO-KYC-NIKOLINA", trigger: "user", reason: null, requested_at: tFo + DAN, decided_at: tFo + 2 * DAN, due_at: null,
+  });
+  const osobnaOrg = { organizerId: uuid7(tFo + 3 * DAN), orgId: uuid7(tFo + 3 * DAN), safe: adresa("de5afe", 0x10) };
+  upisi("organizers", {
+    id: osobnaOrg.organizerId, tenant_id: TENANT, holder_type: "person", legal_name: `${osoba.ime} ${osoba.prezime}`, oib: null,
+    address_line: null, city: null, postal_code: null, country_code: "HR", contact_email: osoba.email, is_platform: 0,
+    created_at: tFo + 3 * DAN, updated_at: tFo + 3 * DAN,
+  });
+  upisi("organizations", {
+    id: osobnaOrg.orgId, organizer_id: osobnaOrg.organizerId, slug: `demo-osoba-nikolina-${osobnaOrg.orgId.replace(/-/g, "").slice(-6)}`,
+    kind: "personal", legal_form: "osoba", display_name: `${osoba.ime} ${osoba.prezime}`, description: null, website: null,
+    social_links: [], logo_file_id: null, category_key: null, safe_address: osobnaOrg.safe, safe_chain_id: LANAC, status: "active",
+    is_fixed_beneficiary: 0, created_at: tFo + 3 * DAN, updated_at: tFo + 3 * DAN, deleted_at: null,
+  });
+  upisi("memberships", { user_id: osoba.id, organization_id: osobnaOrg.orgId, role: "owner", invited_by: null, created_at: tFo + 3 * DAN, updated_at: tFo + 3 * DAN });
+  const tOk = tFo + 3 * DAN;
+  const osobnaKampanja = { id: uuid7(tOk), publicId: javniId() };
+  const naslovOsobne = "Fizikalna terapija nakon prijeloma noge";
+  upisi("campaigns", {
+    id: osobnaKampanja.id, tenant_id: TENANT, organizer_id: osobnaOrg.organizerId, slug: slug(naslovOsobne), type: "donation",
+    vertical: "none", title: naslovOsobne,
+    description: "Nakon prijeloma noge trebam tri mjeseca fizikalne terapije koju osiguranje ne pokriva u cijelosti. " +
+      "Izmišljena demo kampanja fizičke osobe: u prvoj fazi platforme kampanje pokreću samo pravne osobe.",
+    goal_cents: 180000, min_contribution_cents: 100, max_contributors: null, currency: "EUR", state: "active", visibility: "public",
+    mode: "byo", rails: "platform", starts_at: tOk, ends_at: SAD + 50 * DAN, recurrence: "none", cover_image_url: null, lat: null,
+    lng: null, location_name: "Zadar", surplus_intent: "Višak ide na nastavak terapije.", demo: 1, metadata: { demo: true },
+    created_by: osoba.id, created_at: tOk, updated_at: tOk + DAN, deleted_at: null,
+  });
+  upisi("campaign_safes", {
+    campaign_id: osobnaKampanja.id, address: osobnaOrg.safe, chain_id: LANAC, threshold: 1, owners: [adresa("de0e1", 0x40)],
+    platform_signer_count: 0, deployed_at: tOk - SAT, verified_at: tOk + SAT,
+  });
+  upisi("campaign_settings", {
+    campaign_id: osobnaKampanja.id, public_id: osobnaKampanja.publicId, kind: "one_time", category_key: "needs", cover_theme: TEME.needs,
+    created_by_user_id: osoba.id, beneficiary_organization_id: null, beneficiary_approved_at: null, beneficiary_approved_by: null,
+    amount_presets: [2000, 5000, 10000, 30000, 50000], indexable: 1, hide_raised: 0, hide_contributor_count: 0,
+    contributions_sort: "latest", comments_mode: "everyone", allow_moneyboxes: 1, allow_external_offers: 0,
+    contribution_notifications: 1, thank_you_message: "Hvala od srca! (demo)", purpose_verified: 0, contributions_list: "visible",
+    paused_at: null, blocked_at: null, blocked_reason: null, updated_at: tOk + DAN,
+  });
+  const uplateOsobne = [[2500, 1], [5000, 3], [1000, 5], [10000, 8]];
+  let raisedOsobne = 0;
+  for (const [iznos, dan] of uplateOsobne) {
+    const tc = tOk + dan * DAN;
+    const cid = uuid7(tc);
+    raisedOsobne += iznos;
+    upisi("contributions", {
+      id: cid, campaign_id: osobnaKampanja.id, tier_id: null, quantity: 1, amount_cents: iznos, amount_received_cents: iznos,
+      currency: "EUR", state: "paid", payment_rail: "sepa", payment_intent_sid: null, monerium_order_id: `demo-ord-${hex(12)}`,
+      tx_hash: null, log_index: null, onchain_from: null, external_payment_ref: null, payer_iban_hash: `demo${hex(60)}`, underpaid: 0,
+      created_at: tc, paid_at: tc + 10 * 60_000, updated_at: tc + SAT,
+    });
+    upisi("contribution_profiles", {
+      contribution_id: cid, anonymous: dan === 5 ? 1 : 0, display_name: dan === 5 ? null : PODRZAVATELJI[dan], display_name_verified: 0,
+      message: dan === 1 ? "Brz oporavak!" : null, message_hidden: 0, link_url: null, bank_verified: 1, updated_at: tc + SAT,
+    });
+    upisi("contribution_attributions", {
+      contribution_id: cid, checkout_id: null, user_id: null, moneybox_id: null, tracking_link_id: null, share_link_id: null,
+      offer_id: null, amount_hidden: 0, show_message_as_comment: 0, source: "campaign_qr",
+    });
+  }
+  upisi("campaign_stats", {
+    campaign_id: osobnaKampanja.id, raised_cents: raisedOsobne, contribution_count: uplateOsobne.length,
+    contributor_count: uplateOsobne.length, last_contribution_at: tOk + 8 * DAN + 10 * 60_000, updated_at: tOk + 8 * DAN + 10 * 60_000,
+  });
+  primjeri.kampanja.osobna = osobnaKampanja.publicId;
+  primjeri.ponuda = primjerPonude;
 
   Object.assign(primjeri, {
     demoSad,
