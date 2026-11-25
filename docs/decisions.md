@@ -636,3 +636,44 @@ koja se na nju poziva. Blokovi brojeva po sesiji: S1 od 100, S1b od 150, S2 od 2
 1020. **e2e S10:** `e2e/mjesecno.spec.ts` (podsjetnik na 375, trajni nalog na 1280, plaćanje u sandboxu, obećanje,
       poruka kao komentar, „pošalji podsjetnik sada”) i `e2e/promocija.spec.ts` (widget, stream, čestitka, dijeljenje
       komentara, axe novih stanja). Mock e-pošta organizatoru o doprinosu nije u e2e-u (nema demo sesije vlasnika).
+
+## S11 — 25. 11. 2026.
+
+1100. **Pravi SSE statusa kroz Worker proxy** (TODO F3; mijenja 728 u dijelu o pregledniku): `GET
+      /api/checkouts/{id}/stream?cilj=doprinos|napojnica` (pristup T) otvara MPT `{apiUrl}/v1/intents/{sid}/stream`
+      (sid iz baze, bez dodatnog poziva raila) i prevodi `event: stage` u `event: stanje` s `{ state, faza }`; iznos,
+      ID narudžbe i hashevi raila ne idu u preglednik. `retry` i `: ping` prolaze. Kod: `src/lib/mpt/stream.ts`.
+1101. **Stream je signal, ne izvor stanja:** na promjenu `state` ili završnu fazu (`settled`, `rejected`, `expired`)
+      klijent zove pull `…/events` (on upisuje u bazu) i ponovno učita stranicu. Bazu i dalje mijenjaju samo webhook
+      i pull (705).
+1102. **Pull samo kao rezerva:** svake 3 s dok stream ne javi prvi događaj, i opet nakon pada ili zatvaranja streama
+      (rail ga zatvara nakon završne faze ili 30 min). `EventSource` se na grešku zatvara bez ponovnog spajanja (inače
+      bi se na završnoj fazi spajao svake 3 s). Jedan poziv raila po učitavanju (SSR pull) + jedan stream.
+1103. **Stream nedostupan → 204** (`x-stream: nedostupan`): rail bez SSE-a (404), 429 (`too_many_streams`, 8 po
+      sidu), drugi `content-type` ili pad mreže. 204 zatvara `EventSource` bez greške u konzoli. 400 za nepoznat
+      `cilj`, 404 za nepoznat checkout ili checkout bez napojnice.
+1104. **Lokalni e2e ima vlastiti sandbox tenant** `sbx-f5468ddf0b` (odgovor na pitanje S11, auto): rail ograničava
+      simulacije na 100 po tenantu u kliznih 24 h (`SIM_PER_TENANT_PER_DAY`), a S10 ih je potrošio, pa je simulate
+      vraćao 429. Staging ostaje na `sbx-73b4d4042e` (1002, 1003). Stari lokalni `.dev.vars` je u gitignoreanom
+      `.dev.vars.tenant-staging`. Lokalni webhook i dalje nema (700). (auto, potvrditi)
+1105. **Video na stranici kampanje** (`src/lib/video.ts` `parsirajVideo`, `VideoKampanje.astro`): samo https
+      youtube.com (`/watch?v=`, `/shorts/`, `/embed/`, i `www`/`m`), `youtu.be/<id>` i `vimeo.com/<broj>`; YouTube ID
+      točno 11 znakova `[A-Za-z0-9_-]`, Vimeo 1–12 znamenki; URL s korisnikom, lozinkom ili portom se odbija. Iframe i
+      poveznica grade se iz ID-a (`youtube-nocookie.com/embed/<id>`, `player.vimeo.com/video/<id>?dnt=1`), nikad iz
+      URL-a organizatora. `valjanVideoUrl` (čarobnjak, uređivanje) koristi isti parser.
+1106. **Bez sadržaja trećih prije klika:** vlastiti okvir s ikonom; klik ga zamjenjuje iframeom (`title`, minimalni
+      `allow`, `referrerpolicy="strict-origin-when-cross-origin"`, `loading="lazy"`); bez JS-a okvir je poveznica na
+      izvorni video. Video stoji na vrhu odjeljka „Opis”. CSP ne postoji, pa nema `frame-src` izmjene. (potvrditi)
+1107. **Opis kasice kroz renderer opisa** (`renderirajOpis`, meta opis `obicniTekstOpisa`) na `/s/{alias}`; obrazac nove
+      kasice ima istu alatnu traku i napomenu o formatiranju kao kampanja. Kartica kasice opis ne prikazuje.
+1108. **e2e mock e-pošte organizatoru** (`e2e/posta-organizatoru.spec.ts`; zatvara ostatak 1020): demo sesija
+      vlasnice (`demoSesija`) gleda postojeću `/hr/{id}/upravljanje/obavijesti` (`[data-mock-uplate]`); anonimni
+      podržavatelj plaća u zasebnom kontekstu iznosom s centima koji identificira poruku; poruka nema ime ni e-poštu
+      podržavatelja. Uz to `e2e/video.spec.ts` (YouTube na 375, Vimeo na 1280, nijedan zahtjev prema njima prije klika)
+      i `e2e/kasica-opis.spec.ts`.
+1109. **R2 ostaje ✗ do produkcije:** korisnik je nastavio S11 bez promjene auto-odluke 1007, pa je prihvaćena; prijenos
+      fotografija, galerija i privitak prijave ostaju mock s oznakom.
+1110. **e2e checkouta nad stagingom nije zelen u S11:** nakon redeploya `node scripts/provjera-ruta.ts
+      https://crowdfund-staging.domovina.ai` daje 335/335 i SSE proxy vraća `200 text/event-stream` s `event: stanje`,
+      a u SSE testu stream i „bez pulla” prolaze; svaka simulacija na stagingu vraća `rate_limited` (kvota tenanta
+      `sbx-73b4d4042e`, 1104). Staging ostaje na tom tenantu (odgovor S11); ponovna provjera u S12.

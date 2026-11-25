@@ -36,6 +36,7 @@ Arhitektura: [06-arhitektura](06-arhitektura.md). Preslikavanje funkcija: [02](0
 | S9 | F4 | **Paritet i pregled**: tablica pariteta ekran-po-ekran naspram obilaska, a11y i mobilni pregled, preview deploy na `*.workers.dev` (vrata) | 900– | tablica pariteta bez praznih redova; Playwright prolazi na 375 px i 1280 px; preview URL (ako korisnik odobri) |
 | S10 | F4 | **Vrata i dorade** (dodano u S9): preview deploy ako korisnik odobri, webhook izvana, ime/brend ako odgovori; 11 „djelomično” redova iz `docs/10`; e2e mjesečnog toka; SSE | 1000– | `docs/10` bez „djelomično” (ili ✗ s razlogom); `npm run check` i Playwright zeleni; preview URL ili zapisano da nije odobren |
 | S11 | F4 | **Ostatak** (dodano u S10): pravi SSE statusa kroz Worker, video na stranici kampanje, opis kasice kroz renderer, e2e mock e-pošte organizatoru; R2 ako korisnik odluči | 1100– | `npm run check` i Playwright zeleni; staging redeployan; TODO F3/F4 bez otvorenih stavki osim korisnikovih odluka |
+| S12 | F4 | **Provjera i čekanje** (dodano u S11): e2e checkouta (`uplata.spec.ts`, uklj. SSE) nad stagingom kad se kvota simulacija starog tenanta oslobodi; ime/brend ako korisnik odluči | 1200– | `uplata.spec.ts` zelen nad stagingom; ime ili zapisano da je otvoreno |
 
 **Procjena:** 10 sesija (S1–S9 + S1b). **Vrata:** S1 (prijava u Brave), S3 (ime/brend),
 S9 (deploy). **Paralelno:** S2 i S3 dijele samo `docs/00`, ali S3 treba entitete iz S2, pa
@@ -45,8 +46,7 @@ tunel ili ručni `simulate` + pull statusa).
 
 ## Gdje smo
 
-S0–S10 gotovi (25. 11. 2026.). S10: staging `https://crowdfund-staging.domovina.ai` (račun D.O.M., javno, sandbox,
-noindex; webhook sandbox tenanta izvana potvrđen), javni repo `github.com/domovinatv/crowdfund.domovina.ai`, svih 11
-„djelomično” redova `docs/10` zatvoreno (R2 ✗ do odluke), e2e mjesečnog toka, `subscriptions` povezan (odluke
-1000–1020). Ime platforme i dalje otvoreno (odluka 1004). Sljedeće: S11 (izvan plana) — pravi SSE kroz Worker, sitni
-ostaci iz S10, potvrda auto-odluke o R2.
+S0–S11 gotovi (25. 11. 2026.). S11: pravi SSE statusa kroz Worker proxy (radi nad stagingom), video na stranici
+kampanje bez sadržaja trećih prije klika, opis kasice kroz renderer, e2e mock e-pošte organizatoru, lokalni e2e na
+vlastitom sandbox tenantu; R2 ✗ do produkcije prihvaćen (odluke 1100–1109). Ime platforme i dalje otvoreno (1004).
+Sljedeće: S12 (kratko) — e2e checkouta nad stagingom kad se kvota simulacija oslobodi; ime/brend kad korisnik odluči.
