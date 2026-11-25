@@ -54,6 +54,7 @@ test("doprinos kroz sandbox: plaćeno → veći iznos i novi podržavatelj na ka
   test.setTimeout(90_000);
   const greske: string[] = [];
   page.on("pageerror", (e) => greske.push(e.message));
+  page.on("console", (m) => m.type() === "error" && greske.push(m.text()));
   const id = kampanja("doprinos", info.project.name);
   const ime = `E2E ${Date.now().toString(36)}${Math.floor(Math.random() * 1e4)}`;
 
@@ -69,6 +70,7 @@ test("napojnica > 0 kroz sandbox: iznos kampanje ne raste od napojnice", async (
   test.setTimeout(120_000);
   const greske: string[] = [];
   page.on("pageerror", (e) => greske.push(e.message));
+  page.on("console", (m) => m.type() === "error" && greske.push(m.text()));
   const id = kampanja("napojnica", info.project.name);
   const ime = `E2E N ${Date.now().toString(36)}`;
 

@@ -2,8 +2,8 @@
 // Upute za uplatu jednog intenta (docs/08 §3.3 `QrPanel` + `PaymentStatus`), za doprinos i za napojnicu.
 // Produkcija (odluka 704): QR iz `epc_qr_data`, IBAN, primatelj, referenca. Sandbox: oznaka „ne šalji novac”,
 // QR na MPT `checkout_url` i gumbi simulacije (form POST na `api/checkouts/{id}/simulate`, agent A).
-// Stanje uživo: skripta sluša javni MPT `status_stream_url` (SSE) i svake 3 s zove `GET /api/checkouts/{id}/events`
-// (pull, odluka 705); kad se stanje promijeni, stranicu crta poslužitelj iznova. Bez JS-a: „Osvježi stanje”.
+// Stanje uživo: skripta svake 3 s zove `GET /api/checkouts/{id}/events` (pull, odluka 705); MPT SSE nema CORS za
+// naš origin, pa se ne koristi. Kad se stanje promijeni, stranicu crta poslužitelj iznova. Bez JS-a: „Osvježi stanje”.
 import ExternalLink from "@lucide/astro/icons/external-link";
 import FlaskConical from "@lucide/astro/icons/flask-conical";
 import Loader from "@lucide/astro/icons/loader-circle";
@@ -87,7 +87,6 @@ const DD = "font-mono break-all text-ink";
       data-cilj={cilj}
       data-stanje={stanje}
       data-events={`/api/checkouts/${encodeURIComponent(checkoutId)}/events`}
-      data-stream={intent?.statusStreamUrl ?? ""}
       data-faze={JSON.stringify(T.faze)}
     >
       <Loader size={18} aria-hidden="true" class="mt-0.5 shrink-0 animate-spin motion-reduce:animate-none" />
@@ -113,7 +112,8 @@ const DD = "font-mono break-all text-ink";
 </section>
 
 <script>
-  // Stanje uživo (odluka 705): SSE s raila samo budi provjeru; istina je `GET /api/checkouts/{id}/events`.
+  // Stanje uživo (odluka 705): svake 3 s `GET /api/checkouts/{id}/events` (pull s raila). Javni MPT
+  // `status_stream_url` (SSE) preglednik ne smije otvoriti: rail ne šalje `Access-Control-Allow-Origin` (S7).
   type Dio = { state?: string; faza?: string | null } | null;
   for (const el of document.querySelectorAll<HTMLElement>("[data-status-uzivo]")) {
     const cilj = el.dataset.cilj === "napojnica" ? "napojnica" : "doprinos";
@@ -142,18 +142,6 @@ const DD = "font-mono break-all text-ink";
         radi = false;
       }
     };
-    const stream = el.dataset.stream;
-    if (stream && "EventSource" in window) {
-      try {
-        const es = new EventSource(stream);
-        es.onmessage = () => void provjeri();
-        es.addEventListener("status", () => void provjeri());
-        es.onerror = () => es.readyState === EventSource.CLOSED && es.close();
-        addEventListener("pagehide", () => es.close());
-      } catch {
-        /* bez SSE ostaje pull */
-      }
-    }
     setInterval(provjeri, 3000);
   }
 </script>
