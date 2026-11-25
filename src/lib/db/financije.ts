@@ -236,28 +236,45 @@ export async function zapisiPovrat(
  * Potvrda povrata (mock provjere transakcije): `refunds.confirmed`, doprinos `refunded`, `campaign_stats` umanjen
  * za primljeni iznos i jedan doprinos, obavijest podržavatelju (ako je e-pošta poznata). false kad zapis ne
  * postoji, nije ove kampanje ili je već potvrđen.
+ *
+ * `contributor_count` se umanjuje samo ako nakon povrata kampanja nema drugog `paid` doprinosa istog
+ * podržavatelja, po istom pravilu kao pri uplati (odluka 717, `src/lib/db/uplate.ts`): isti `payer_iban_hash`,
+ * ista e-pošta checkouta (bez obzira na veličinu slova) ili isti `user_id` checkouta.
  */
 export async function potvrdiPovrat(db: D1Database, campaignId: string, refundId: string, sad: number): Promise<boolean> {
   const r = await db
     .prepare(
-      `SELECT r.contribution_id, d.amount_received_cents, d.state, ch.email, ch.user_id
+      `SELECT r.contribution_id, d.amount_received_cents, d.state, d.payer_iban_hash,
+              COALESCE(ch.email, cs.email) AS email, COALESCE(ch.user_id, cs.user_id) AS user_id
          FROM refunds r JOIN contributions d ON d.id = r.contribution_id
          LEFT JOIN contribution_attributions a ON a.contribution_id = d.id
          LEFT JOIN checkouts ch ON ch.id = a.checkout_id
+         LEFT JOIN checkouts cs ON cs.contribution_sid = d.payment_intent_sid
         WHERE r.id = ? AND d.campaign_id = ? AND r.status = 'recorded'`,
     )
     .bind(refundId, campaignId)
-    .first<{ contribution_id: string; amount_received_cents: number | null; state: StanjeDoprinosa; email: string | null; user_id: string | null }>();
+    .first<{
+      contribution_id: string; amount_received_cents: number | null; state: StanjeDoprinosa; payer_iban_hash: string | null;
+      email: string | null; user_id: string | null;
+    }>();
   if (!r) return false;
   await db.prepare("UPDATE refunds SET status = 'confirmed', confirmed_at = ? WHERE id = ?").bind(sad, refundId).run();
   if (r.state === "paid") {
     await db.prepare("UPDATE contributions SET state = 'refunded', updated_at = ? WHERE id = ?").bind(sad, r.contribution_id).run();
     await db
       .prepare(
-        `UPDATE campaign_stats SET raised_cents = max(0, raised_cents - ?), contribution_count = max(0, contribution_count - 1),
-                contributor_count = max(0, contributor_count - 1), updated_at = ? WHERE campaign_id = ?`,
+        `UPDATE campaign_stats
+            SET raised_cents = max(0, raised_cents - ?1), contribution_count = max(0, contribution_count - 1),
+                contributor_count = max(0, contributor_count - (CASE WHEN EXISTS (
+                  SELECT 1 FROM contributions d2 LEFT JOIN checkouts c2 ON c2.contribution_sid = d2.payment_intent_sid
+                   WHERE d2.campaign_id = ?3 AND d2.state = 'paid' AND d2.id <> ?4
+                     AND ((?5 IS NOT NULL AND d2.payer_iban_hash = ?5)
+                       OR (?6 IS NOT NULL AND c2.email = ?6 COLLATE NOCASE)
+                       OR (?7 IS NOT NULL AND c2.user_id = ?7))) THEN 0 ELSE 1 END)),
+                updated_at = ?2
+          WHERE campaign_id = ?3`,
       )
-      .bind(r.amount_received_cents ?? 0, sad, campaignId)
+      .bind(r.amount_received_cents ?? 0, sad, campaignId, r.contribution_id, r.payer_iban_hash, r.email, r.user_id)
       .run();
   }
   if (r.email) {
