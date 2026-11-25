@@ -58,6 +58,9 @@ Plan je u [`docs/plan.md`](../plan.md). Svaka sesija ima svoj handoff `SN.md`. K
   `main`. Nepovratno i vanjsko (deploy, remote, mail, prijava na tuđe servise, pravi novac)
   ostavi korisniku.
 - **Token budget:** oko 150k konteksta orkestratora zatvori sesiju po koraku 3.
+- **Veličina agentovog paketa (S6):** agent s ~15–20 ruta (pogledi + upiti + testovi) potroši 300k konteksta
+  na pola posla; 7–10 ruta po agentu prođe u 120–240k. Paralelni agenti dijele jedan `astro dev` (Astro 7
+  dopušta jedan po direktoriju) i lokalni D1; `db:seed:local` smije samo jedan, uz najavu.
 - Istraživanja u `docs/research/YYYY-MM-DD-*.md`; obilazak u `docs/research/obilazak/`.
 - Iz `pay.domovina.ai/CLAUDE.md`: iznos uplate nikad ne nosi identitet.
 - Commit trailer: `Co-Authored-By` po sistemskoj uputi sesije.
