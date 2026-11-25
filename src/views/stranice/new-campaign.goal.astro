@@ -45,6 +45,12 @@ const radio = "flex min-h-11 cursor-pointer items-start gap-3 rounded-md border 
         class:list={[POLJE, rubPolja(g.naslov)]} />
       <p id="naslov-pomoc" class="mt-1.5 text-sm text-ink-muted">{C.naslovPomoc}</p>
       {g.naslov && <p id="naslov-greska" class="mt-1 text-sm font-medium text-danger">{g.naslov}</p>}
+      <div class="mt-2 flex flex-wrap items-center gap-2">
+        <button type="button" disabled aria-describedby="ai-naslov-pomoc"
+          class="inline-flex min-h-11 items-center rounded-md border border-line px-3 text-sm font-medium text-ink-muted">{C.aiNaslov}</button>
+        <PhaseBadge lang={lang} />
+        <p id="ai-naslov-pomoc" class="w-full text-sm text-ink-muted">{C.aiNaslovPomoc}</p>
+      </div>
     </div>
 
     <div>
