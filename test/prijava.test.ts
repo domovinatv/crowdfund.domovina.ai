@@ -3,6 +3,7 @@
 import { describe, expect, it } from "vitest";
 import primjeri from "../seed/primjeri.json";
 import {
+  AKTIVNOST_KORAK,
   KOLACIC_DEMO_POSTE,
   KOLACIC_PRIJAVE,
   KOLACIC_SESIJE,
@@ -151,6 +152,22 @@ describe("sesija", () => {
     expect(await korisnikSesije(db, s2.token, SAD + 10)).toBeNull();
     expect(await korisnikSesije(db, undefined, SAD)).toBeNull();
     expect(await korisnikSesije(db, "x".repeat(500), SAD)).toBeNull();
+  });
+
+  it("aktivnost sesije: last_activity_at se osvježava najviše jednom u 5 min (odluka 905)", async () => {
+    const { db, sqlite } = svjeza();
+    const u = (await korisnikPoEmailu(db, ORGANIZATOR))!;
+    const s = await prijavi(db, { userId: u.id, email: u.email, nacin: "google", sad: SAD });
+    const zadnja = () => broj(sqlite, "SELECT last_activity_at FROM login_events WHERE session_id = ?", s.id);
+    const pocetna = zadnja();
+    await korisnikSesije(db, s.token, SAD + 1000);
+    expect(zadnja()).toBe(pocetna ?? SAD + 1000);
+    await korisnikSesije(db, s.token, SAD + AKTIVNOST_KORAK);
+    expect(zadnja()).toBe(SAD + AKTIVNOST_KORAK);
+    await korisnikSesije(db, s.token, SAD + AKTIVNOST_KORAK + 60_000);
+    expect(zadnja()).toBe(SAD + AKTIVNOST_KORAK);
+    expect(await korisnikSesije(db, "nepostojeci-token", SAD + 2 * AKTIVNOST_KORAK)).toBeNull();
+    expect(zadnja()).toBe(SAD + AKTIVNOST_KORAK);
   });
 
   it("demo sesije iz seeda: organizator i moderator", async () => {

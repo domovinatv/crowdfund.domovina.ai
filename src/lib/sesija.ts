@@ -367,16 +367,28 @@ export async function prijavi(
 /** Korisnik iz tokena kolačića: sesija postoji, nije opozvana ni istekla, korisnik nije obrisan. */
 export async function korisnikSesije(db: D1Database, token: string | undefined, sad: number): Promise<Korisnik | null> {
   if (!token || token.length > 128) return null;
+  const id = await hashTokena(token);
   const r = await db
     .prepare(
       `SELECT u.id, u.email, u.display_name, u.first_name, u.last_name, u.platform_role, u.deleted_at
          FROM sessions s JOIN users u ON u.id = s.user_id
         WHERE s.id = ? AND s.revoked_at IS NULL AND s.expires_at > ? AND u.deleted_at IS NULL`,
     )
-    .bind(await hashTokena(token), sad)
+    .bind(id, sad)
     .first<RedakKorisnika>();
-  return r ? korisnikIz(r) : null;
+  if (!r) return null;
+  // Povijest prijava pokazuje zadnju aktivnost; upis najviše jednom u AKTIVNOST_KORAK po sesiji (odluka 905).
+  await db
+    .prepare(
+      "UPDATE login_events SET last_activity_at = ? WHERE session_id = ? AND (last_activity_at IS NULL OR last_activity_at <= ?)",
+    )
+    .bind(sad, id, sad - AKTIVNOST_KORAK)
+    .run();
+  return korisnikIz(r);
 }
+
+/** Najmanji razmak između dva upisa `login_events.last_activity_at` iste sesije (5 min). */
+export const AKTIVNOST_KORAK = 5 * 60 * 1000;
 
 /** Opozovi sesiju tokena (odjava). Vraća true ako je sesija bila aktivna. */
 export async function opozoviSesiju(db: D1Database, token: string | undefined, sad: number): Promise<boolean> {
