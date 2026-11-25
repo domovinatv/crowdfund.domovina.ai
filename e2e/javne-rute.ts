@@ -35,6 +35,8 @@ export interface Primjeri {
   pozivnica: string;
   prijavaModeracije: string;
   korisnikSlug: string;
+  /** Plaćeni checkout aktivne kampanje (koraci 2–4 checkouta, S7). */
+  checkout: string;
 }
 
 export type Sesija = "organizator" | "moderator";
@@ -61,10 +63,7 @@ export const ucitajPrimjere = (): Primjeri =>
 
 /** Rute koje se namjerno ne provjeravaju, s razlogom (ulaze u izvještaj skripte). */
 export const IZOSTAVLJENE: Record<string, string> = {
-  "campaign.support.checkout": "checkout korak 2 je S7 (MPT sandbox)",
-  "campaign.support.checkout.tip": "checkout korak 3 je S7",
-  "campaign.support.checkout.done": "potvrda uplate je S7",
-  reminder: "podsjetnik ponavljanja otvara novi MPT intent i ima vlastiti token (S7, tok 10)",
+  reminder: "podsjetnik ponavljanja otvara novi MPT intent i ima vlastiti token: S8 s ponavljanjem (odluka 709)",
 };
 
 /** Namjerni statusi koji odstupaju od pravila iz `pristup` (bez sesije / sa sesijom), s razlogom. */
@@ -90,7 +89,7 @@ function parametri(kljuc: string, p: Primjeri): Record<string, string> {
   const id = kljuc === "external.campaign" ? p.vanjska : p.kampanja.aktivna!;
   const slug = kljuc === "user" ? p.korisnik.javni : kljuc.startsWith("org.") ? p.organizacijaOrganizatora : p.organizacija;
   const token = kljuc === "confirm-action" ? p.potvrdaRadnje : kljuc === "invite" ? p.pozivnica : p.pracenjeToken;
-  return { id, slug, alias: p.kasica, token, category: p.faqKategorija ?? "donating" };
+  return { id, slug, alias: p.kasica, token, category: p.faqKategorija ?? "donating", checkout: p.checkout };
 }
 
 const popuni = (uzorak: string, params: Record<string, string>) =>

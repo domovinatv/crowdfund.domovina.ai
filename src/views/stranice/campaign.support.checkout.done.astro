@@ -1,0 +1,75 @@
+---
+// Checkout korak 4, potvrda (odluka 711, docs/08 §3.3 `ReceiptCard`): zahvala, iznos, kampanja, stanje, referenca,
+// poveznica na MPT stranicu intenta, napomena o potvrdi u produkciji, natrag na kampanju i dijeljenje.
+import ExternalLink from "@lucide/astro/icons/external-link";
+import HeartHandshake from "@lucide/astro/icons/heart-handshake";
+import Base from "../../layouts/Base.astro";
+import KoraciCheckouta from "../../components/checkout/KoraciCheckouta.astro";
+import ShareSheet from "../../components/kampanja/ShareSheet.astro";
+import { formatDatuma, formatNovca } from "../../components/kampanja/format";
+import { GUMB, GUMB_DRUGI, KARTICA } from "../../components/upravljanje/stil";
+import { url } from "../../lib/rute";
+import { CHECKOUT, popuni } from "../sadrzaj/checkout";
+import type { PodaciPotvrde } from "./campaign.support.checkout.done.ucitaj";
+import type { PropsStranice } from "../tipovi";
+
+type Props = PropsStranice<PodaciPotvrde>;
+const { lang, podaci } = Astro.props;
+const { k, ch, intent, adresa } = podaci;
+const C = CHECKOUT[lang];
+const T = C.potvrda;
+const novac = formatNovca(lang);
+const korisnik = Astro.locals.korisnik;
+const stanje = ch.doprinos?.stanje ?? "pending";
+const DT = "text-ink-muted";
+const DD = "min-w-0 break-words text-ink";
+---
+<Base lang={lang} title={`${T.naslov} · ${k.title}`} noindex>
+  <div class="mx-auto max-w-2xl">
+    <h1 class="page-title flex items-center gap-2 text-ink">
+      <HeartHandshake size={28} aria-hidden="true" class="shrink-0 text-action" />{T.naslov}
+    </h1>
+    <KoraciCheckouta lang={lang} korak={4} />
+    <p class="mt-4 text-ink-soft">{popuni(T.tekst, { naslov: k.title })}</p>
+
+    <section class={`mt-6 ${KARTICA}`} aria-label={T.naslov}>
+      <dl class="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 text-sm">
+        <dt class={DT}>{T.kampanja}</dt>
+        <dd class={DD}><a href={url(lang, "campaign", { id: k.publicId })} class="font-semibold underline underline-offset-2">{k.title}</a></dd>
+        <dt class={DT}>{T.iznos}</dt>
+        <dd class={`${DD} font-semibold tabular-nums`}>{novac(ch.iznosCenti)}</dd>
+        {ch.doprinos?.manjak && ch.doprinos.primljenoCenti !== null && (
+          <><dt class={DT}>{T.primljeno}</dt><dd class={`${DD} tabular-nums`}>{novac(ch.doprinos.primljenoCenti)}</dd></>
+        )}
+        <dt class={DT}>{T.stanje}</dt>
+        <dd class={DD} data-stanje-doprinosa={stanje}>{T.stanja[stanje]}</dd>
+        {ch.napojnica && (
+          <>
+            <dt class={DT}>{T.napojnica}</dt>
+            <dd class={`${DD} tabular-nums`}>{novac(ch.napojnica.iznosCenti)} · {T.stanjaNapojnice[ch.napojnica.stanje]}</dd>
+          </>
+        )}
+        {ch.shortRef && (<><dt class={DT}>{T.referenca}</dt><dd class={`${DD} font-mono`}>{ch.shortRef.toUpperCase()}</dd></>)}
+        <dt class={DT}>{T.datum}</dt>
+        <dd class={DD}>{formatDatuma(lang, ch.doprinos?.placen ?? ch.stvoren)}</dd>
+      </dl>
+      {intent?.checkoutUrl && (
+        <a href={intent.checkoutUrl} rel="noopener" target="_blank" class="mt-3 inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-action underline underline-offset-2">
+          {T.mpt}<ExternalLink size={14} aria-hidden="true" />
+        </a>
+      )}
+      <p class="mt-2 text-sm text-ink-muted">{T.mptNapomena}</p>
+    </section>
+
+    <div class="mt-6 flex flex-wrap gap-3">
+      <a href={url(lang, "campaign", { id: k.publicId })} class={GUMB}>{T.natrag}</a>
+      {korisnik && <a href={url(lang, "my.donations")} class={GUMB_DRUGI}>{T.moje}</a>}
+    </div>
+
+    <section aria-labelledby="podijeli" class="mt-8">
+      <h2 id="podijeli" class="text-lg font-semibold text-ink">{T.podijeli}</h2>
+      <p class="mt-1 text-sm text-ink-soft">{T.podijeliTekst}</p>
+      <div class="mt-3"><ShareSheet lang={lang} adresa={adresa} naslov={k.title} /></div>
+    </section>
+  </div>
+</Base>

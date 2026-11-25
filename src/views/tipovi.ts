@@ -22,6 +22,8 @@ export interface KontekstStranice {
   db: D1Database;
   /** Prijavljeni korisnik (middleware, kolačić `sesija`) ili null. Pristup: src/lib/pristup.ts. */
   korisnik: Korisnik | null;
+  /** Okolina Workera (`.dev.vars` lokalno), npr. za `mptKonfig(env)` (S7). U testovima po želji. */
+  env?: unknown;
 }
 
 export type RezultatUcitavanja<T = unknown> = Response | { podaci: T };

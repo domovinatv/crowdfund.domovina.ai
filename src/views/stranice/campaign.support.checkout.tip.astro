@@ -1,0 +1,108 @@
+---
+// Checkout korak 3, napojnica (docs/08 §5.4, odluke 7 i 708): svi izbori iste veličine i boje, „0 €” prvi, ništa
+// unaprijed odabrano, bez emocionalnog pritiska. Napojnica ide platformi, ne kampanji.
+import ArrowLeft from "@lucide/astro/icons/arrow-left";
+import CircleCheckBig from "@lucide/astro/icons/circle-check-big";
+import Base from "../../layouts/Base.astro";
+import KoraciCheckouta from "../../components/checkout/KoraciCheckouta.astro";
+import PlacanjeIntenta from "../../components/checkout/PlacanjeIntenta.astro";
+import { formatNovca } from "../../components/kampanja/format";
+import { GRESKA, GUMB, GUMB_DRUGI, KARTICA, OZNAKA, POLJE, POMOC, rub } from "../../components/upravljanje/stil";
+import { IZBORI_NAPOJNICE } from "../../lib/db/checkout";
+import { url } from "../../lib/rute";
+import { CHECKOUT, popuni } from "../sadrzaj/checkout";
+import type { PodaciNapojnice } from "./campaign.support.checkout.tip.ucitaj";
+import type { PropsStranice } from "../tipovi";
+
+type Props = PropsStranice<PodaciNapojnice>;
+const { lang, podaci } = Astro.props;
+const { k, ch, placen, intent, sandbox, napojnicaPlacena, napojnicaNeuspjela, izbor, svojIznos, greska, greskaUplate } = podaci;
+const C = CHECKOUT[lang];
+const T = C.napojnica;
+const novac = formatNovca(lang);
+const ovdje = url(lang, "campaign.support.checkout.tip", { id: k.publicId, checkout: ch.id });
+const potvrda = url(lang, "campaign.support.checkout.done", { id: k.publicId, checkout: ch.id });
+const IZBOR = "flex min-h-11 cursor-pointer items-center justify-center rounded-md px-3 font-semibold tabular-nums text-ink ring-1 ring-ink-muted/50 has-[:checked]:bg-action has-[:checked]:text-paper has-[:checked]:ring-action has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-action";
+const opis = ["napojnica-pomoc", greska ? "napojnica-greska" : ""].filter(Boolean).join(" ");
+---
+<Base lang={lang} title={`${T.naslov} · ${k.title}`} noindex>
+  <div class="mx-auto max-w-2xl">
+    <a href={url(lang, "campaign", { id: k.publicId })} class="inline-flex min-h-11 items-center gap-1 text-sm font-medium text-action underline-offset-2 hover:underline">
+      <ArrowLeft size={16} aria-hidden="true" />{C.natrag}
+    </a>
+    <h1 class="page-title mt-2 text-ink">{T.naslov}</h1>
+    <KoraciCheckouta lang={lang} korak={3} />
+
+    {!placen ? (
+      <section class={`mt-6 ${KARTICA}`}>
+        <p class="text-ink">{T.nijeUplaceno}</p>
+        <a href={url(lang, "campaign.support.checkout", { id: k.publicId, checkout: ch.id })} class={`mt-4 ${GUMB_DRUGI}`}>{T.natragNaUplatu}</a>
+      </section>
+    ) : (
+      <>
+        <p class="mt-4 flex items-center gap-2 font-semibold text-success">
+          <CircleCheckBig size={20} aria-hidden="true" />{T.uspjeh}
+        </p>
+
+        {ch.napojnica ? (
+          napojnicaPlacena ? (
+            <section role="status" class={`mt-6 ${KARTICA}`} data-napojnica-placena>
+              <p class="flex items-center gap-2 text-lg font-semibold text-success"><CircleCheckBig size={22} aria-hidden="true" />{T.placena}</p>
+              <a href={potvrda} class={`mt-4 ${GUMB}`}>{T.naPotvrdu}</a>
+            </section>
+          ) : napojnicaNeuspjela ? (
+            <section class={`mt-6 ${KARTICA}`}>
+              <p class="text-ink-soft">{C.placanje.istekla}</p>
+              <a href={potvrda} class={`mt-4 ${GUMB}`}>{T.naPotvrdu}</a>
+            </section>
+          ) : (
+            <>
+              <p class="mt-6 text-ink-soft">{popuni(T.placanje, { iznos: novac(ch.napojnica.iznosCenti) })}</p>
+              <PlacanjeIntenta
+                lang={lang}
+                checkoutId={ch.id}
+                cilj="napojnica"
+                iznosCenti={ch.napojnica.iznosCenti}
+                shortRef={null}
+                intent={intent}
+                sandbox={sandbox}
+                rok={ch.rok}
+                stanje={ch.napojnica.stanje}
+                osvjezi={ovdje}
+              />
+              <a href={potvrda} class={`mt-4 ${GUMB_DRUGI}`}>{T.naPotvrdu}</a>
+            </>
+          )
+        ) : (
+          <form method="post" action={ovdje} novalidate class="mt-6 space-y-4">
+            {greskaUplate && <p role="alert" class="rounded-md bg-danger-bg p-3 text-sm font-semibold text-danger">{T.mptGreska}</p>}
+            <p class="max-w-[70ch] text-ink-soft">{T.tekst}</p>
+            <fieldset class={`space-y-3 ${KARTICA}`} aria-describedby={opis}>
+              <legend class="text-lg font-semibold text-ink">{T.izbor}</legend>
+              <div class="grid grid-cols-2 gap-2 sm:grid-cols-5">
+                {IZBORI_NAPOJNICE.map((c) => (
+                  <label class={IZBOR}>
+                    <input type="radio" name="napojnica" value={String(c)} checked={izbor === String(c)} class="sr-only" />
+                    {c === 0 ? T.bez : novac(c)}
+                  </label>
+                ))}
+                <label class={IZBOR}>
+                  <input type="radio" name="napojnica" value="svoj" checked={izbor === "svoj"} class="sr-only" />
+                  {T.svoj}
+                </label>
+              </div>
+              <div>
+                <label for="svojaNapojnica" class={OZNAKA}>{T.svojIznos}</label>
+                <input id="svojaNapojnica" name="svojaNapojnica" type="text" inputmode="decimal" autocomplete="off" value={svojIznos}
+                  aria-invalid={greska ? "true" : undefined} aria-describedby={opis} class:list={[POLJE, "max-w-xs", rub(greska)]} />
+              </div>
+              <p id="napojnica-pomoc" class={POMOC}>{T.raspon}</p>
+              {greska && <p id="napojnica-greska" class={GRESKA}>{T.greske[greska]}</p>}
+            </fieldset>
+            <button type="submit" class={GUMB}>{T.gumb}</button>
+          </form>
+        )}
+      </>
+    )}
+  </div>
+</Base>

@@ -1,0 +1,68 @@
+---
+// Checkout korak 2 (docs/08 §5.3): iznos, referenca, QR/IBAN ili sandbox oznaka sa simulacijom, stanje uživo.
+import ArrowLeft from "@lucide/astro/icons/arrow-left";
+import CircleCheckBig from "@lucide/astro/icons/circle-check-big";
+import CircleX from "@lucide/astro/icons/circle-x";
+import Base from "../../layouts/Base.astro";
+import KoraciCheckouta from "../../components/checkout/KoraciCheckouta.astro";
+import PlacanjeIntenta from "../../components/checkout/PlacanjeIntenta.astro";
+import { formatNovca } from "../../components/kampanja/format";
+import { GUMB, KARTICA } from "../../components/upravljanje/stil";
+import { url } from "../../lib/rute";
+import { CHECKOUT, popuni } from "../sadrzaj/checkout";
+import type { PodaciPlacanja } from "./campaign.support.checkout.ucitaj";
+import type { PropsStranice } from "../tipovi";
+
+type Props = PropsStranice<PodaciPlacanja>;
+const { lang, podaci } = Astro.props;
+const { k, ch, intent, sandbox, placen, neuspio } = podaci;
+const C = CHECKOUT[lang];
+const T = C.placanje;
+const novac = formatNovca(lang);
+const ovdje = url(lang, "campaign.support.checkout", { id: k.publicId, checkout: ch.id });
+const ponovo = url(lang, "campaign.support", { id: k.publicId }) + (ch.kasicaAlias ? `?s=${encodeURIComponent(ch.kasicaAlias)}` : "");
+const odbijena = ch.stanje === "rejected" || intent?.stage === "rejected";
+---
+<Base lang={lang} title={`${T.naslov} · ${k.title}`} noindex>
+  <div class="mx-auto max-w-2xl">
+    <a href={url(lang, "campaign", { id: k.publicId })} class="inline-flex min-h-11 items-center gap-1 text-sm font-medium text-action underline-offset-2 hover:underline">
+      <ArrowLeft size={16} aria-hidden="true" />{C.natrag}
+    </a>
+    <h1 class="page-title mt-2 text-ink">{T.naslov}</h1>
+    <KoraciCheckouta lang={lang} korak={2} />
+    <p class="mt-3 break-words text-ink-soft">{k.title}</p>
+
+    {placen ? (
+      <section role="status" class={`mt-6 ${KARTICA}`} data-uplaceno>
+        <h2 class="flex items-center gap-2 text-lg font-semibold text-success">
+          <CircleCheckBig size={22} aria-hidden="true" />{T.uplaceno}
+        </h2>
+        {ch.doprinos?.manjak && ch.doprinos.primljenoCenti !== null && (
+          <p class="mt-2 text-ink-soft">{popuni(T.uplacenoManje, { iznos: novac(ch.doprinos.primljenoCenti) })}</p>
+        )}
+        <a href={url(lang, "campaign.support.checkout.tip", { id: k.publicId, checkout: ch.id })} class={`mt-4 ${GUMB}`}>{T.nastavi}</a>
+      </section>
+    ) : neuspio ? (
+      <section role="alert" class={`mt-6 ${KARTICA}`} data-neuspjelo>
+        <h2 class="flex items-center gap-2 text-lg font-semibold text-danger">
+          <CircleX size={22} aria-hidden="true" />{T.neuspjelo}
+        </h2>
+        <p class="mt-2 text-ink-soft">{odbijena ? T.odbijenaTekst : T.istekla}</p>
+        <a href={ponovo} class={`mt-4 ${GUMB}`}>{T.noviPokusaj}</a>
+      </section>
+    ) : (
+      <PlacanjeIntenta
+        lang={lang}
+        checkoutId={ch.id}
+        cilj="doprinos"
+        iznosCenti={ch.iznosCenti}
+        shortRef={ch.shortRef}
+        intent={intent}
+        sandbox={sandbox}
+        rok={ch.rok}
+        stanje={ch.doprinos?.stanje ?? "pending"}
+        osvjezi={ovdje}
+      />
+    )}
+  </div>
+</Base>

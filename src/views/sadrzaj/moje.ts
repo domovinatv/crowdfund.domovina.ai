@@ -111,8 +111,8 @@ const hr = {
       rejected: "Odbijeno",
       refunded: "Vraćeno",
     },
-    potvrda: "Potvrda o uplati dolazi s pravim plaćanjem (MPT, kasnije); u prototipu je referenca dovoljna.",
-    radnje: { otvori: "Otvori kampanju", widget: "Widget", podrzi: "Doniraj ponovno" },
+    potvrda: "Potvrda o uplati s ključem uplatitelja dolazi s produkcijskim MPT-om; dotad je potvrda stranica „Potvrda” uz svaku donaciju.",
+    radnje: { otvori: "Otvori kampanju", widget: "Widget", podrzi: "Doniraj ponovno", potvrda: "Potvrda" },
   },
   kasice: {
     naslov: "Moje kasice",
@@ -270,8 +270,8 @@ const en: Moje = {
       rejected: "Rejected",
       refunded: "Refunded",
     },
-    potvrda: "A payment receipt comes with real payments (MPT, later); in the prototype the reference is enough.",
-    radnje: { otvori: "Open campaign", widget: "Widget", podrzi: "Donate again" },
+    potvrda: "A payment receipt with the payer's key comes with production MPT; until then the “Confirmation” page next to each donation is the receipt.",
+    radnje: { otvori: "Open campaign", widget: "Widget", podrzi: "Donate again", potvrda: "Confirmation" },
   },
   kasice: {
     naslov: "My moneyboxes",

@@ -1,21 +1,36 @@
 ---
-// Checkout korak 1 (docs/08 §5.2) kao stub do S7: sažetak kampanje, kasica iz `?s=`, jasna poruka.
+// Checkout korak 1 (docs/08 §5.2, obilazak 19 i 25): iznos (brzi izbor + svoj), prikaz na popisu, poruka 300 zn,
+// e-pošta (prijavljenom iz sesije), „kao tvrtka” samo neprijavljenom, prihvat uvjeta. Radi bez JS-a (POST na
+// istu rutu, greške uz polja); skripta samo broji znakove poruke i bira „svoj iznos” kad se u njega upisuje.
 import ArrowLeft from "@lucide/astro/icons/arrow-left";
-import Hourglass from "@lucide/astro/icons/hourglass";
 import PiggyBank from "@lucide/astro/icons/piggy-bank";
 import ShieldCheck from "@lucide/astro/icons/shield-check";
 import Base from "../../layouts/Base.astro";
 import CampaignStats from "../../components/kampanja/CampaignStats.astro";
 import PausedNotice from "../../components/kampanja/PausedNotice.astro";
+import KoraciCheckouta from "../../components/checkout/KoraciCheckouta.astro";
+import { formatNovca } from "../../components/kampanja/format";
+import { GRESKA, GUMB, KARTICA, OZNAKA, POLJE, POMOC, rub } from "../../components/upravljanje/stil";
+import { PORUKA_NAJVISE, type PoljeCheckouta } from "../../lib/db/checkout";
 import { url } from "../../lib/rute";
-import { KAMPANJA, PODRUTE } from "../sadrzaj/kampanja";
+import { KAMPANJA } from "../sadrzaj/kampanja";
+import { CHECKOUT, popuni } from "../sadrzaj/checkout";
 import type { PodaciPodrske } from "./campaign.support.ucitaj";
 import type { PropsStranice } from "../tipovi";
 
 type Props = PropsStranice<PodaciPodrske>;
 const { lang, podaci } = Astro.props;
-const { k, kasica } = podaci;
-const T = PODRUTE[lang].podrska;
+const { k, kasica, ref, iznosi, najmanjeCenti, vrijednosti: v, greske, greskaUplate } = podaci;
+const T = CHECKOUT[lang].obrazac;
+const novac = formatNovca(lang);
+const korisnik = Astro.locals.korisnik;
+const min = novac(najmanjeCenti);
+const g = (p: PoljeCheckouta) => (greske[p] ? popuni(T.greske[greske[p]!], { min }) : undefined);
+const opis = (p: PoljeCheckouta, pomoc = false) => [pomoc ? `${p}-pomoc` : "", greske[p] ? `${p}-greska` : ""].filter(Boolean).join(" ") || undefined;
+const brojGresaka = Object.keys(greske).length;
+const MALO = "text-sm font-normal text-ink-muted";
+const svojOdabran = v.izbor === "svoj" || (!v.izbor && v.svojIznos !== "");
+const GUMB_IZNOSA = "flex min-h-11 cursor-pointer items-center justify-center rounded-md px-3 font-semibold tabular-nums text-ink ring-1 ring-ink-muted/50 has-[:checked]:bg-action has-[:checked]:text-paper has-[:checked]:ring-action has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-action";
 ---
 <Base lang={lang} title={`${T.naslov} · ${k.title}`} noindex>
   <div class="mx-auto max-w-2xl">
@@ -23,6 +38,7 @@ const T = PODRUTE[lang].podrska;
       <ArrowLeft size={16} aria-hidden="true" />{KAMPANJA[lang].natrag}
     </a>
     <h1 class="page-title mt-2 text-ink">{T.naslov}</h1>
+    {k.primaUplate && <KoraciCheckouta lang={lang} korak={1} />}
 
     <div class="mt-4 rounded-md bg-paper p-4 shadow-card">
       <p class="text-lg font-semibold text-ink break-words">{k.title}</p>
@@ -43,15 +59,140 @@ const T = PODRUTE[lang].podrska;
     }
 
     {
-      k.primaUplate ? (
-        <section aria-labelledby="s7" class="mt-6 rounded-md border border-dashed border-warning/60 bg-warning-bg p-4">
-          <h2 id="s7" class="flex items-center gap-2 text-lg font-semibold text-warning">
-            <Hourglass size={20} aria-hidden="true" />{T.s7Naslov}
-          </h2>
-          <p class="mt-2 text-ink-soft">{T.s7Tekst}</p>
-        </section>
-      ) : (
+      !k.primaUplate ? (
         <div class="mt-6"><PausedNotice lang={lang} stanje={k.stanje} /></div>
+      ) : (
+        <form method="post" action={url(lang, "campaign.support", { id: k.publicId })} novalidate class="mt-6 space-y-6" data-checkout-obrazac>
+          {kasica && <input type="hidden" name="s" value={kasica.alias} />}
+          {ref && <input type="hidden" name="ref" value={ref} />}
+          {brojGresaka > 0 && <p role="alert" class="rounded-md bg-danger-bg p-3 text-sm font-semibold text-danger">{T.greskeNaslov}</p>}
+          {greskaUplate && (
+            <p role="alert" class="rounded-md bg-danger-bg p-3 text-sm font-semibold text-danger">
+              {greskaUplate === "konfig" ? T.bezKonfiguracije : T.mptGreska}
+            </p>
+          )}
+
+          <fieldset class={`space-y-3 ${KARTICA}`} aria-describedby={opis("iznos", true)}>
+            <legend class="text-lg font-semibold text-ink">{T.iznos}</legend>
+            <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {iznosi.map((c) => (
+                <label class={GUMB_IZNOSA}>
+                  <input type="radio" name="izbor" value={String(c)} checked={v.izbor === String(c)} class="sr-only" />
+                  {novac(c)}
+                </label>
+              ))}
+              <label class={GUMB_IZNOSA}>
+                <input type="radio" name="izbor" value="svoj" checked={svojOdabran} class="sr-only" data-svoj />
+                {T.svoj}
+              </label>
+            </div>
+            <div>
+              <label for="svojIznos" class={OZNAKA}>{T.svojIznos}</label>
+              <div class="mt-1.5 flex max-w-xs items-stretch">
+                <input id="svojIznos" name="svojIznos" type="text" inputmode="decimal" autocomplete="off" value={v.svojIznos}
+                  aria-invalid={greske.iznos ? "true" : undefined} aria-describedby={opis("iznos", true)}
+                  class:list={[POLJE, "mt-0 rounded-r-none", rub(greske.iznos)]} />
+                <span class="inline-flex items-center rounded-r-sm border border-l-0 border-ink-muted/60 bg-mist px-3 text-ink-soft">€</span>
+              </div>
+            </div>
+            <p id="iznos-pomoc" class={POMOC}>{popuni(T.raspon, { min })}</p>
+            {g("iznos") && <p id="iznos-greska" class={GRESKA}>{g("iznos")}</p>}
+          </fieldset>
+
+          <fieldset class={`space-y-4 ${KARTICA}`}>
+            <legend class="text-lg font-semibold text-ink">{T.vidljivost}</legend>
+            <label class="flex gap-3">
+              <input name="skrijIme" type="checkbox" value="1" checked={v.skrijIme} class="mt-1 size-5 shrink-0 accent-action" />
+              <span class="text-ink">{T.skrijIme}</span>
+            </label>
+            <label class="flex gap-3">
+              <input name="skrijIznos" type="checkbox" value="1" checked={v.skrijIznos} class="mt-1 size-5 shrink-0 accent-action" />
+              <span class="text-ink">{T.skrijIznos}</span>
+            </label>
+            <div>
+              <label for="poruka" class={OZNAKA}>{T.poruka} <span class={MALO}>({T.neobavezno})</span></label>
+              <textarea id="poruka" name="poruka" rows="4" maxlength={PORUKA_NAJVISE}
+                aria-invalid={greske.poruka ? "true" : undefined} aria-describedby={["poruka-brojac", greske.poruka ? "poruka-greska" : ""].filter(Boolean).join(" ")}
+                class:list={[POLJE, rub(greske.poruka)]}>{v.poruka}</textarea>
+              <p id="poruka-brojac" class={`${POMOC} text-right tabular-nums`} data-brojac={T.brojac} aria-live="polite">{popuni(T.brojac, { n: [...v.poruka].length })}</p>
+              {g("poruka") && <p id="poruka-greska" class={GRESKA}>{g("poruka")}</p>}
+            </div>
+          </fieldset>
+
+          <fieldset class={`space-y-4 ${KARTICA}`}>
+            <legend class="text-lg font-semibold text-ink">{T.podaci}</legend>
+            {korisnik ? (
+              <>
+                <p class="text-ink">{popuni(T.emailPrijavljen, { email: korisnik.email })}</p>
+                <p class="text-sm text-ink-soft">{popuni(T.naPopisu, { ime: korisnik.ime })}</p>
+              </>
+            ) : (
+              <>
+                <div>
+                  <label for="email" class={OZNAKA}>{T.email} <span class={MALO}>({T.obavezno})</span></label>
+                  <input id="email" name="email" type="email" required autocomplete="email" maxlength="254" value={v.email}
+                    aria-invalid={greske.email ? "true" : undefined} aria-describedby={opis("email", true)} class:list={[POLJE, rub(greske.email)]} />
+                  <p id="email-pomoc" class={POMOC}>{T.emailPomoc}</p>
+                  {g("email") && <p id="email-greska" class={GRESKA}>{g("email")}</p>}
+                </div>
+                <div class="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label for="ime" class={OZNAKA}>{T.ime} <span class={MALO}>({T.neobavezno})</span></label>
+                    <input id="ime" name="ime" type="text" autocomplete="given-name" maxlength="100" value={v.ime}
+                      aria-invalid={greske.ime ? "true" : undefined} aria-describedby={opis("ime")} class:list={[POLJE, rub(greske.ime)]} />
+                    {g("ime") && <p id="ime-greska" class={GRESKA}>{g("ime")}</p>}
+                  </div>
+                  <div>
+                    <label for="prezime" class={OZNAKA}>{T.prezime} <span class={MALO}>({T.neobavezno})</span></label>
+                    <input id="prezime" name="prezime" type="text" autocomplete="family-name" maxlength="100" value={v.prezime}
+                      aria-invalid={greske.prezime ? "true" : undefined} aria-describedby={opis("prezime")} class:list={[POLJE, rub(greske.prezime)]} />
+                    {g("prezime") && <p id="prezime-greska" class={GRESKA}>{g("prezime")}</p>}
+                  </div>
+                </div>
+                <label class="flex gap-3">
+                  <input name="kaoTvrtka" type="checkbox" value="1" checked={v.kaoTvrtka} class="mt-1 size-5 shrink-0 accent-action" />
+                  <span class="text-ink">{T.kaoTvrtka}</span>
+                </label>
+                <div class="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label for="tvrtka" class={OZNAKA}>{T.tvrtka}</label>
+                    <input id="tvrtka" name="tvrtka" type="text" autocomplete="organization" maxlength="200" value={v.tvrtka}
+                      aria-invalid={greske.tvrtka ? "true" : undefined} aria-describedby={opis("tvrtka")} class:list={[POLJE, rub(greske.tvrtka)]} />
+                    {g("tvrtka") && <p id="tvrtka-greska" class={GRESKA}>{g("tvrtka")}</p>}
+                  </div>
+                  <div>
+                    <label for="oib" class={OZNAKA}>{T.oib} <span class={MALO}>({T.neobavezno})</span></label>
+                    <input id="oib" name="oib" type="text" inputmode="numeric" maxlength="11" pattern="[0-9]{11}" autocomplete="off" value={v.oib}
+                      aria-invalid={greske.oib ? "true" : undefined} aria-describedby={opis("oib", true)} class:list={[POLJE, "font-mono", rub(greske.oib)]} />
+                    <p id="oib-pomoc" class={POMOC}>{T.oibPomoc}</p>
+                    {g("oib") && <p id="oib-greska" class={GRESKA}>{g("oib")}</p>}
+                  </div>
+                </div>
+                <div>
+                  <label class="flex gap-3">
+                    <input name="uvjeti" type="checkbox" value="1" checked={v.uvjeti} required
+                      aria-invalid={greske.uvjeti ? "true" : undefined} aria-describedby={opis("uvjeti")} class="mt-1 size-5 shrink-0 accent-action" />
+                    <span class="text-ink">
+                      {T.uvjeti} <a href={url(lang, "terms")} class="font-semibold text-action underline underline-offset-2">{T.uvjetiPoveznica}</a> {T.i}
+                      <a href={url(lang, "privacy")} class="font-semibold text-action underline underline-offset-2">{T.privatnostPoveznica}</a>
+                    </span>
+                  </label>
+                  {g("uvjeti") && <p id="uvjeti-greska" class={GRESKA}>{g("uvjeti")}</p>}
+                </div>
+              </>
+            )}
+          </fieldset>
+
+          <section aria-labelledby="sazetak" class={KARTICA}>
+            <h2 id="sazetak" class="text-lg font-semibold text-ink">{T.sazetak}</h2>
+            <dl class="mt-2 grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-1 text-ink">
+              <dt>{T.provizija}</dt><dd class="tabular-nums">{T.nula}</dd>
+            </dl>
+            <p class="mt-2 text-sm text-ink-muted">{T.napojnicaNapomena}</p>
+          </section>
+
+          <button type="submit" class={GUMB}>{T.gumb}</button>
+        </form>
       )
     }
 
@@ -60,3 +201,25 @@ const T = PODRUTE[lang].podrska;
     </p>
   </div>
 </Base>
+
+<script>
+  // Poboljšanje uz JS: brojač znakova poruke i odabir „svoj iznos” kad se upisuje iznos.
+  for (const obrazac of document.querySelectorAll<HTMLFormElement>("[data-checkout-obrazac]")) {
+    const poruka = obrazac.querySelector<HTMLTextAreaElement>("#poruka");
+    const brojac = obrazac.querySelector<HTMLElement>("[data-brojac]");
+    if (poruka && brojac) {
+      const uzorak = brojac.dataset.brojac ?? "{n}";
+      poruka.addEventListener("input", () => (brojac.textContent = uzorak.replace("{n}", String([...poruka.value].length))));
+    }
+    const svoj = obrazac.querySelector<HTMLInputElement>("#svojIznos");
+    const radio = obrazac.querySelector<HTMLInputElement>("[data-svoj]");
+    if (svoj && radio) {
+      svoj.addEventListener("input", () => {
+        if (svoj.value.trim()) radio.checked = true;
+      });
+      for (const r of obrazac.querySelectorAll<HTMLInputElement>('input[name="izbor"]')) {
+        if (r !== radio) r.addEventListener("change", () => (svoj.value = ""));
+      }
+    }
+  }
+</script>

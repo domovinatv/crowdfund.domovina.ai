@@ -1,6 +1,6 @@
 ---
 // Moje donacije /hr/moje/donacije (P, obilazak 08 „Donated by me”): kartica po doprinosu s kampanjom,
-// organizatorom, iznosom, stanjem intenta i referencom. Potvrda o uplati dolazi s MPT-om (S7).
+// organizatorom, iznosom, stanjem intenta i referencom. Poveznica na potvrdu checkouta (S7, odluke 670, 711).
 import Heart from "@lucide/astro/icons/heart";
 import OkvirMoje from "../../components/moje/OkvirMoje.astro";
 import { formatDatuma, formatNovca } from "../../components/kampanja/format";
@@ -59,6 +59,7 @@ const boja = (s: string) => (s === "paid" ? "bg-success-bg text-success" : s ===
               </dl>
               {d.kampanja.vidljiva ? (
                 <p class="mt-3 flex flex-wrap gap-x-4">
+                  <a href={url(lang, "campaign.support.checkout.done", { id: d.kampanja.publicId, checkout: d.checkoutId })} class="inline-flex min-h-11 items-center font-medium text-action underline underline-offset-2">{T.radnje.potvrda}</a>
                   <a href={url(lang, "campaign", { id: d.kampanja.publicId })} class="inline-flex min-h-11 items-center font-medium text-action underline underline-offset-2">{T.radnje.otvori}</a>
                   <a href={url(lang, "campaign.widget", { id: d.kampanja.publicId })} class="inline-flex min-h-11 items-center font-medium text-action underline underline-offset-2">{T.radnje.widget}</a>
                   <a href={url(lang, "campaign.support", { id: d.kampanja.publicId })} class="inline-flex min-h-11 items-center font-medium text-action underline underline-offset-2">{T.radnje.podrzi}</a>

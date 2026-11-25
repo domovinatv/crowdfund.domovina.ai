@@ -21,7 +21,7 @@ if (isLang(lang)) {
   if (nadjeno && (Pogled || ucitaj)) {
     params = nadjeno.params;
     const r = ucitaj
-      ? await ucitaj({ lang, params, url: Astro.url, request: Astro.request, cookies: Astro.cookies, db: env.DB, korisnik: Astro.locals.korisnik })
+      ? await ucitaj({ lang, params, url: Astro.url, request: Astro.request, cookies: Astro.cookies, db: env.DB, korisnik: Astro.locals.korisnik, env })
       : { podaci: null };
     if (r instanceof Response) {
       if (r.status !== 404) return r;

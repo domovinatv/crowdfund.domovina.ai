@@ -953,6 +953,8 @@ function generiraj(/** @type {string} */ demoSad) {
     pozivnica: DEMO_TOKENI.pozivnica,
     prijavaModeracije: prijaveModeracije[0],
     korisnikSlug: "demo-marko",
+    // Plaćeni checkout aktivne kampanje: primjer `{checkout}` za korake 2–4 checkouta (S7, pristup T).
+    checkout: checkouti.find((c) => c.campaign_id === kInfo[0].id && c.intent_state === "paid")?.id ?? null,
     organizacijaNaCekanju: naCekanju.slug,
     pozivnicaIstekla: DEMO_TOKENI.pozivnicaIstekla,
     verifikacijaNamjene,
