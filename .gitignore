@@ -3,6 +3,7 @@ dist/
 .wrangler/
 .astro/
 .dev.vars
+.dev.vars.tenant-*
 .env*
 # snimke tuđeg sučelja (4fund) samo lokalno, vidi docs/decisions.md odluka 4
 docs/research/obilazak/snimke/

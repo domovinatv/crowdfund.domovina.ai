@@ -95,3 +95,33 @@ test("napojnica > 0 kroz sandbox: iznos kampanje ne raste od napojnice", async (
   await expect(page.locator("[data-stanje-doprinosa='paid']")).toBeVisible();
   expect(greske).toEqual([]);
 });
+
+// S11 (TODO F3): status uživo dolazi kroz SSE proxy (`/api/checkouts/{id}/stream`), ne pull. Simulacija ide mimo
+// stranice (izravni POST), pa stranica mora sama prijeći u „plaćeno” bez reloada iz testa. Pull `…/events` smije
+// raditi samo do prvog događaja streama, pa nakon toga nema nijednog zahtjeva na `…/events` do promjene stanja.
+test("status uživo kroz SSE: stranica sama prelazi u plaćeno, bez pulla dok stream radi", async ({ page }, info) => {
+  test.setTimeout(60_000);
+  const id = kampanja("doprinos", info.project.name);
+  const ime = `E2E SSE ${Date.now().toString(36)}`;
+  await page.goto(`/hr/${id}/podrzi`);
+  await page.fill("#svojIznos", "3");
+  await page.fill("#email", `e2e-sse-${Date.now().toString(36)}@example.org`);
+  await page.fill("#ime", ime);
+  await page.locator("input[name='uvjeti']").check();
+  const stream = page.waitForResponse((r) => /\/api\/checkouts\/[A-Za-z0-9_-]{22}\/stream/.test(r.url()));
+  await page.locator("[data-checkout-obrazac] button[type='submit']").click();
+  await expect(page).toHaveURL(new RegExp(`/hr/${id}/podrzi/[A-Za-z0-9_-]{22}$`));
+  const checkoutId = page.url().split("/").pop()!;
+  const r = await stream;
+  expect(r.url()).toContain(checkoutId);
+  expect(r.status()).toBe(200);
+  expect(r.headers()["content-type"]).toContain("text/event-stream");
+  const pullovi: string[] = [];
+  page.on("request", (q) => q.url().includes(`/api/checkouts/${checkoutId}/events`) && pullovi.push(q.url()));
+  await page.waitForTimeout(4000);
+  expect(pullovi, "pull dok stream radi").toEqual([]);
+
+  const sim = await page.request.post(`/api/checkouts/${checkoutId}/simulate`, { data: { ishod: "paid" } });
+  expect(sim.ok()).toBe(true);
+  await expect(page.locator("[data-uplaceno]")).toBeVisible({ timeout: 20_000 });
+});
