@@ -34,6 +34,7 @@
  * prefiksom domene (bez tajne), hex.
  */
 import { izjavePriPlacanju } from "./obavijesti";
+import { uuid7 } from "./zajednicko";
 import { dohvatiIntent, type DohvatFn, type MptFaza, type MptIntent, type MptKonfig } from "../mpt/klijent";
 
 /** Vrste webhooka raila (CHECK u `webhook_receipts.event_type`). */
@@ -330,6 +331,8 @@ async function primijeniNaDoprinos(
           .bind(primljeno, r.campaign_id, r.id, ibanHash, r.email, r.user_id, placeno, sad),
         // S8: komentar iz poruke i mock e-poruka organizatoru, pod istim uvjetom (doprinos još u polaznom stanju).
         ...izjavePriPlacanju(db, r.id, dp.iz, primljeno, sad),
+        // S10: veza obećanja s `subscriptions` (tok 10, zatvara odluku 828), pod istim uvjetom.
+        ...(r.checkout_id ? izjavePretplate(db, r.id, r.checkout_id, dp.iz, primljeno, placeno, ibanHash, sad) : []),
       );
       indeksDoprinosa = izjave.length;
       izjave.push(
@@ -374,6 +377,54 @@ async function primijeniNaDoprinos(
     cilj: "doprinos",
     prijelazUPlaceno: doprinosPromijenjen && p?.doprinos?.u === "paid",
   };
+}
+
+/**
+ * Plaćeni mjesec obećanja (`checkouts.recurring_pledge_id`) i `subscriptions` jezgre (tok 10, docs/04): obećanje koje
+ * već ima pretplatu dobiva +1 doprinos i iznos; obećanje bez pretplate je dobiva tek kad je poznat `payer_iban_hash`
+ * (stupac je NOT NULL, a jezgra prepoznaje ponavljanje po IBAN-u), dakle s webhookom koji nosi `sender_iban`, ne s
+ * pullom u sandboxu. Sve pod uvjetom da je doprinos još u polaznom stanju, pa ponovljeni događaj ne broji dvaput.
+ * Redoslijed: prvo postojeća pretplata, onda nova, da se prvi mjesec ne zbroji dvaput.
+ */
+export function izjavePretplate(
+  db: D1Database,
+  doprinosId: string,
+  checkoutId: string,
+  iz: readonly string[],
+  primljeno: number,
+  placeno: number,
+  ibanHash: string | null,
+  sad: number,
+): D1PreparedStatement[] {
+  const uvjet = (n: number) => `EXISTS (SELECT 1 FROM contributions WHERE id = ?${n} AND state IN (${u(iz)}))`;
+  const pretplata = uuid7(sad);
+  return [
+    db
+      .prepare(
+        `UPDATE subscriptions
+            SET contribution_count = contribution_count + 1, total_cents = total_cents + ?1,
+                last_contribution_at = max(COALESCE(last_contribution_at, 0), ?2), updated_at = ?3
+          WHERE id = (SELECT rp.subscription_id FROM checkouts ch JOIN recurring_pledges rp ON rp.id = ch.recurring_pledge_id WHERE ch.id = ?4)
+            AND ${uvjet(5)}`,
+      )
+      .bind(primljeno, placeno, sad, checkoutId, doprinosId),
+    db
+      .prepare(
+        `INSERT INTO subscriptions (id, campaign_id, payer_iban_hash, status, interval_days, contribution_count, total_cents,
+                                    first_contribution_at, last_contribution_at, next_expected_at, cancelled_at, created_at, updated_at)
+         SELECT ?1, ch.campaign_id, ?2, 'active', 30, 1, ?3, ?4, ?4, NULL, NULL, ?5, ?5
+           FROM checkouts ch JOIN recurring_pledges rp ON rp.id = ch.recurring_pledge_id
+          WHERE ch.id = ?6 AND rp.subscription_id IS NULL AND ?2 IS NOT NULL AND ${uvjet(7)}`,
+      )
+      .bind(pretplata, ibanHash, primljeno, placeno, sad, checkoutId, doprinosId),
+    db
+      .prepare(
+        `UPDATE recurring_pledges SET subscription_id = ?1, updated_at = ?2
+          WHERE id = (SELECT recurring_pledge_id FROM checkouts WHERE id = ?3) AND subscription_id IS NULL
+            AND EXISTS (SELECT 1 FROM subscriptions WHERE id = ?1)`,
+      )
+      .bind(pretplata, sad, checkoutId),
+  ];
 }
 
 async function primijeniNaNapojnicu(db: D1Database, d: DogadajUplate, t: RedNapojnice, sad: number): Promise<IshodPrimjene> {

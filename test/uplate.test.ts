@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { noviSid, stvoriIntent } from "../src/lib/mpt/klijent";
 import { obradiSimulaciju, obradiWebhook, odgovorStanja } from "../src/lib/mpt/obrada";
 import { dogadajIzIntenta, hashIbana, primijeniDogadaj, stanjeCheckouta, uskladiCheckout, uskladiIntent, type StanjeCheckouta } from "../src/lib/db/uplate";
+import { stvoriObecanje } from "../src/lib/db/ponavljanje";
 import { broj, kaoD1, novaBaza, redovi } from "./pomoc/baza";
 import { IBAN_TESTA, TAJNA_TESTA, dvojnikMpt, type DvojnikMpt } from "./pomoc/mpt-dvojnik";
 
@@ -420,5 +421,59 @@ describe("stanjeCheckouta()", () => {
     const u = await novaUplata();
     expect((await stanjeCheckouta(db, u.checkoutId))?.napojnica).toBeNull();
     expect(await stanjeCheckouta(db, "nema")).toBeNull();
+  });
+});
+
+describe("S10: obećanje i subscriptions (tok 10, odluka 828)", () => {
+  const placen = (sid: string, senderIban: string | null, webhookId: string | null = null) =>
+    primijeniDogadaj(
+      db,
+      { vrsta: "intent.paid", webhookId, sid, moneriumOrderId: null, primljenoCenti: 2500, placenoU: 1_800_000_000_000, senderIban, faza: null },
+      Date.now(),
+      { ibanTajna: TAJNA_TESTA },
+    );
+  async function mjesecObecanja(pledgeId: string): Promise<Uplata> {
+    const x = await novaUplata();
+    sqlite.prepare("UPDATE checkouts SET recurring_pledge_id = ? WHERE id = ?").run(pledgeId, x.checkoutId);
+    return x;
+  }
+  const obecanje = async () => {
+    const userId = (sqlite.prepare("SELECT id FROM users ORDER BY id LIMIT 1").get() as { id: string }).id;
+    return stvoriObecanje(db, { userId, campaignId: kampanja, iznosCenti: 2500, dan: 10, nacin: "reminder", sad: Date.now() });
+  };
+  const pretplataObecanja = (id: string) =>
+    sqlite
+      .prepare(
+        `SELECT s.campaign_id, s.payer_iban_hash, s.status, s.interval_days, s.contribution_count, s.total_cents
+           FROM recurring_pledges rp JOIN subscriptions s ON s.id = rp.subscription_id WHERE rp.id = ?`,
+      )
+      .get(id) as Record<string, unknown> | undefined;
+
+  it("prvi plaćeni mjesec s IBAN-om stvara pretplatu i veže obećanje; idući mjesec +1; ponovljeni događaj ne broji", async () => {
+    const id = await obecanje();
+    const prvi = await mjesecObecanja(id);
+    await placen(prvi.sid, IBAN_TESTA);
+    const hash = await hashIbana(IBAN_TESTA, TAJNA_TESTA);
+    expect(pretplataObecanja(id)).toEqual({
+      campaign_id: kampanja, payer_iban_hash: hash, status: "active", interval_days: 30, contribution_count: 1, total_cents: 2500,
+    });
+    await placen(prvi.sid, IBAN_TESTA); // ponovljeno: doprinos više nije u polaznom stanju
+    expect(pretplataObecanja(id)).toMatchObject({ contribution_count: 1, total_cents: 2500 });
+    const drugi = await mjesecObecanja(id);
+    await placen(drugi.sid, IBAN_TESTA);
+    expect(pretplataObecanja(id)).toMatchObject({ contribution_count: 2, total_cents: 5000 });
+    expect(broj(sqlite, "SELECT count(*) FROM subscriptions WHERE payer_iban_hash = ?", hash)).toBe(1);
+  });
+
+  it("bez IBAN-a (pull u sandboxu) nema pretplate; doprinos bez obećanja je ne dira", async () => {
+    const prije = broj(sqlite, "SELECT count(*) FROM subscriptions");
+    const id = await obecanje();
+    const x = await mjesecObecanja(id);
+    await placen(x.sid, null);
+    expect(doprinos(x.doprinosId).state).toBe("paid");
+    expect(pretplataObecanja(id)).toBeUndefined();
+    const obicna = await novaUplata();
+    await placen(obicna.sid, IBAN_TESTA);
+    expect(broj(sqlite, "SELECT count(*) FROM subscriptions")).toBe(prije);
   });
 });
