@@ -463,3 +463,20 @@ koja se na nju poziva. Blokovi brojeva po sesiji: S1 od 100, S1b od 150, S2 od 2
      „Osvježi stanje”, a svaki GET stranice ionako radi pull. Pravi SSE traži CORS na railu ili proxy kroz Worker (S8/S9).
 729. **`POST /api/checkouts/{id}/tip`** prima samo JSON (415/400/404/409/502); obrasce od CSRF-a štiti Astro
      `checkOrigin`. Učitavači koraka 2–4 dodatno zovu `dohvatiIntent` za QR i `checkout_url` (bez migracije).
+
+## S8 — 25. 11. 2026.
+
+800. **4fundov API ne koristimo; iznos vanjske kampanje ne prikazujemo.** Provjera 25. 11. 2026. (Brave, samo
+     čitanje): Uvjeti (`4fund.com/terms`) nemaju odredbu o API-ju, a čl. 13.1 štiti „database” kao intelektualno
+     vlasništvo; OpenAPI (`/api/v1/public/doc`, swagger iz HTML-a) traži `Bearer` na svih 5 GET putanja („Get user
+     whip-rounds” = kampanje vlasnika tokena); FAQ „How can you access the open API?” kaže da se pristup traži
+     obrascem, a `access_token` 4fund dodjeljuje „after reviewing your application and the planned use of the API”.
+     Javnog neautentificiranog izvora iznosa nema. Zato: metapodaci (naslov, kategorija, kratki opis) unose se ručno,
+     iznos se ne prikazuje, a organizatorov vlastiti token ne tražimo (to bi bilo dijeljenje vjerodajnice).
+     *Revizija:* zahtjev 4fundu za token s opisom namjene je vanjska radnja i korisnikova odluka.
+801. **Gumb „Podrži na 4fundu”** vodi na `https://4fund.com/{external_id}/pay` sastavljen iz provjerenog
+     `external_id` (6 znakova), ne iz spremljenog URL-a; oznaka „plaćanje na 4fund.com”, nova kartica,
+     `noopener nofollow`.
+802. **Provjera vlasništva vanjske kampanje ostaje mock** (odluka 209): 4fund automatiziranim dohvatima vraća 403
+     (`/terms`, `/faq`, `/{id}/pay`, 25. 11. 2026.), pa produkcijska provjera koda u opisu treba ručni pregled admina.
+     (potvrditi)
