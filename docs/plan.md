@@ -35,6 +35,7 @@ Arhitektura: [06-arhitektura](06-arhitektura.md). Preslikavanje funkcija: [02](0
 | S8 | F3 | **Hibrid i ostatak**: vanjska 4fund kampanja (opt-in link, oznaka, gumb na njihov `/pay`, provjera uvjeta za čitanje iznosa), recurring (podsjetnik + QR), faza-2 UI (ponude, razine, osobe) s oznakom | 800– | e2e za vanjsku kampanju; svaki red tablice u `02` ima ekran u prototipu |
 | S9 | F4 | **Paritet i pregled**: tablica pariteta ekran-po-ekran naspram obilaska, a11y i mobilni pregled, preview deploy na `*.workers.dev` (vrata) | 900– | tablica pariteta bez praznih redova; Playwright prolazi na 375 px i 1280 px; preview URL (ako korisnik odobri) |
 | S10 | F4 | **Vrata i dorade** (dodano u S9): preview deploy ako korisnik odobri, webhook izvana, ime/brend ako odgovori; 11 „djelomično” redova iz `docs/10`; e2e mjesečnog toka; SSE | 1000– | `docs/10` bez „djelomično” (ili ✗ s razlogom); `npm run check` i Playwright zeleni; preview URL ili zapisano da nije odobren |
+| S11 | F4 | **Ostatak** (dodano u S10): pravi SSE statusa kroz Worker, video na stranici kampanje, opis kasice kroz renderer, e2e mock e-pošte organizatoru; R2 ako korisnik odluči | 1100– | `npm run check` i Playwright zeleni; staging redeployan; TODO F3/F4 bez otvorenih stavki osim korisnikovih odluka |
 
 **Procjena:** 10 sesija (S1–S9 + S1b). **Vrata:** S1 (prijava u Brave), S3 (ime/brend),
 S9 (deploy). **Paralelno:** S2 i S3 dijele samo `docs/00`, ali S3 treba entitete iz S2, pa
@@ -44,9 +45,8 @@ tunel ili ručni `simulate` + pull statusa).
 
 ## Gdje smo
 
-S0–S9 gotovi (25. 11. 2026.); otvorena su samo vrata. S9: paritet ekran po ekran (`docs/10`, 87 redova, 11
-„djelomično” s popisom), pregled u Braveu na 375 i 1280 px (0 preljeva na 213 ruta), axe WCAG 2.1 AA u Playwrightu
-(240 testova, 0 nalaza), sažetak za pravnika i produkciju (`docs/11`), popravci (postotak cilja, zadnja aktivnost
-sesije, a11y). `npm run check` zelen (645 testova), 335/335 ruta, Playwright 678 passed (odluke 900–910).
-**Vrata:** preview deploy na `*.workers.dev` (pripremljeno u `docs/11` §C), ime i brend (odluka 305), GitHub remote.
-Sljedeće: S10 (izvan izvornog plana): odgovori na vrata i „djelomično” redovi iz `docs/10`.
+S0–S10 gotovi (25. 11. 2026.). S10: staging `https://crowdfund-staging.domovina.ai` (račun D.O.M., javno, sandbox,
+noindex; webhook sandbox tenanta izvana potvrđen), javni repo `github.com/domovinatv/crowdfund.domovina.ai`, svih 11
+„djelomično” redova `docs/10` zatvoreno (R2 ✗ do odluke), e2e mjesečnog toka, `subscriptions` povezan (odluke
+1000–1020). Ime platforme i dalje otvoreno (odluka 1004). Sljedeće: S11 (izvan plana) — pravi SSE kroz Worker, sitni
+ostaci iz S10, potvrda auto-odluke o R2.

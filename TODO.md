@@ -30,7 +30,7 @@ Legenda: `[x]` gotovo · `[ ]` otvoreno · `[~]` u radu · `(!)` traži korisnik
 - [ ] (!) Prijedlozi za campaign-core (`foundation`, `purpose_evidence`, `amount_hidden`, J2), odluka 213 — vlasnik jezgre
 - [x] `docs/07-rute.md` (hr/en sitemap, 85 ruta 4funda preslikano) → S3
 - [x] `docs/08-dizajn-sustav.md` (tokeni, komponente, žičani okviri) → S3
-- [ ] (!) Ime i brend platforme: 5 prijedloga u `08` §6, do odgovora radno ime (odluka 305), pitanje na vrhu S4
+- [ ] (!) Ime i brend platforme: dvije runde prijedloga odbijene (`08` §6, `research/2026-11-25-ime-platforme-iteracija-2.md`), radno ime vrijedi (odluke 305, 1004)
 
 ## F2 — Prototip
 
@@ -50,16 +50,18 @@ Legenda: `[x]` gotovo · `[ ]` otvoreno · `[~]` u radu · `(!)` traži korisnik
 - [x] MPT sandbox tenant, checkout, webhook, napojnica, potvrda (588 unit, 416 Playwright, e2e nad sandboxom) → S7
 - [x] Prihvat uvjeta checkouta u `consents`; „prikaži poruku kao komentar”; obavijesti e-poštom (mock) (odluke 821–824) → S8
 - [x] `potvrdiPovrat` po pravilu 717 → S8
-- [ ] Pravi SSE statusa (CORS na MPT `/stream` ili proxy kroz Worker), jedan poziv raila po učitavanju → S10
-- [ ] (!) Webhook izvana: s preview URL-om `webhook_url` sandbox tenanta na `/webhooks/mpt` (vrata deploy, `docs/11` §C) → S10
+- [ ] Pravi SSE statusa (CORS na MPT `/stream` ili proxy kroz Worker), jedan poziv raila po učitavanju → S11
+- [x] Webhook izvana: `webhook_url` sandbox tenanta na `https://crowdfund-staging.domovina.ai/webhooks/mpt`, 2 × POST → 200 (odluka 1003) → S10
 - [x] Vanjska 4fund kampanja (e2e), recurring (podsjetnik + trajni nalog), faza-2 UI, `02` pokriven (odluke 800–849) → S8
-- [ ] e2e mjesečnog toka i komentara/obavijesti pri plaćanju; povezati `subscriptions` s obećanjem (odluka 828) → S10
+- [x] e2e mjesečnog toka i komentara pri plaćanju (`mjesecno.spec.ts`); `subscriptions` povezan uz poznati IBAN (odluke 1019, 1020) → S10
+- [ ] e2e mock e-pošte organizatoru o novom doprinosu (treba demo sesija vlasnika) → S11
 - [ ] (!) Zahtjev 4fundu za API token radi prikaza iznosa vanjskih kampanja (odluka 800) — korisnikova odluka
 
 ## F4 — Paritet
 
 - [x] Tablica pariteta (`docs/10`, 87 redova), pregled 375/1280 u Braveu, axe a11y 240 testova (odluke 900–908) → S9
 - [x] Otvorena pitanja za pravnika i produkciju (`docs/11`) → S9
-- [ ] 11 „djelomično” redova iz `docs/10` §Sažetak (6 sitnih, 5 srednjih: captcha, upload medija/R2, rich text, privitak prijave, uređivanje kategorije/galerije) → S10
-- [ ] (!) Preview deploy na workers.dev: pripremljen (`docs/11` §C), čeka odobrenje → S10
-- [ ] (!) GitHub remote i javnost repoa (odluka 17)
+- [x] 11 „djelomično” redova iz `docs/10` zatvoreno: 3 „=”, 8 „≈”, R2 ✗ do odluke (odluke 1007–1018) → S10
+- [ ] (!) R2 za medije i privitak: auto-odluka „✗ do odluke” (1007) čeka potvrdu korisnika
+- [x] Staging deploy `https://crowdfund-staging.domovina.ai` (D.O.M., javno, noindex, traka sandboxa; odluke 1000–1002) → S10
+- [x] GitHub: javni `github.com/domovinatv/crowdfund.domovina.ai`, pregled povijesti prije pusha (odluka 1006) → S10

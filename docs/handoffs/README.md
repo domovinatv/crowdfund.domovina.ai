@@ -1,4 +1,4 @@
-# Handoffi za sesije S1–S10 (i S1b)
+# Handoffi za sesije S1–S11 (i S1b)
 
 Plan je u [`docs/plan.md`](../plan.md). Svaka sesija ima svoj handoff `SN.md`. Korisnik nakon
 `/clear` kaže „nastavi crowdfund” ili zalijepi prompt iz clipboarda.
@@ -32,7 +32,8 @@ Plan je u [`docs/plan.md`](../plan.md). Svaka sesija ima svoj handoff `SN.md`. K
 | S7 | Uplata kroz MPT sandbox | gotovo, vrata ime/brend i dalje otvorena | 7e44bd2 | `npm run check`: astro check 0 errors, vitest 28 datoteka / 588 testova / 0 skipped, build complete; `npm run routes` 320 / 320 / 0 bez pogleda / 1 izostavljena; `BASE_URL=http://localhost:8798 npx playwright test` 416 passed (4 e2e nad stvarnim sandboxom) | sandbox tenant, checkout 4 koraka, webhook (potpis, dedupe, idempotentno) + pull istim putem, napojnica kao drugi intent, potvrda; status pull umjesto SSE (MPT nema CORS); odluke 700–729 |
 | S8 | Hibrid i ostatak | gotovo, vrata ime/brend i dalje otvorena | a7f1ddc | `npm run check`: astro check 0 errors, vitest 32 datoteke / 644 testa / 0 skipped, build complete; `npm run routes` 335 / 335 / 0 bez pogleda / 0 izostavljenih; `BASE_URL=http://localhost:8798 npx playwright test` 438 passed (uklj. e2e vanjske kampanje) | vanjska 4fund kampanja (API ne, gumb `/pay`), mjesečni podsjetnik + trajni nalog, privola i komentar iz poruke, faza-2 UI (ponude, razine, promocija, osobna kampanja), `02` pokriven; odluke 800–849 |
 | S9 | Paritet i pregled | gotovo, vrata deploy i ime/brend otvorena | 3f4e967 | `npm run check`: astro check 0 errors (391 datoteka), vitest 32 datoteke / 645 testova / 0 skipped, build complete; `npm run routes` 335 / 335 / 0 bez pogleda / 0 izostavljenih; `BASE_URL=http://localhost:8798 npx playwright test` 678 passed (uklj. 240 axe na 375 i 1280 px) | `docs/10` paritet (87 redova, 11 djelomično), `docs/11` pravnik i produkcija + priprema deploya, Brave pregled 213 ruta × 2 širine bez preljeva, popravci (postotak, aktivnost sesije, a11y); odluke 900–910 |
-| S10 | Vrata i dorade | vrata: deploy | | | |
+| S10 | Vrata i dorade | gotovo, ime/brend otvoreno | 65a8fbd | `npm run check`: astro check 0 errors, vitest 34 datoteke / 678 testova / 0 skipped, build complete; `npm run routes` 335 / 335 (lokalno i nad stagingom); `BASE_URL=http://localhost:8798 npx playwright test` 686 passed; nad stagingom `uplata` + `mjesecno` 6 passed | staging `crowdfund-staging.domovina.ai` (D.O.M., javno, noindex), webhook izvana 2 × 200, javni GitHub repo, 11 „djelomično” zatvoreno (R2 ✗ auto, potvrditi), e2e mjesečnog toka; odluke 1000–1020 |
+| S11 | Ostatak | otvoreno | | | |
 
 ## Zajednička pravila (svaka sesija)
 
