@@ -3,6 +3,9 @@
 // poveznica na MPT stranicu intenta, napomena o potvrdi u produkciji, natrag na kampanju i dijeljenje.
 import ExternalLink from "@lucide/astro/icons/external-link";
 import HeartHandshake from "@lucide/astro/icons/heart-handshake";
+import Repeat from "@lucide/astro/icons/repeat";
+import { datum } from "../../components/katalog/oblik";
+import { PONAVLJANJE } from "../sadrzaj/ponavljanje";
 import Base from "../../layouts/Base.astro";
 import KoraciCheckouta from "../../components/checkout/KoraciCheckouta.astro";
 import ShareSheet from "../../components/kampanja/ShareSheet.astro";
@@ -15,7 +18,8 @@ import type { PropsStranice } from "../tipovi";
 
 type Props = PropsStranice<PodaciPotvrde>;
 const { lang, podaci } = Astro.props;
-const { k, ch, intent, adresa } = podaci;
+const { k, ch, intent, adresa, obecanje } = podaci;
+const O = PONAVLJANJE[lang].obecanje;
 const C = CHECKOUT[lang];
 const T = C.potvrda;
 const novac = formatNovca(lang);
@@ -60,6 +64,19 @@ const DD = "min-w-0 break-words text-ink";
       )}
       <p class="mt-2 text-sm text-ink-muted">{T.mptNapomena}</p>
     </section>
+
+    {
+      obecanje && (
+        <section aria-labelledby="obecanje" class={`mt-6 ${KARTICA}`} data-obecanje={obecanje.nacin}>
+          <h2 id="obecanje" class="flex items-center gap-2 text-lg font-semibold text-ink"><Repeat size={20} aria-hidden="true" />{O.naslov}</h2>
+          <p class="mt-1 text-ink">{popuni(O.tekst, { iznos: novac(obecanje.iznosCenti), dan: obecanje.dan })}</p>
+          {obecanje.nacin === "reminder" && obecanje.sljedeci !== null && obecanje.status === "active" && (
+            <p class="mt-1 text-sm text-ink-soft">{popuni(O.sljedeci, { datum: datum(lang, obecanje.sljedeci) })}</p>
+          )}
+          <a href={url(lang, "settings.recurring")} class="mt-3 inline-flex min-h-11 items-center text-sm font-semibold text-action underline underline-offset-2">{O.upravljaj}</a>
+        </section>
+      )
+    }
 
     <div class="mt-6 flex flex-wrap gap-3">
       <a href={url(lang, "campaign", { id: k.publicId })} class={GUMB}>{T.natrag}</a>

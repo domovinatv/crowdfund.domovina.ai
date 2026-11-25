@@ -72,7 +72,7 @@ const odbijena = ch.stanje === "rejected" || intent?.stage === "rejected";
 
     {
       obecanje && (
-        <section aria-labelledby="obecanje" class={`mt-6 ${KARTICA}`} data-obecanje={obecanje.nacin}>
+        <section aria-labelledby="obecanje" class={`mt-6 ${KARTICA}`} data-obecanje={obecanje.nacin} data-obecanje-id={obecanje.id}>
           <h2 id="obecanje" class="flex items-center gap-2 text-lg font-semibold text-ink">
             <Repeat size={20} aria-hidden="true" />{O.naslov}
           </h2>
