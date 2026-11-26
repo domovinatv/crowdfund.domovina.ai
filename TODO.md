@@ -30,7 +30,7 @@ Legenda: `[x]` gotovo · `[ ]` otvoreno · `[~]` u radu · `(!)` traži korisnik
 - [ ] (!) Prijedlozi za campaign-core (`foundation`, `purpose_evidence`, `amount_hidden`, J2), odluka 213 — vlasnik jezgre
 - [x] `docs/07-rute.md` (hr/en sitemap, 85 ruta 4funda preslikano) → S3
 - [x] `docs/08-dizajn-sustav.md` (tokeni, komponente, žičani okviri) → S3
-- [ ] (!) Ime i brend platforme: dvije runde prijedloga odbijene (`08` §6, `research/2026-11-25-ime-platforme-iteracija-2.md`), radno ime vrijedi (odluke 305, 1004)
+- [ ] (!) Ime i brend platforme: šest rundi prijedloga, uži izbor i preporuka Odsrca u `research/2026-11-26-ime-platforme-iteracija-6-srce-i-uzi-izbor.md`, radno ime vrijedi (odluke 305, 1004)
 
 ## F2 — Prototip
 
